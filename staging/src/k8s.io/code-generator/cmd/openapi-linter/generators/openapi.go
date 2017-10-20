@@ -22,7 +22,6 @@ import (
 	"io"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 
 	"k8s.io/gengo/args"
@@ -169,6 +168,10 @@ type openAPIGen struct {
 
 func NewOpenAPIGen(sanitizedName string, targetPackage *types.Package, context *generator.Context) generator.Generator {
 	glog.V(2).Infof("----------- Creating a new OpenAPI generator...")
+	for k, v := range targetPackage.Imports {
+		glog.V(2).Infof("-----------------%v: %v", k, v)
+	}
+	glog.V(2).Infof("----------- Import information printed...")
 	return &openAPIGen{
 		DefaultGen: generator.DefaultGen{
 			OptionalName: sanitizedName,
@@ -206,6 +209,7 @@ func (g *openAPIGen) isOtherPackage(pkg string) bool {
 
 func (g *openAPIGen) Imports(c *generator.Context) []string {
 	importLines := []string{}
+	importLines = append(importLines, "k8s.io/api/core/v1")
 	for _, singleImport := range g.imports.ImportLines() {
 		importLines = append(importLines, singleImport)
 	}
@@ -223,21 +227,27 @@ func argsFromType(t *types.Type) generator.Args {
 
 func (g *openAPIGen) Init(c *generator.Context, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
-	sw.Do("func GetOpenAPIDefinitions(ref $.ReferenceCallback|raw$) map[string]$.OpenAPIDefinition|raw$ {\n", argsFromType(nil))
-	sw.Do("return map[string]$.OpenAPIDefinition|raw${\n", argsFromType(nil))
+	// sw.Do("func GetOpenAPIDefinitions(ref $.ReferenceCallback|raw$) map[string]$.OpenAPIDefinition|raw$ {\n", argsFromType(nil))
+	// sw.Do("return map[string]$.OpenAPIDefinition|raw${\n", argsFromType(nil))
 	return sw.Error()
 }
 
 func (g *openAPIGen) Finalize(c *generator.Context, w io.Writer) error {
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
-	sw.Do("}\n", nil)
-	sw.Do("}\n", nil)
+	// sw.Do("}\n", nil)
+	// sw.Do("}\n", nil)
 	return sw.Error()
 }
 
 func (g *openAPIGen) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
 	glog.V(5).Infof("generating for type %v", t)
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
+	glog.V(2).Infof("Printing out context c:")
+	glog.V(2).Infof("%v", c)
+	glog.V(2).Infof("End of printing")
+	glog.V(2).Infof("Printing out type t:")
+	glog.V(2).Infof("%v", t)
+	glog.V(2).Infof("End of printing")
 	err := newOpenAPITypeWriter(sw).generate(t)
 	if err != nil {
 		return err
@@ -342,45 +352,74 @@ func (g openAPITypeWriter) generate(t *types.Type) error {
 	// Only generate for struct type and ignore the rest
 	switch t.Kind {
 	case types.Struct:
-		args := argsFromType(t)
-		g.Do("\"$.$\": ", t.Name)
-		if hasOpenAPIDefinitionMethod(t) {
-			g.Do("$.type|raw${}.OpenAPIDefinition(),\n", args)
-			return nil
-		}
-		g.Do("{\nSchema: spec.Schema{\nSchemaProps: spec.SchemaProps{\n", nil)
-		g.generateDescription(t.CommentLines)
-		g.Do("Properties: map[string]$.SpecSchemaType|raw${\n", args)
-		required, err := g.generateMembers(t, []string{})
-		if err != nil {
-			return err
-		}
-		g.Do("},\n", nil)
-		if len(required) > 0 {
-			g.Do("Required: []string{\"$.$\"},\n", strings.Join(required, "\",\""))
-		}
-		g.Do("},\n", nil)
-		if err := g.generateExtensions(t.CommentLines); err != nil {
-			return err
-		}
-		g.Do("},\n", nil)
-		g.Do("Dependencies: []string{\n", args)
-		// Map order is undefined, sort them or we may get a different file generated each time.
-		keys := []string{}
-		for k := range g.refTypes {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			v := g.refTypes[k]
-			if t, _ := openapi.GetOpenAPITypeFormat(v.String()); t != "" {
-				// This is a known type, we do not need a reference to it
-				// Will eliminate special case of time.Time
-				continue
+		for _, cl := range t.CommentLines {
+			if cl != "" {
+				g.Do("//$.$\n", cl)
 			}
-			g.Do("\"$.$\",", k)
 		}
-		g.Do("},\n},\n", nil)
+		g.Do("type $.$ struct {\n", t.Name.Name)
+		for _, m := range t.Members {
+			for _, l := range m.CommentLines {
+				if l != "" {
+					g.Do("\t//$.$\n", l)
+				}
+			}
+			if !m.Embedded {
+				g.Do("\t$.$\t", m.Name)
+				if m.Type != nil {
+					g.Do("$.$", m.Type.Name)
+				} else {
+					g.Do("", nil)
+				}
+			} else {
+				g.Do("\t$.$", typeShortName(m.Type))
+			}
+			if m.Tags != "" {
+				g.Do("\t`$.$`", m.Tags)
+			}
+			g.Do("\n", nil)
+		}
+		g.Do("}\n\n", nil)
+
+		// args := argsFromType(t)
+		// g.Do("\"$.$\": ", t.Name)
+		// if hasOpenAPIDefinitionMethod(t) {
+		// 	g.Do("$.type|raw${}.OpenAPIDefinition(),\n", args)
+		// 	return nil
+		// }
+		// g.Do("{\nSchema: spec.Schema{\nSchemaProps: spec.SchemaProps{\n", nil)
+		// g.generateDescription(t.CommentLines)
+		// g.Do("Properties: map[string]$.SpecSchemaType|raw${\n", args)
+		// required, err := g.generateMembers(t, []string{})
+		// if err != nil {
+		// 	return err
+		// }
+		// g.Do("},\n", nil)
+		// if len(required) > 0 {
+		// 	g.Do("Required: []string{\"$.$\"},\n", strings.Join(required, "\",\""))
+		// }
+		// g.Do("},\n", nil)
+		// if err := g.generateExtensions(t.CommentLines); err != nil {
+		// 	return err
+		// }
+		// g.Do("},\n", nil)
+		// g.Do("Dependencies: []string{\n", args)
+		// // Map order is undefined, sort them or we may get a different file generated each time.
+		// keys := []string{}
+		// for k := range g.refTypes {
+		// 	keys = append(keys, k)
+		// }
+		// sort.Strings(keys)
+		// for _, k := range keys {
+		// 	v := g.refTypes[k]
+		// 	if t, _ := openapi.GetOpenAPITypeFormat(v.String()); t != "" {
+		// 		// This is a known type, we do not need a reference to it
+		// 		// Will eliminate special case of time.Time
+		// 		continue
+		// 	}
+		// 	g.Do("\"$.$\",", k)
+		// }
+		// g.Do("},\n},\n", nil)
 	}
 	return nil
 }

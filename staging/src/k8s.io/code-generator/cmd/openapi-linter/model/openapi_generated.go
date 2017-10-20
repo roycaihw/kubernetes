@@ -21,57 +21,21 @@ limitations under the License.
 package model
 
 import (
-	spec "github.com/go-openapi/spec"
-	common "k8s.io/kube-openapi/pkg/common"
+	"k8s.io/api/core/v1"
 )
 
-func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
-	return map[string]common.OpenAPIDefinition{
-		"k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/openapi-linter/model.Car": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "Car is a simple car model.",
-					Properties: map[string]spec.Schema{
-						"Color": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
-							},
-						},
-						"Capacity": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"integer"},
-								Format: "int32",
-							},
-						},
-					},
-					Required: []string{"Color", "Capacity"},
-				},
-			},
-			Dependencies: []string{},
-		},
-		"k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/openapi-linter/model.MinimalPod": {
-			Schema: spec.Schema{
-				SchemaProps: spec.SchemaProps{
-					Description: "MinimalPod is a minimal pod.",
-					Properties: map[string]spec.Schema{
-						"name": {
-							SchemaProps: spec.SchemaProps{
-								Type:   []string{"string"},
-								Format: "",
-							},
-						},
-						"PodSpec": {
-							SchemaProps: spec.SchemaProps{
-								Ref: ref("k8s.io/api/core/v1.PodSpec"),
-							},
-						},
-					},
-					Required: []string{"name", "PodSpec"},
-				},
-			},
-			Dependencies: []string{
-				"k8s.io/api/core/v1.PodSpec"},
-		},
-	}
+//Car is a simple car model.
+//+k8s:openapi-gen=true
+type Car struct {
+	Color    string
+	Capacity int
+	//+k8s:openapi-gen=false
+	HiddenFeature string
+}
+
+//MinimalPod is a minimal pod.
+//+k8s:openapi-gen=true
+type MinimalPod struct {
+	Name string `json:"name"`
+	v1.PodSpec
 }
