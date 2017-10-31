@@ -39,6 +39,7 @@ import (
 	"k8s.io/kubernetes/pkg/proxy/healthcheck"
 	"k8s.io/kubernetes/pkg/proxy/iptables"
 	"k8s.io/kubernetes/pkg/proxy/ipvs"
+	"k8s.io/kubernetes/pkg/proxy/metrics"
 	"k8s.io/kubernetes/pkg/proxy/userspace"
 	"k8s.io/kubernetes/pkg/util/configz"
 	utildbus "k8s.io/kubernetes/pkg/util/dbus"
@@ -65,6 +66,7 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
 
 	protocol := utiliptables.ProtocolIpv4
 	if net.ParseIP(config.BindAddress).To4() == nil {
+		glog.V(0).Infof("IPv6 bind address (%s), assume IPv6 operation", config.BindAddress)
 		protocol = utiliptables.ProtocolIpv6
 	}
 
@@ -81,7 +83,12 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
 
 	// We omit creation of pretty much everything if we run in cleanup mode
 	if cleanupAndExit {
-		return &ProxyServer{IptInterface: iptInterface, IpvsInterface: ipvsInterface, CleanupAndExit: cleanupAndExit}, nil
+		return &ProxyServer{
+			execer:         execer,
+			IptInterface:   iptInterface,
+			IpvsInterface:  ipvsInterface,
+			CleanupAndExit: cleanupAndExit,
+		}, nil
 	}
 
 	client, eventClient, err := createClients(config.ClientConnection, master)
@@ -115,10 +122,8 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
 	proxyMode := getProxyMode(string(config.Mode), iptInterface, iptables.LinuxKernelCompatTester{})
 	if proxyMode == proxyModeIPTables {
 		glog.V(0).Info("Using iptables Proxier.")
-		var nodeIP net.IP
-		if config.BindAddress != "0.0.0.0" {
-			nodeIP = net.ParseIP(config.BindAddress)
-		} else {
+		nodeIP := net.ParseIP(config.BindAddress)
+		if nodeIP.Equal(net.IPv4zero) || nodeIP.Equal(net.IPv6zero) {
 			nodeIP = getNodeIP(client, hostname)
 		}
 		if config.IPTables.MasqueradeBit == nil {
@@ -144,7 +149,7 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
 		if err != nil {
 			return nil, fmt.Errorf("unable to create proxier: %v", err)
 		}
-		iptables.RegisterMetrics()
+		metrics.RegisterMetrics()
 		proxier = proxierIPTables
 		serviceEventHandler = proxierIPTables
 		endpointsEventHandler = proxierIPTables
@@ -176,6 +181,7 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
 		if err != nil {
 			return nil, fmt.Errorf("unable to create proxier: %v", err)
 		}
+		metrics.RegisterMetrics()
 		proxier = proxierIPVS
 		serviceEventHandler = proxierIPVS
 		endpointsEventHandler = proxierIPVS

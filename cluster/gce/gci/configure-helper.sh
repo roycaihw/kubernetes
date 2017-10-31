@@ -52,7 +52,7 @@ function config-ip-firewall {
   iptables -N KUBE-METADATA-SERVER
   iptables -I FORWARD -p tcp -d 169.254.169.254 --dport 80 -j KUBE-METADATA-SERVER
 
-  if [[ -n "${KUBE_FIREWALL_METADATA_SERVER:-}" ]]; then
+  if [[ "${ENABLE_METADATA_CONCEALMENT:-}" == "true" ]]; then
     iptables -A KUBE-METADATA-SERVER -j DROP
   fi
 }
@@ -405,7 +405,7 @@ EOF
   if [[ -n "${SECONDARY_RANGE_NAME:-}" ]]; then
     use_cloud_config="true"
     cat <<EOF >> /etc/gce.conf
-secondary-range-name = ${SECONDARY-RANGE-NAME}
+secondary-range-name = ${SECONDARY_RANGE_NAME}
 EOF
   fi
   if [[ "${use_cloud_config}" != "true" ]]; then
@@ -506,7 +506,7 @@ function create-master-audit-policy {
       - group: "batch"
       - group: "certificates.k8s.io"
       - group: "extensions"
-      - group: "metrics"
+      - group: "metrics.k8s.io"
       - group: "networking.k8s.io"
       - group: "policy"
       - group: "rbac.authorization.k8s.io"
@@ -568,7 +568,7 @@ rules:
       - system:kube-controller-manager
     verbs: ["get", "list"]
     resources:
-      - group: "metrics"
+      - group: "metrics.k8s.io"
 
   # Don't log these read-only URLs.
   - level: None
@@ -724,30 +724,6 @@ contexts:
     user: kube-proxy
   name: service-account-context
 current-context: service-account-context
-EOF
-}
-
-function create-kubeproxy-serviceaccount-kubeconfig {
-  echo "Creating kube-proxy serviceaccount kubeconfig file"
-  cat <<EOF >/var/lib/kube-proxy/kubeconfig
-apiVersion: v1
-kind: Config
-clusters:
-- cluster:
-    certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-    server: https://${KUBERNETES_MASTER_NAME}
-  name: default
-contexts:
-- context:
-    cluster: default
-    namespace: default
-    user: default
-  name: default
-current-context: default
-users:
-- name: default
-  user:
-    tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
 EOF
 }
 
@@ -1093,7 +1069,7 @@ function prepare-kube-proxy-manifest-variables {
   if [[ -n "${FEATURE_GATES:-}" ]]; then
     params+=" --feature-gates=${FEATURE_GATES}"
   fi
-  params+=" --iptables-sync-period=1m --iptables-min-sync-period=10s"
+  params+=" --iptables-sync-period=1m --iptables-min-sync-period=10s --ipvs-sync-period=1m --ipvs-min-sync-period=10s"
   if [[ -n "${KUBEPROXY_TEST_ARGS:-}" ]]; then
     params+=" ${KUBEPROXY_TEST_ARGS}"
   fi
@@ -1119,6 +1095,7 @@ function prepare-kube-proxy-manifest-variables {
   sed -i -e "s@{{pod_priority}}@${pod_priority}@g" ${src_file}
   sed -i -e "s@{{ cpurequest }}@100m@g" ${src_file}
   sed -i -e "s@{{api_servers_with_port}}@${api_servers}@g" ${src_file}
+  sed -i -e "s@{{kubernetes_service_host_env_value}}@${KUBERNETES_MASTER_NAME}@g" ${src_file}
   if [[ -n "${CLUSTER_IP_RANGE:-}" ]]; then
     sed -i -e "s@{{cluster_cidr}}@--cluster-cidr=${CLUSTER_IP_RANGE}@g" ${src_file}
   fi
@@ -1142,7 +1119,7 @@ function start-kube-proxy {
 # $4: value for variable 'cpulimit'
 # $5: pod name, which should be either etcd or etcd-events
 function prepare-etcd-manifest {
-  local host_name=$(hostname)
+  local host_name=${ETCD_HOSTNAME:-$(hostname -s)}
   local etcd_cluster=""
   local cluster_state="new"
   local etcd_protocol="http"
@@ -1193,6 +1170,11 @@ function prepare-etcd-manifest {
     sed -i -e "s@{{ *pillar\.get('etcd_docker_tag', '\(.*\)') *}}@${ETCD_IMAGE}@g" "${temp_file}"
   else
     sed -i -e "s@{{ *pillar\.get('etcd_docker_tag', '\(.*\)') *}}@\1@g" "${temp_file}"
+  fi
+  if [[ -n "${ETCD_DOCKER_REPOSITORY:-}" ]]; then
+    sed -i -e "s@{{ *pillar\.get('etcd_docker_repository', '\(.*\)') *}}@${ETCD_DOCKER_REPOSITORY}@g" "${temp_file}"
+  else
+    sed -i -e "s@{{ *pillar\.get('etcd_docker_repository', '\(.*\)') *}}@\1@g" "${temp_file}"
   fi
   sed -i -e "s@{{ *etcd_protocol *}}@$etcd_protocol@g" "${temp_file}"
   sed -i -e "s@{{ *etcd_creds *}}@$etcd_creds@g" "${temp_file}"
@@ -1441,9 +1423,13 @@ function start-kube-apiserver {
   fi
   if [[ -n "${PROJECT_ID:-}" && -n "${TOKEN_URL:-}" && -n "${TOKEN_BODY:-}" && -n "${NODE_NETWORK:-}" ]]; then
     local -r vm_external_ip=$(curl --retry 5 --retry-delay 3 --fail --silent -H 'Metadata-Flavor: Google' "http://metadata/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip")
-    params+=" --advertise-address=${vm_external_ip}"
-    params+=" --ssh-user=${PROXY_SSH_USER}"
-    params+=" --ssh-keyfile=/etc/srv/sshproxy/.sshkeyfile"
+    if [[ -n "${PROXY_SSH_USER:-}" ]]; then
+      params+=" --advertise-address=${vm_external_ip}"      
+      params+=" --ssh-user=${PROXY_SSH_USER}"
+      params+=" --ssh-keyfile=/etc/srv/sshproxy/.sshkeyfile"
+    else
+      params+=" --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname",
+    fi
   elif [ -n "${MASTER_ADVERTISE_ADDRESS:-}" ]; then
     params="${params} --advertise-address=${MASTER_ADVERTISE_ADDRESS}"
   fi
@@ -1581,6 +1567,9 @@ function start-kube-controller-manager {
   if [[ -n "${SERVICE_CLUSTER_IP_RANGE:-}" ]]; then
     params+=" --service-cluster-ip-range=${SERVICE_CLUSTER_IP_RANGE}"
   fi
+  if [[ -n "${CONCURRENT_SERVICE_SYNCS:-}" ]]; then
+    params+=" --concurrent-service-syncs=${CONCURRENT_SERVICE_SYNCS}"
+  fi
   if [[ "${NETWORK_PROVIDER:-}" == "kubenet" ]]; then
     params+=" --allocate-node-cidrs=true"
   elif [[ -n "${ALLOCATE_NODE_CIDRS:-}" ]]; then
@@ -1601,6 +1590,10 @@ function start-kube-controller-manager {
   fi
   if [[ -n "${CLUSTER_SIGNING_DURATION:-}" ]]; then
     params+=" --experimental-cluster-signing-duration=$CLUSTER_SIGNING_DURATION"
+  fi
+  # disable using HPA metrics REST clients if metrics-server isn't enabled
+  if [[ "${ENABLE_METRICS_SERVER:-}" != "true" ]]; then
+    params+=" --horizontal-pod-autoscaler-use-rest-clients=false"
   fi
 
   local -r kube_rc_docker_tag=$(cat /home/kubernetes/kube-docker-files/kube-controller-manager.docker_tag)
@@ -1802,6 +1795,13 @@ function start-kube-addons {
     setup-addon-manifests "addons" "dns"
     local -r kubedns_file="${dst_dir}/dns/kube-dns.yaml"
     mv "${dst_dir}/dns/kube-dns.yaml.in" "${kubedns_file}"
+    if [ -n "${CUSTOM_KUBE_DNS_YAML:-}" ]; then
+      # Replace with custom GKE kube-dns deployment.
+      cat > "${kubedns_file}" <<EOF
+$(echo "$CUSTOM_KUBE_DNS_YAML")
+EOF
+      update-prometheus-to-sd-parameters ${kubedns_file}
+    fi
     # Replace the salt configurations with variable values.
     sed -i -e "s@{{ *pillar\['dns_domain'\] *}}@${DNS_DOMAIN}@g" "${kubedns_file}"
     sed -i -e "s@{{ *pillar\['dns_server'\] *}}@${DNS_SERVER_IP}@g" "${kubedns_file}"
@@ -1862,7 +1862,7 @@ function start-kube-addons {
   if [[ "${ENABLE_IP_MASQ_AGENT:-}" == "true" ]]; then
     setup-addon-manifests "addons" "ip-masq-agent"
   fi
-  if [[ "${ENABLE_METADATA_PROXY:-}" == "simple" ]]; then
+  if [[ "${ENABLE_METADATA_CONCEALMENT:-}" == "true" ]]; then
     setup-addon-manifests "addons" "metadata-proxy/gce"
   fi
 
@@ -1889,8 +1889,12 @@ function start-lb-controller {
     echo "Start GCE L7 pod"
     prepare-log-file /var/log/glbc.log
     setup-addon-manifests "addons" "cluster-loadbalancing/glbc"
-    cp "${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/glbc.manifest" \
-       /etc/kubernetes/manifests/
+
+    local -r glbc_manifest="${KUBE_HOME}/kube-manifests/kubernetes/gci-trusty/glbc.manifest"
+    if [[ ! -z "${GCE_GLBC_IMAGE:-}" ]]; then
+      sed -i "s@image:.*@image: ${GCE_GLBC_IMAGE}@" "${glbc_manifest}"
+    fi
+    cp "${glbc_manifest}" /etc/kubernetes/manifests/
   fi
 }
 
@@ -1997,8 +2001,6 @@ else
   create-kubelet-kubeconfig ${KUBERNETES_MASTER_NAME}
   if [[ "${KUBE_PROXY_DAEMONSET:-}" != "true" ]]; then
     create-kubeproxy-user-kubeconfig
-  else
-    create-kubeproxy-serviceaccount-kubeconfig
   fi
   if [[ "${ENABLE_NODE_PROBLEM_DETECTOR:-}" == "standalone" ]]; then
     create-node-problem-detector-kubeconfig

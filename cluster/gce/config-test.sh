@@ -43,6 +43,7 @@ PREEMPTIBLE_NODE=${PREEMPTIBLE_NODE:-false}
 PREEMPTIBLE_MASTER=${PREEMPTIBLE_MASTER:-false}
 KUBE_DELETE_NODES=${KUBE_DELETE_NODES:-true}
 KUBE_DELETE_NETWORK=${KUBE_DELETE_NETWORK:-true}
+CREATE_CUSTOM_NETWORK=${CREATE_CUSTOM_NETWORK:-false}
 
 MASTER_OS_DISTRIBUTION=${KUBE_MASTER_OS_DISTRIBUTION:-${KUBE_OS_DISTRIBUTION:-gci}}
 NODE_OS_DISTRIBUTION=${KUBE_NODE_OS_DISTRIBUTION:-${KUBE_OS_DISTRIBUTION:-gci}}
@@ -75,14 +76,18 @@ CVM_VERSION=${CVM_VERSION:-container-vm-v20170627}
 GCI_VERSION=${KUBE_GCI_VERSION:-cos-stable-60-9592-90-0}
 MASTER_IMAGE=${KUBE_GCE_MASTER_IMAGE:-}
 MASTER_IMAGE_PROJECT=${KUBE_GCE_MASTER_PROJECT:-cos-cloud}
-NODE_IMAGE=${KUBE_GCE_NODE_IMAGE:-${CVM_VERSION}}
+NODE_IMAGE=${KUBE_GCE_NODE_IMAGE:-${GCI_VERSION}}
 NODE_IMAGE_PROJECT=${KUBE_GCE_NODE_PROJECT:-cos-cloud}
+NODE_SERVICE_ACCOUNT=${KUBE_GCE_NODE_SERVICE_ACCOUNT:-default}
 CONTAINER_RUNTIME=${KUBE_CONTAINER_RUNTIME:-docker}
 GCI_DOCKER_VERSION=${KUBE_GCI_DOCKER_VERSION:-}
 RKT_VERSION=${KUBE_RKT_VERSION:-1.23.0}
 RKT_STAGE1_IMAGE=${KUBE_RKT_STAGE1_IMAGE:-coreos.com/rkt/stage1-coreos}
 
 NETWORK=${KUBE_GCE_NETWORK:-e2e-test-${USER}}
+if [[ "${CREATE_CUSTOM_NETWORK}" == true ]]; then
+  SUBNETWORK="${SUBNETWORK:-${NETWORK}-custom-subnet}"
+fi
 INSTANCE_PREFIX="${KUBE_GCE_INSTANCE_PREFIX:-e2e-test-${USER}}"
 CLUSTER_NAME="${CLUSTER_NAME:-${INSTANCE_PREFIX}}"
 MASTER_NAME="${INSTANCE_PREFIX}-master"
@@ -94,8 +99,8 @@ NODE_TAG="${INSTANCE_PREFIX}-minion"
 
 CLUSTER_IP_RANGE="${CLUSTER_IP_RANGE:-$(get-cluster-ip-range)}"
 MASTER_IP_RANGE="${MASTER_IP_RANGE:-10.246.0.0/24}"
-# NODE_IP_RANGE is used when ENABLE_IP_ALIASES=true. It is the primary range in
-# the subnet and is the range used for node instance IPs.
+# NODE_IP_RANGE is used when ENABLE_IP_ALIASES=true or CREATE_CUSTOM_NETWORK=true.
+# It is the primary range in the subnet and is the range used for node instance IPs.
 NODE_IP_RANGE="$(get-node-ip-range)"
 
 RUNTIME_CONFIG="${KUBE_RUNTIME_CONFIG:-}"
@@ -146,6 +151,7 @@ HEAPSTER_MACHINE_TYPE="${HEAPSTER_MACHINE_TYPE:-}"
 # Set etcd image (e.g. gcr.io/google_containers/etcd) and version (e.g. 3.1.10) if you need
 # non-default version.
 ETCD_IMAGE="${TEST_ETCD_IMAGE:-}"
+ETCD_DOCKER_REPOSITORY="${TEST_ETCD_DOCKER_REPOSITORY:-}"
 ETCD_VERSION="${TEST_ETCD_VERSION:-}"
 
 # Default Log level for all components in test clusters and variables to override it in specific components.
@@ -199,9 +205,14 @@ if [[ ${NETWORK_POLICY_PROVIDER:-} == "calico" ]]; then
 	NODE_LABELS="$NODE_LABELS,projectcalico.org/ds-ready=true"
 fi
 
-# Apply the right node label if metadata proxy is on.
-if [[ ${ENABLE_METADATA_PROXY:-} == "simple" ]]; then
-        NODE_LABELS="${NODE_LABELS},beta.kubernetes.io/metadata-proxy-ready=true"
+# Enable metadata concealment by firewalling pod traffic to the metadata server
+# and run a proxy daemonset on nodes.
+ENABLE_METADATA_CONCEALMENT="${ENABLE_METADATA_CONCEALMENT:-true}" # true, false
+if [[ ${ENABLE_METADATA_CONCEALMENT:-} == "true" ]]; then
+  # Put the necessary label on the node so the daemonset gets scheduled.
+  NODE_LABELS="${NODE_LABELS},beta.kubernetes.io/metadata-proxy-ready=true"
+  # Add to the provider custom variables.
+  PROVIDER_VARS="${PROVIDER_VARS:-} ENABLE_METADATA_CONCEALMENT"
 fi
 
 # Optional: Enable node logging.
@@ -273,9 +284,6 @@ if [ ${ENABLE_IP_ALIASES} = true ]; then
   IP_ALIAS_SUBNETWORK=${KUBE_GCE_IP_ALIAS_SUBNETWORK:-${INSTANCE_PREFIX}-subnet-default}
   # Reserve the services IP space to avoid being allocated for other GCP resources.
   SERVICE_CLUSTER_IP_SUBNETWORK=${KUBE_GCE_SERVICE_CLUSTER_IP_SUBNETWORK:-${INSTANCE_PREFIX}-subnet-services}
-  # NODE_IP_RANGE is used when ENABLE_IP_ALIASES=true. It is the primary range in
-  # the subnet and is the range used for node instance IPs.
-  NODE_IP_RANGE="${NODE_IP_RANGE:-10.40.0.0/22}"
   # Add to the provider custom variables.
   PROVIDER_VARS="${PROVIDER_VARS:-} ENABLE_IP_ALIASES"
 fi
@@ -285,8 +293,13 @@ if [[ -n "${GCE_ALPHA_FEATURES:-}" ]]; then
   PROVIDER_VARS="${PROVIDER_VARS:-} GCE_ALPHA_FEATURES"
 fi
 
+# Override default GLBC image
+if [[ -n "${GCE_GLBC_IMAGE:-}" ]]; then
+  PROVIDER_VARS="${PROVIDER_VARS:-} GCE_GLBC_IMAGE"
+fi
+
 # If we included ResourceQuota, we should keep it at the end of the list to prevent incrementing quota usage prematurely.
-ADMISSION_CONTROL="${KUBE_ADMISSION_CONTROL:-Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,PodPreset,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,Priority,ResourceQuota}"
+ADMISSION_CONTROL="${KUBE_ADMISSION_CONTROL:-Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,PodPreset,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,Priority,ResourceQuota,GenericAdmissionWebhook}"
 
 # Optional: if set to true kube-up will automatically check for existing resources and clean them up.
 KUBE_UP_AUTOMATIC_CLEANUP=${KUBE_UP_AUTOMATIC_CLEANUP:-false}
@@ -389,3 +402,7 @@ fi
 
 # Optional: enable certificate rotation of the kubelet certificates.
 ROTATE_CERTIFICATES="${ROTATE_CERTIFICATES:-}"
+
+# The number of services that are allowed to sync concurrently. Will be passed
+# into kube-controller-manager via `--concurrent-service-syncs`
+CONCURRENT_SERVICE_SYNCS="${CONCURRENT_SERVICE_SYNCS:-}"

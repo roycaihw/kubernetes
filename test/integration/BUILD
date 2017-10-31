@@ -11,6 +11,7 @@ go_library(
         "doc.go",
         "utils.go",
     ],
+    importpath = "k8s.io/kubernetes/test/integration",
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
@@ -35,6 +36,7 @@ filegroup(
         "//test/integration/auth:all-srcs",
         "//test/integration/client:all-srcs",
         "//test/integration/configmap:all-srcs",
+        "//test/integration/daemonset:all-srcs",
         "//test/integration/defaulttolerationseconds:all-srcs",
         "//test/integration/deployment:all-srcs",
         "//test/integration/etcd:all-srcs",
@@ -50,6 +52,7 @@ filegroup(
         "//test/integration/quota:all-srcs",
         "//test/integration/replicaset:all-srcs",
         "//test/integration/replicationcontroller:all-srcs",
+        "//test/integration/scale:all-srcs",
         "//test/integration/scheduler:all-srcs",
         "//test/integration/scheduler_perf:all-srcs",
         "//test/integration/secrets:all-srcs",

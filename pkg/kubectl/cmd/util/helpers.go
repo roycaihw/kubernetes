@@ -36,7 +36,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -44,7 +43,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/kubectl"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
 	"k8s.io/kubernetes/pkg/printers"
@@ -117,11 +116,6 @@ var ErrExit = fmt.Errorf("exit")
 // This method is generic to the command in use and may be used by non-Kubectl
 // commands.
 func CheckErr(err error) {
-	checkErr(err, fatalErrHandler)
-}
-
-// checkErrWithPrefix works like CheckErr, but adds a caller-defined prefix to non-nil errors
-func checkErrWithPrefix(prefix string, err error) {
 	checkErr(err, fatalErrHandler)
 }
 
@@ -578,7 +572,7 @@ func ChangeResourcePatch(info *resource.Info, changeCause string) ([]byte, types
 	}
 }
 
-// containsChangeCause checks if input resource info contains change-cause annotation.
+// ContainsChangeCause checks if input resource info contains change-cause annotation.
 func ContainsChangeCause(info *resource.Info) bool {
 	annotations, err := info.Mapping.MetadataAccessor.Annotations(info.Object)
 	if err != nil {
@@ -693,7 +687,7 @@ func FilterResourceList(obj runtime.Object, filterFuncs kubectl.Filters, filterO
 	if err != nil {
 		return 0, []runtime.Object{obj}, utilerrors.NewAggregate([]error{err})
 	}
-	if errs := runtime.DecodeList(items, api.Codecs.UniversalDecoder(), unstructured.UnstructuredJSONScheme); len(errs) > 0 {
+	if errs := runtime.DecodeList(items, legacyscheme.Codecs.UniversalDecoder(), unstructured.UnstructuredJSONScheme); len(errs) > 0 {
 		return 0, []runtime.Object{obj}, utilerrors.NewAggregate(errs)
 	}
 
@@ -734,17 +728,6 @@ func PrintFilterCount(out io.Writer, found, hidden, errors int, options *printer
 			}
 		}
 	}
-}
-
-// ObjectListToVersionedObject receives a list of api objects and a group version
-// and squashes the list's items into a single versioned runtime.Object.
-func ObjectListToVersionedObject(objects []runtime.Object, version schema.GroupVersion) (runtime.Object, error) {
-	objectList := &api.List{Items: objects}
-	converted, err := resource.TryConvert(api.Scheme, objectList, version, api.Registry.GroupOrDie(api.GroupName).GroupVersion)
-	if err != nil {
-		return nil, err
-	}
-	return converted, nil
 }
 
 // IsSiblingCommandExists receives a pointer to a cobra command and a target string.

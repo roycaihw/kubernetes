@@ -98,6 +98,29 @@ func TestPatchAnonymousField(t *testing.T) {
 	}
 }
 
+func TestPatchInvalid(t *testing.T) {
+	testGV := schema.GroupVersion{Group: "", Version: "v"}
+	scheme.AddKnownTypes(testGV, &testPatchType{})
+	codec := codecs.LegacyCodec(testGV)
+	defaulter := runtime.ObjectDefaulter(scheme)
+
+	original := &testPatchType{
+		TypeMeta:         metav1.TypeMeta{Kind: "testPatchType", APIVersion: "v"},
+		TestPatchSubType: TestPatchSubType{StringField: "my-value"},
+	}
+	patch := `barbaz`
+	expectedError := "invalid character 'b' looking for beginning of value"
+
+	actual := &testPatchType{}
+	err := strategicPatchObject(codec, defaulter, original, []byte(patch), actual, &testPatchType{})
+	if apierrors.IsBadRequest(err) == false {
+		t.Errorf("expected HTTP status: BadRequest, got: %#v", apierrors.ReasonForError(err))
+	}
+	if err.Error() != expectedError {
+		t.Errorf("expected %#v, got %#v", expectedError, err.Error())
+	}
+}
+
 type testPatcher struct {
 	t *testing.T
 
@@ -212,7 +235,6 @@ func (tc *patchTestCase) Run(t *testing.T) {
 	ctx = request.WithNamespace(ctx, namespace)
 
 	namer := &testNamer{namespace, name}
-	copier := runtime.ObjectCopier(scheme)
 	creater := runtime.ObjectCreater(scheme)
 	defaulter := runtime.ObjectDefaulter(scheme)
 	convertor := runtime.UnsafeObjectConvertor(scheme)
@@ -266,7 +288,7 @@ func (tc *patchTestCase) Run(t *testing.T) {
 
 		}
 
-		resultObj, err := patchResource(ctx, admit, 1*time.Second, versionedObj, testPatcher, name, patchType, patch, namer, copier, creater, defaulter, convertor, kind, resource, codec)
+		resultObj, err := patchResource(ctx, admit, 1*time.Second, versionedObj, testPatcher, name, patchType, patch, namer, creater, defaulter, convertor, kind, resource, codec)
 		if len(tc.expectedError) != 0 {
 			if err == nil || err.Error() != tc.expectedError {
 				t.Errorf("%s: expected error %v, but got %v", tc.name, tc.expectedError, err)

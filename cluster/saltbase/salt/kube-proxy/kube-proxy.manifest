@@ -32,7 +32,7 @@
  {% set feature_gates = "--feature-gates=" + grains.feature_gates -%}
 {% endif -%}
 
-{% set throttles = "--iptables-sync-period=1m --iptables-min-sync-period=10s" -%}
+{% set throttles = "--iptables-sync-period=1m --iptables-min-sync-period=10s --ipvs-sync-period=1m --ipvs-min-sync-period=10s" -%}
 
 {% set pod_priority = "" -%}
 {% if pillar.get('enable_pod_priority', '').lower() == 'true' -%}
@@ -96,6 +96,9 @@ spec:
     - mountPath: /run/xtables.lock
       name: iptableslock
       readOnly: false
+    - mountPath: /lib/modules
+      name: lib-modules
+      readOnly: true
   volumes:
   - hostPath:
       path: /usr/share/ca-certificates
@@ -114,3 +117,6 @@ spec:
       path: /run/xtables.lock
       type: FileOrCreate
     name: iptableslock
+  - name: lib-modules
+    hostPath:
+      path: /lib/modules

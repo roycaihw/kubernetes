@@ -15,6 +15,7 @@ go_library(
         "server_run_options.go",
         "serving.go",
     ],
+    importpath = "k8s.io/apiserver/pkg/server/options",
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
@@ -29,7 +30,9 @@ go_library(
         "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/admission:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/admission/initializer:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/admission/plugin/initialization:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/admission/plugin/webhook:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/apis/audit/v1beta1:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/audit:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/audit/policy:go_default_library",
@@ -65,6 +68,7 @@ go_test(
         "serving_test.go",
     ],
     data = glob(["testdata/**"]),
+    importpath = "k8s.io/apiserver/pkg/server/options",
     library = ":go_default_library",
     deps = [
         "//vendor/github.com/stretchr/testify/assert:go_default_library",

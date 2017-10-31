@@ -39,6 +39,7 @@ go_library(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/kubelet/dockershim",
     deps = [
         "//pkg/credentialprovider:go_default_library",
         "//pkg/kubelet/apis/cri:go_default_library",
@@ -63,6 +64,7 @@ go_library(
         "//pkg/security/apparmor:go_default_library",
         "//pkg/util/hash:go_default_library",
         "//pkg/util/parsers:go_default_library",
+        "//vendor/github.com/armon/circbuf:go_default_library",
         "//vendor/github.com/blang/semver:go_default_library",
         "//vendor/github.com/docker/docker/api/types:go_default_library",
         "//vendor/github.com/docker/docker/api/types/container:go_default_library",
@@ -73,6 +75,7 @@ go_library(
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
         "//vendor/k8s.io/client-go/tools/remotecommand:go_default_library",
     ],
@@ -102,6 +105,7 @@ go_test(
         "fixtures/seccomp/sub/subtest",
         "fixtures/seccomp/test",
     ],
+    importpath = "k8s.io/kubernetes/pkg/kubelet/dockershim",
     library = ":go_default_library",
     deps = [
         "//pkg/kubelet/apis/cri/v1alpha1/runtime:go_default_library",

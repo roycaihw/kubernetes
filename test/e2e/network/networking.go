@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/master/ports"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -45,10 +46,16 @@ var _ = SIGDescribe("Networking", func() {
 		}
 	})
 
-	It("should provide Internet connection for containers", func() {
+	It("should provide Internet connection for containers [Feature:Networking-IPv4]", func() {
 		By("Running container which tries to ping 8.8.8.8")
 		framework.ExpectNoError(
-			framework.CheckConnectivityToHost(f, "", "ping-test", "8.8.8.8", 30))
+			framework.CheckConnectivityToHost(f, "", "ping-test", "8.8.8.8", framework.IPv4PingCommand, 30))
+	})
+
+	It("should provide Internet connection for containers [Feature:Networking-IPv6][Experimental]", func() {
+		By("Running container which tries to ping google.com")
+		framework.ExpectNoError(
+			framework.CheckConnectivityToHost(f, "", "ping-test", "google.com", framework.IPv6PingCommand, 30))
 	})
 
 	// First test because it has no dependencies on variables created later on.
@@ -64,12 +71,12 @@ var _ = SIGDescribe("Networking", func() {
 			{path: "/version"},
 			// TODO: test proxy links here
 		}
-		if !framework.ProviderIs("gke") {
+		if !framework.ProviderIs("gke", "skeleton") {
 			tests = append(tests, struct{ path string }{path: "/logs"})
 		}
 		for _, test := range tests {
 			By(fmt.Sprintf("testing: %s", test.path))
-			data, err := f.ClientSet.Core().RESTClient().Get().
+			data, err := f.ClientSet.CoreV1().RESTClient().Get().
 				AbsPath(test.path).
 				DoRaw()
 			if err != nil {
@@ -99,7 +106,7 @@ var _ = SIGDescribe("Networking", func() {
 			By(fmt.Sprintf("dialing(http) %v --> %v:%v (config.clusterIP)", config.TestContainerPod.Name, config.ClusterIP, framework.ClusterHttpPort))
 			config.DialFromTestContainer("http", config.ClusterIP, framework.ClusterHttpPort, config.MaxTries, 0, config.EndpointHostnames())
 
-			By(fmt.Sprintf("dialing(http) %v --> %v:%v (nodeIP)", config.TestContainerPod.Name, config.ExternalAddrs[0], config.NodeHttpPort))
+			By(fmt.Sprintf("dialing(http) %v --> %v:%v (nodeIP)", config.TestContainerPod.Name, config.NodeIP, config.NodeHttpPort))
 			config.DialFromTestContainer("http", config.NodeIP, config.NodeHttpPort, config.MaxTries, 0, config.EndpointHostnames())
 		})
 
@@ -108,7 +115,7 @@ var _ = SIGDescribe("Networking", func() {
 			By(fmt.Sprintf("dialing(udp) %v --> %v:%v (config.clusterIP)", config.TestContainerPod.Name, config.ClusterIP, framework.ClusterUdpPort))
 			config.DialFromTestContainer("udp", config.ClusterIP, framework.ClusterUdpPort, config.MaxTries, 0, config.EndpointHostnames())
 
-			By(fmt.Sprintf("dialing(udp) %v --> %v:%v (nodeIP)", config.TestContainerPod.Name, config.ExternalAddrs[0], config.NodeUdpPort))
+			By(fmt.Sprintf("dialing(udp) %v --> %v:%v (nodeIP)", config.TestContainerPod.Name, config.NodeIP, config.NodeUdpPort))
 			config.DialFromTestContainer("udp", config.NodeIP, config.NodeUdpPort, config.MaxTries, 0, config.EndpointHostnames())
 		})
 
@@ -193,6 +200,53 @@ var _ = SIGDescribe("Networking", func() {
 			By(fmt.Sprintf("dialing(udp) %v (node) --> %v:%v (nodeIP)", config.NodeIP, config.NodeIP, config.NodeUdpPort))
 			config.DialFromNode("udp", config.NodeIP, config.NodeUdpPort, config.MaxTries, config.MaxTries, sets.NewString())
 		})
-		// TODO: Test sessionAffinity #31712
+
+		It("should function for client IP based session affinity: http [Slow]", func() {
+			config := framework.NewNetworkingTestConfig(f)
+			By(fmt.Sprintf("dialing(http) %v --> %v:%v (config.clusterIP)", config.TestContainerPod.Name, config.ClusterIP, framework.ClusterHttpPort))
+			updateSessionAffinity := func(svc *v1.Service) {
+				svc.Spec.SessionAffinity = v1.ServiceAffinityClientIP
+			}
+			_, err := framework.UpdateService(f.ClientSet, config.NodePortService.Namespace, config.NodePortService.Name, updateSessionAffinity)
+			if err != nil {
+				framework.Failf("Failed to update service session affinity, error: %v", err)
+			}
+
+			// Check if number of endpoints returned are exactly one.
+			eps, err := config.GetEndpointsFromTestContainer("http", config.ClusterIP, framework.ClusterHttpPort, framework.SessionAffinityChecks)
+			if err != nil {
+				framework.Failf("Failed to get endpoints from test container, error: %v", err)
+			}
+			if len(eps) == 0 {
+				framework.Failf("Unexpected no endpoints return")
+			}
+			if len(eps) > 1 {
+				framework.Failf("Unexpected endpoints return: %v, expect 1 endpoints", eps)
+			}
+		})
+
+		It("should function for client IP based session affinity: udp [Slow]", func() {
+			config := framework.NewNetworkingTestConfig(f)
+			By(fmt.Sprintf("dialing(udp) %v --> %v:%v (config.clusterIP)", config.TestContainerPod.Name, config.ClusterIP, framework.ClusterUdpPort))
+			updateSessionAffinity := func(svc *v1.Service) {
+				svc.Spec.SessionAffinity = v1.ServiceAffinityClientIP
+			}
+			_, err := framework.UpdateService(f.ClientSet, config.NodePortService.Namespace, config.NodePortService.Name, updateSessionAffinity)
+			if err != nil {
+				framework.Failf("Failed to update service session affinity, error: %v", err)
+			}
+
+			// Check if number of endpoints returned are exactly one.
+			eps, err := config.GetEndpointsFromTestContainer("udp", config.ClusterIP, framework.ClusterUdpPort, framework.SessionAffinityChecks)
+			if err != nil {
+				framework.Failf("Failed to get endpoints from test container, error: %v", err)
+			}
+			if len(eps) == 0 {
+				framework.Failf("Unexpected no endpoints return")
+			}
+			if len(eps) > 1 {
+				framework.Failf("Unexpected endpoints return: %v, expect 1 endpoints", eps)
+			}
+		})
 	})
 })

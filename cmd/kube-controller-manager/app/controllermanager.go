@@ -52,7 +52,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
@@ -224,7 +224,7 @@ func createRecorder(kubeClient *clientset.Clientset) record.EventRecorder {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
 	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: v1core.New(kubeClient.CoreV1().RESTClient()).Events("")})
-	return eventBroadcaster.NewRecorder(api.Scheme, v1.EventSource{Component: "controller-manager"})
+	return eventBroadcaster.NewRecorder(legacyscheme.Scheme, v1.EventSource{Component: "controller-manager"})
 }
 
 func createClients(s *options.CMServer) (*clientset.Clientset, *clientset.Clientset, *restclient.Config, error) {
@@ -348,6 +348,7 @@ func NewControllerInitializers() map[string]InitFunc {
 	controllers["cronjob"] = startCronJobController
 	controllers["csrsigning"] = startCSRSigningController
 	controllers["csrapproving"] = startCSRApprovingController
+	controllers["csrcleaner"] = startCSRCleanerController
 	controllers["ttl"] = startTTLController
 	controllers["bootstrapsigner"] = startBootstrapSignerController
 	controllers["tokencleaner"] = startTokenCleanerController

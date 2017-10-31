@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/kubectl"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
@@ -217,7 +218,7 @@ func (o *ResourcesOptions) Run() error {
 		})
 		if transformed && err == nil {
 			// TODO: switch UpdatePodSpecForObject to work on v1.PodSpec, use info.VersionedObject, and avoid conversion completely
-			versionedEncoder := api.Codecs.EncoderForVersion(o.Encoder, info.Mapping.GroupVersionKind.GroupVersion())
+			versionedEncoder := legacyscheme.Codecs.EncoderForVersion(o.Encoder, info.Mapping.GroupVersionKind.GroupVersion())
 			return runtime.Encode(versionedEncoder, info.Object)
 		}
 		return nil, err
@@ -237,7 +238,10 @@ func (o *ResourcesOptions) Run() error {
 		}
 
 		if o.Local || cmdutil.GetDryRunFlag(o.Cmd) {
-			return o.PrintObject(o.Cmd, o.Local, o.Mapper, info.Object, o.Out)
+			if err := o.PrintObject(o.Cmd, o.Local, o.Mapper, info.Object, o.Out); err != nil {
+				return err
+			}
+			continue
 		}
 
 		obj, err := resource.NewHelper(info.Client, info.Mapping).Patch(info.Namespace, info.Name, types.StrategicMergePatchType, patch.Patch)

@@ -9,11 +9,13 @@ go_library(
         "metrics_client.go",
         "metrics_printer.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/kubectl/metricsutil",
     visibility = [
         "//build/visible_to:pkg_kubectl_metricsutil_CONSUMERS",
     ],
     deps = [
         "//pkg/api:go_default_library",
+        "//pkg/api/legacyscheme:go_default_library",
         "//pkg/api/validation:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/core/internalversion:go_default_library",
         "//pkg/printers:go_default_library",

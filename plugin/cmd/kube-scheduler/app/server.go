@@ -70,23 +70,23 @@ func Run(s *options.SchedulerServer) error {
 	// To help debugging, immediately log version
 	glog.Infof("Version: %+v", version.Get())
 
-	kubecli, err := createClient(s)
+	kubeClient, leaderElectionClient, err := createClients(s)
 	if err != nil {
 		return fmt.Errorf("unable to create kube client: %v", err)
 	}
 
-	recorder := createRecorder(kubecli, s)
+	recorder := createRecorder(kubeClient, s)
 
-	informerFactory := informers.NewSharedInformerFactory(kubecli, 0)
+	informerFactory := informers.NewSharedInformerFactory(kubeClient, 0)
 	// cache only non-terminal pods
-	podInformer := factory.NewPodInformer(kubecli, 0)
 
+	podInformer := factory.NewPodInformer(kubeClient, 0, s.SchedulerName)
 	// Apply algorithms based on feature gates.
 	algorithmprovider.ApplyFeatureGates()
 
 	sched, err := CreateScheduler(
 		s,
-		kubecli,
+		kubeClient,
 		informerFactory.Core().V1().Nodes(),
 		podInformer,
 		informerFactory.Core().V1().PersistentVolumes(),
@@ -95,6 +95,7 @@ func Run(s *options.SchedulerServer) error {
 		informerFactory.Extensions().V1beta1().ReplicaSets(),
 		informerFactory.Apps().V1beta1().StatefulSets(),
 		informerFactory.Core().V1().Services(),
+		informerFactory.Policy().V1beta1().PodDisruptionBudgets(),
 		recorder,
 	)
 	if err != nil {
@@ -131,7 +132,7 @@ func Run(s *options.SchedulerServer) error {
 	rl, err := resourcelock.New(s.LeaderElection.ResourceLock,
 		s.LockObjectNamespace,
 		s.LockObjectName,
-		kubecli.CoreV1(),
+		leaderElectionClient.CoreV1(),
 		resourcelock.ResourceLockConfig{
 			Identity:      id,
 			EventRecorder: recorder,

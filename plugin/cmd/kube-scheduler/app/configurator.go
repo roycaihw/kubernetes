@@ -24,6 +24,7 @@ import (
 	appsinformers "k8s.io/client-go/informers/apps/v1beta1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	extensionsinformers "k8s.io/client-go/informers/extensions/v1beta1"
+	policyinformers "k8s.io/client-go/informers/policy/v1beta1"
 	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,10 +36,10 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/api"
 
 	"k8s.io/api/core/v1"
 
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/plugin/pkg/scheduler"
 	_ "k8s.io/kubernetes/plugin/pkg/scheduler/algorithmprovider"
@@ -53,25 +54,25 @@ func createRecorder(kubecli *clientset.Clientset, s *options.SchedulerServer) re
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
 	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: v1core.New(kubecli.CoreV1().RESTClient()).Events("")})
-	return eventBroadcaster.NewRecorder(api.Scheme, v1.EventSource{Component: s.SchedulerName})
+	return eventBroadcaster.NewRecorder(legacyscheme.Scheme, v1.EventSource{Component: s.SchedulerName})
 }
 
-func createClient(s *options.SchedulerServer) (*clientset.Clientset, error) {
+func createClients(s *options.SchedulerServer) (*clientset.Clientset, *clientset.Clientset, error) {
 	kubeconfig, err := clientcmd.BuildConfigFromFlags(s.Master, s.Kubeconfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to build config from flags: %v", err)
+		return nil, nil, fmt.Errorf("unable to build config from flags: %v", err)
 	}
 
 	kubeconfig.ContentType = s.ContentType
 	// Override kubeconfig qps/burst settings from flags
 	kubeconfig.QPS = s.KubeAPIQPS
 	kubeconfig.Burst = int(s.KubeAPIBurst)
-
-	cli, err := clientset.NewForConfig(restclient.AddUserAgent(kubeconfig, "leader-election"))
+	kubeClient, err := clientset.NewForConfig(restclient.AddUserAgent(kubeconfig, "scheduler"))
 	if err != nil {
-		return nil, fmt.Errorf("invalid API configuration: %v", err)
+		glog.Fatalf("Invalid API configuration: %v", err)
 	}
-	return cli, nil
+	leaderElectionClient := clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "leader-election"))
+	return kubeClient, leaderElectionClient, nil
 }
 
 // CreateScheduler encapsulates the entire creation of a runnable scheduler.
@@ -86,6 +87,7 @@ func CreateScheduler(
 	replicaSetInformer extensionsinformers.ReplicaSetInformer,
 	statefulSetInformer appsinformers.StatefulSetInformer,
 	serviceInformer coreinformers.ServiceInformer,
+	pdbInformer policyinformers.PodDisruptionBudgetInformer,
 	recorder record.EventRecorder,
 ) (*scheduler.Scheduler, error) {
 	configurator := factory.NewConfigFactory(
@@ -99,6 +101,7 @@ func CreateScheduler(
 		replicaSetInformer,
 		statefulSetInformer,
 		serviceInformer,
+		pdbInformer,
 		s.HardPodAffinitySymmetricWeight,
 		utilfeature.DefaultFeatureGate.Enabled(features.EnableEquivalenceClassCache),
 	)

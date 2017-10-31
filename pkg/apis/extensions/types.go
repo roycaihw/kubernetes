@@ -937,7 +937,7 @@ type PodSecurityPolicySpec struct {
 	// +optional
 	DefaultAllowPrivilegeEscalation *bool
 	// AllowPrivilegeEscalation determines if a pod can request to allow
-	// privilege escalation.
+	// privilege escalation. If unspecified, defaults to true.
 	// +optional
 	AllowPrivilegeEscalation bool
 	// AllowedHostPaths is a white list of allowed host paths. Empty indicates that all host paths may be used.
@@ -1010,7 +1010,7 @@ type SELinuxStrategyOptions struct {
 	// Rule is the strategy that will dictate the allowable labels that may be set.
 	Rule SELinuxStrategy
 	// seLinuxOptions required to run as; required for MustRunAs
-	// More info: https://git.k8s.io/community/contributors/design-proposals/security_context.md
+	// More info: https://kubernetes.io/docs/concepts/policy/pod-security-policy/#selinux
 	// +optional
 	SELinuxOptions *api.SELinuxOptions
 }

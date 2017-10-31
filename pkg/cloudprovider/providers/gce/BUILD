@@ -44,6 +44,7 @@ go_library(
         "metrics.go",
         "token_source.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/cloudprovider/providers/gce",
     deps = [
         "//pkg/api/v1/service:go_default_library",
         "//pkg/cloudprovider:go_default_library",
@@ -52,6 +53,7 @@ go_library(
         "//pkg/master/ports:go_default_library",
         "//pkg/util/net/sets:go_default_library",
         "//pkg/util/version:go_default_library",
+        "//pkg/version:go_default_library",
         "//pkg/volume:go_default_library",
         "//pkg/volume/util:go_default_library",
         "//vendor/cloud.google.com/go/compute/metadata:go_default_library",
@@ -97,6 +99,7 @@ go_test(
         "gce_test.go",
         "metrics_test.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/cloudprovider/providers/gce",
     library = ":go_default_library",
     deps = [
         "//pkg/cloudprovider:go_default_library",

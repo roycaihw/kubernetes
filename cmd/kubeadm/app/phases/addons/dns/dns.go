@@ -31,7 +31,7 @@ import (
 	kubeadmconstants "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	kubeadmutil "k8s.io/kubernetes/cmd/kubeadm/app/util"
 	"k8s.io/kubernetes/cmd/kubeadm/app/util/apiclient"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/util/version"
 )
 
@@ -51,23 +51,33 @@ func EnsureDNSAddon(cfg *kubeadmapi.MasterConfiguration, client clientset.Interf
 		return err
 	}
 
-	// Get the YAML manifest conditionally based on the k8s version
-	kubeDNSDeploymentBytes := GetKubeDNSManifest(k8sVersion)
-	dnsDeploymentBytes, err := kubeadmutil.ParseTemplate(kubeDNSDeploymentBytes, struct{ ImageRepository, Arch, Version, DNSDomain, MasterTaintKey string }{
-		ImageRepository: cfg.ImageRepository,
-		Arch:            runtime.GOARCH,
-		// Get the kube-dns version conditionally based on the k8s version
-		Version:        GetKubeDNSVersion(k8sVersion),
-		DNSDomain:      cfg.Networking.DNSDomain,
-		MasterTaintKey: kubeadmconstants.LabelNodeRoleMaster,
-	})
-	if err != nil {
-		return fmt.Errorf("error when parsing kube-dns deployment template: %v", err)
-	}
-
 	dnsip, err := getDNSIP(client)
 	if err != nil {
 		return err
+	}
+
+	var dnsBindAddr string
+	if dnsip.To4() == nil {
+		dnsBindAddr = "::1"
+	} else {
+		dnsBindAddr = "127.0.0.1"
+	}
+
+	// Get the YAML manifest conditionally based on the k8s version
+	kubeDNSDeploymentBytes := GetKubeDNSManifest(k8sVersion)
+	dnsDeploymentBytes, err := kubeadmutil.ParseTemplate(kubeDNSDeploymentBytes,
+		struct{ ImageRepository, Arch, Version, DNSBindAddr, DNSDomain, DNSProbeType, MasterTaintKey string }{
+			ImageRepository: cfg.ImageRepository,
+			Arch:            runtime.GOARCH,
+			// Get the kube-dns version conditionally based on the k8s version
+			Version:        GetKubeDNSVersion(k8sVersion),
+			DNSBindAddr:    dnsBindAddr,
+			DNSDomain:      cfg.Networking.DNSDomain,
+			DNSProbeType:   GetKubeDNSProbeType(k8sVersion),
+			MasterTaintKey: kubeadmconstants.LabelNodeRoleMaster,
+		})
+	if err != nil {
+		return fmt.Errorf("error when parsing kube-dns deployment template: %v", err)
 	}
 
 	dnsServiceBytes, err := kubeadmutil.ParseTemplate(KubeDNSService, struct{ DNSIP string }{
@@ -97,7 +107,7 @@ func CreateServiceAccount(client clientset.Interface) error {
 
 func createKubeDNSAddon(deploymentBytes, serviceBytes []byte, client clientset.Interface) error {
 	kubednsDeployment := &apps.Deployment{}
-	if err := kuberuntime.DecodeInto(api.Codecs.UniversalDecoder(), deploymentBytes, kubednsDeployment); err != nil {
+	if err := kuberuntime.DecodeInto(legacyscheme.Codecs.UniversalDecoder(), deploymentBytes, kubednsDeployment); err != nil {
 		return fmt.Errorf("unable to decode kube-dns deployment %v", err)
 	}
 
@@ -107,7 +117,7 @@ func createKubeDNSAddon(deploymentBytes, serviceBytes []byte, client clientset.I
 	}
 
 	kubednsService := &v1.Service{}
-	if err := kuberuntime.DecodeInto(api.Codecs.UniversalDecoder(), serviceBytes, kubednsService); err != nil {
+	if err := kuberuntime.DecodeInto(legacyscheme.Codecs.UniversalDecoder(), serviceBytes, kubednsService); err != nil {
 		return fmt.Errorf("unable to decode kube-dns service %v", err)
 	}
 

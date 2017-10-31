@@ -55,7 +55,6 @@ import (
 	utilnode "k8s.io/kubernetes/pkg/util/node"
 	"k8s.io/kubernetes/pkg/util/system"
 	taintutils "k8s.io/kubernetes/pkg/util/taints"
-	utilversion "k8s.io/kubernetes/pkg/util/version"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
 )
 
@@ -65,7 +64,6 @@ func init() {
 }
 
 var (
-	gracefulDeletionVersion = utilversion.MustParseSemantic("v1.1.0")
 	// UnreachableTaintTemplate is the taint for when a node becomes unreachable.
 	UnreachableTaintTemplate = &v1.Taint{
 		Key:    algorithm.TaintNodeUnreachable,
@@ -186,7 +184,6 @@ type Controller struct {
 	cidrAllocator     ipam.CIDRAllocator
 	taintManager      *scheduler.NoExecuteTaintManager
 
-	forcefullyDeletePod        func(*v1.Pod) error
 	nodeExistsInCloudProvider  func(types.NodeName) (bool, error)
 	computeZoneStateFunc       func(nodeConditions []*v1.NodeCondition) (int, ZoneState)
 	enterPartialDisruptionFunc func(nodeNum int) float32
@@ -249,11 +246,11 @@ func NewNodeController(
 	glog.V(0).Infof("Sending events to api server.")
 	eventBroadcaster.StartRecordingToSink(
 		&v1core.EventSinkImpl{
-			Interface: v1core.New(kubeClient.Core().RESTClient()).Events(""),
+			Interface: v1core.New(kubeClient.CoreV1().RESTClient()).Events(""),
 		})
 
-	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("node_controller", kubeClient.Core().RESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.CoreV1().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("node_controller", kubeClient.CoreV1().RESTClient().GetRateLimiter())
 	}
 
 	if allocateNodeCIDRs {
@@ -285,9 +282,6 @@ func NewNodeController(
 		serviceCIDR:            serviceCIDR,
 		allocateNodeCIDRs:      allocateNodeCIDRs,
 		allocatorType:          allocatorType,
-		forcefullyDeletePod: func(p *v1.Pod) error {
-			return util.ForcefullyDeletePod(kubeClient, p)
-		},
 		nodeExistsInCloudProvider: func(nodeName types.NodeName) (bool, error) {
 			return util.NodeExistsInCloudProvider(cloud, nodeName)
 		},
@@ -309,14 +303,12 @@ func NewNodeController(
 
 	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			nc.maybeDeleteTerminatingPod(obj)
 			pod := obj.(*v1.Pod)
 			if nc.taintManager != nil {
 				nc.taintManager.PodUpdated(nil, pod)
 			}
 		},
 		UpdateFunc: func(prev, obj interface{}) {
-			nc.maybeDeleteTerminatingPod(obj)
 			prevPod := prev.(*v1.Pod)
 			newPod := obj.(*v1.Pod)
 			if nc.taintManager != nil {
@@ -656,7 +648,7 @@ func (nc *Controller) monitorNodeStatus() error {
 				return true, nil
 			}
 			name := node.Name
-			node, err = nc.kubeClient.Core().Nodes().Get(name, metav1.GetOptions{})
+			node, err = nc.kubeClient.CoreV1().Nodes().Get(name, metav1.GetOptions{})
 			if err != nil {
 				glog.Errorf("Failed while getting a Node to retry updating NodeStatus. Probably Node %s was deleted.", name)
 				return false, err
@@ -1063,7 +1055,7 @@ func (nc *Controller) tryUpdateNodeStatus(node *v1.Node) (time.Duration, v1.Node
 
 		_, currentCondition := v1node.GetNodeCondition(&node.Status, v1.NodeReady)
 		if !apiequality.Semantic.DeepEqual(currentCondition, &observedReadyCondition) {
-			if _, err = nc.kubeClient.Core().Nodes().UpdateStatus(node); err != nil {
+			if _, err = nc.kubeClient.CoreV1().Nodes().UpdateStatus(node); err != nil {
 				glog.Errorf("Error updating node %s: %v", node.Name, err)
 				return gracePeriod, observedReadyCondition, currentReadyCondition, err
 			}
@@ -1194,57 +1186,5 @@ func (nc *Controller) ComputeZoneState(nodeReadyConditions []*v1.NodeCondition) 
 		return notReadyNodes, statePartialDisruption
 	default:
 		return notReadyNodes, stateNormal
-	}
-}
-
-// maybeDeleteTerminatingPod non-gracefully deletes pods that are terminating
-// that should not be gracefully terminated.
-func (nc *Controller) maybeDeleteTerminatingPod(obj interface{}) {
-	pod, ok := obj.(*v1.Pod)
-	if !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			glog.Errorf("Couldn't get object from tombstone %#v", obj)
-			return
-		}
-		pod, ok = tombstone.Obj.(*v1.Pod)
-		if !ok {
-			glog.Errorf("Tombstone contained object that is not a Pod %#v", obj)
-			return
-		}
-	}
-
-	// consider only terminating pods
-	if pod.DeletionTimestamp == nil {
-		return
-	}
-
-	node, err := nc.nodeLister.Get(pod.Spec.NodeName)
-	// if there is no such node, do nothing and let the podGC clean it up.
-	if apierrors.IsNotFound(err) {
-		return
-	}
-	if err != nil {
-		// this can only happen if the Store.KeyFunc has a problem creating
-		// a key for the pod. If it happens once, it will happen again so
-		// don't bother requeuing the pod.
-		utilruntime.HandleError(err)
-		return
-	}
-
-	// delete terminating pods that have been scheduled on
-	// nodes that do not support graceful termination
-	// TODO(mikedanese): this can be removed when we no longer
-	// guarantee backwards compatibility of master API to kubelets with
-	// versions less than 1.1.0
-	v, err := utilversion.ParseSemantic(node.Status.NodeInfo.KubeletVersion)
-	if err != nil {
-		glog.V(0).Infof("Couldn't parse version %q of node: %v", node.Status.NodeInfo.KubeletVersion, err)
-		utilruntime.HandleError(nc.forcefullyDeletePod(pod))
-		return
-	}
-	if v.LessThan(gracefulDeletionVersion) {
-		utilruntime.HandleError(nc.forcefullyDeletePod(pod))
-		return
 	}
 }

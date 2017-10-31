@@ -47,12 +47,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	clientextensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	federation "k8s.io/kubernetes/federation/apis/federation/v1beta1"
-	fedclientset "k8s.io/kubernetes/federation/client/clientset_generated/federation_clientset"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/events"
 	"k8s.io/kubernetes/pkg/api/helper"
 	"k8s.io/kubernetes/pkg/api/helper/qos"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/api/ref"
 	resourcehelper "k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/apis/apps"
@@ -211,7 +210,7 @@ func (g *genericDescriber) Describe(namespace, name string, describerSettings pr
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = g.events.Events(namespace).Search(api.Scheme, obj)
+		events, _ = g.events.Events(namespace).Search(legacyscheme.Scheme, obj)
 	}
 
 	return tabbedString(func(out io.Writer) error {
@@ -607,11 +606,11 @@ func (d *PodDescriber) Describe(namespace, name string, describerSettings printe
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		if ref, err := ref.GetReference(api.Scheme, pod); err != nil {
+		if ref, err := ref.GetReference(legacyscheme.Scheme, pod); err != nil {
 			glog.Errorf("Unable to construct reference to '%#v': %v", pod, err)
 		} else {
 			ref.Kind = ""
-			events, _ = d.Core().Events(namespace).Search(api.Scheme, ref)
+			events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, ref)
 		}
 	}
 
@@ -623,6 +622,10 @@ func describePod(pod *api.Pod, events *api.EventList) (string, error) {
 		w := NewPrefixWriter(out)
 		w.Write(LEVEL_0, "Name:\t%s\n", pod.Name)
 		w.Write(LEVEL_0, "Namespace:\t%s\n", pod.Namespace)
+		if pod.Spec.Priority != nil {
+			w.Write(LEVEL_0, "Priority:\t%d\n", *pod.Spec.Priority)
+			w.Write(LEVEL_0, "PriorityClassName:\t%s\n", stringOrNone(pod.Spec.PriorityClassName))
+		}
 		if pod.Spec.NodeName == "" {
 			w.Write(LEVEL_0, "Node:\t<none>\n")
 		} else {
@@ -897,6 +900,19 @@ func printRBDVolumeSource(rbd *api.RBDVolumeSource, w PrefixWriter) {
 		rbd.CephMonitors, rbd.RBDImage, rbd.FSType, rbd.RBDPool, rbd.RadosUser, rbd.Keyring, rbd.SecretRef, rbd.ReadOnly)
 }
 
+func printRBDPersistentVolumeSource(rbd *api.RBDPersistentVolumeSource, w PrefixWriter) {
+	w.Write(LEVEL_2, "Type:\tRBD (a Rados Block Device mount on the host that shares a pod's lifetime)\n"+
+		"    CephMonitors:\t%v\n"+
+		"    RBDImage:\t%v\n"+
+		"    FSType:\t%v\n"+
+		"    RBDPool:\t%v\n"+
+		"    RadosUser:\t%v\n"+
+		"    Keyring:\t%v\n"+
+		"    SecretRef:\t%v\n"+
+		"    ReadOnly:\t%v\n",
+		rbd.CephMonitors, rbd.RBDImage, rbd.FSType, rbd.RBDPool, rbd.RadosUser, rbd.Keyring, rbd.SecretRef, rbd.ReadOnly)
+}
+
 func printDownwardAPIVolumeSource(d *api.DownwardAPIVolumeSource, w PrefixWriter) {
 	w.Write(LEVEL_2, "Type:\tDownwardAPI (a volume populated by information about the pod)\n    Items:\n")
 	for _, mapping := range d.Items {
@@ -954,6 +970,26 @@ func printScaleIOVolumeSource(sio *api.ScaleIOVolumeSource, w PrefixWriter) {
 		"    FSType:\t%v\n"+
 		"    ReadOnly:\t%v\n",
 		sio.Gateway, sio.System, sio.ProtectionDomain, sio.StoragePool, sio.StorageMode, sio.VolumeName, sio.FSType, sio.ReadOnly)
+}
+
+func printScaleIOPersistentVolumeSource(sio *api.ScaleIOPersistentVolumeSource, w PrefixWriter) {
+	var secretNS, secretName string
+	if sio.SecretRef != nil {
+		secretName = sio.SecretRef.Name
+		secretNS = sio.SecretRef.Namespace
+	}
+	w.Write(LEVEL_2, "Type:\tScaleIO (a persistent volume backed by a block device in ScaleIO)\n"+
+		"    Gateway:\t%v\n"+
+		"    System:\t%v\n"+
+		"    Protection Domain:\t%v\n"+
+		"    Storage Pool:\t%v\n"+
+		"    Storage Mode:\t%v\n"+
+		"    VolumeName:\t%v\n"+
+		"    SecretName:\t%v\n"+
+		"    SecretNamespace:\t%v\n"+
+		"    FSType:\t%v\n"+
+		"    ReadOnly:\t%v\n",
+		sio.Gateway, sio.System, sio.ProtectionDomain, sio.StoragePool, sio.StorageMode, sio.VolumeName, secretName, secretNS, sio.FSType, sio.ReadOnly)
 }
 
 func printLocalVolumeSource(ls *api.LocalVolumeSource, w PrefixWriter) {
@@ -1067,7 +1103,7 @@ func (d *PersistentVolumeDescriber) Describe(namespace, name string, describerSe
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, pv)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, pv)
 	}
 
 	return describePersistentVolume(pv, events)
@@ -1107,7 +1143,7 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 		case pv.Spec.Glusterfs != nil:
 			printGlusterfsVolumeSource(pv.Spec.Glusterfs, w)
 		case pv.Spec.RBD != nil:
-			printRBDVolumeSource(pv.Spec.RBD, w)
+			printRBDPersistentVolumeSource(pv.Spec.RBD, w)
 		case pv.Spec.Quobyte != nil:
 			printQuobyteVolumeSource(pv.Spec.Quobyte, w)
 		case pv.Spec.VsphereVolume != nil:
@@ -1121,7 +1157,7 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 		case pv.Spec.PortworxVolume != nil:
 			printPortworxVolumeSource(pv.Spec.PortworxVolume, w)
 		case pv.Spec.ScaleIO != nil:
-			printScaleIOVolumeSource(pv.Spec.ScaleIO, w)
+			printScaleIOPersistentVolumeSource(pv.Spec.ScaleIO, w)
 		case pv.Spec.Local != nil:
 			printLocalVolumeSource(pv.Spec.Local, w)
 		case pv.Spec.CephFS != nil:
@@ -1160,7 +1196,7 @@ func (d *PersistentVolumeClaimDescriber) Describe(namespace, name string, descri
 		return "", err
 	}
 
-	events, _ := d.Core().Events(namespace).Search(api.Scheme, pvc)
+	events, _ := d.Core().Events(namespace).Search(legacyscheme.Scheme, pvc)
 
 	return describePersistentVolumeClaim(pvc, events)
 }
@@ -1430,7 +1466,7 @@ type EnvVarResolverFunc func(e api.EnvVar) string
 // EnvValueFrom is exported for use by describers in other packages
 func EnvValueRetriever(pod *api.Pod) EnvVarResolverFunc {
 	return func(e api.EnvVar) string {
-		internalFieldPath, _, err := api.Scheme.ConvertFieldLabel(e.ValueFrom.FieldRef.APIVersion, "Pod", e.ValueFrom.FieldRef.FieldPath, "")
+		internalFieldPath, _, err := legacyscheme.Scheme.ConvertFieldLabel(e.ValueFrom.FieldRef.APIVersion, "Pod", e.ValueFrom.FieldRef.FieldPath, "")
 		if err != nil {
 			return "" // pod validation should catch this on create
 		}
@@ -1531,7 +1567,7 @@ func (d *ReplicationControllerDescriber) Describe(namespace, name string, descri
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, controller)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, controller)
 	}
 
 	return describeReplicationController(controller, events, running, waiting, succeeded, failed)
@@ -1605,7 +1641,7 @@ func (d *ReplicaSetDescriber) Describe(namespace, name string, describerSettings
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, rs)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, rs)
 	}
 
 	return describeReplicaSet(rs, events, running, waiting, succeeded, failed, getPodErr)
@@ -1657,7 +1693,7 @@ func (d *JobDescriber) Describe(namespace, name string, describerSettings printe
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, job)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, job)
 	}
 
 	return describeJob(job, events)
@@ -1709,7 +1745,7 @@ func (d *CronJobDescriber) Describe(namespace, name string, describerSettings pr
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, cronJob)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, cronJob)
 	}
 
 	return describeCronJob(cronJob, events)
@@ -1808,7 +1844,7 @@ func (d *DaemonSetDescriber) Describe(namespace, name string, describerSettings 
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, daemon)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, daemon)
 	}
 
 	return describeDaemonSet(daemon, events, running, waiting, succeeded, failed)
@@ -1959,7 +1995,7 @@ func (i *IngressDescriber) describeIngress(ing *extensions.Ingress, describerSet
 		describeIngressAnnotations(w, ing.Annotations)
 
 		if describerSettings.ShowEvents {
-			events, _ := i.Core().Events(ing.Namespace).Search(api.Scheme, ing)
+			events, _ := i.Core().Events(ing.Namespace).Search(legacyscheme.Scheme, ing)
 			if events != nil {
 				DescribeEvents(events, w)
 			}
@@ -2010,7 +2046,7 @@ func (d *ServiceDescriber) Describe(namespace, name string, describerSettings pr
 	endpoints, _ := d.Core().Endpoints(namespace).Get(name, metav1.GetOptions{})
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, service)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, service)
 	}
 	return describeService(service, endpoints, events)
 }
@@ -2107,7 +2143,7 @@ func (d *EndpointsDescriber) Describe(namespace, name string, describerSettings 
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, ep)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, ep)
 	}
 
 	return describeEndpoints(ep, events)
@@ -2219,7 +2255,7 @@ func (d *ServiceAccountDescriber) Describe(namespace, name string, describerSett
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.Core().Events(namespace).Search(api.Scheme, serviceAccount)
+		events, _ = d.Core().Events(namespace).Search(legacyscheme.Scheme, serviceAccount)
 	}
 
 	return describeServiceAccount(serviceAccount, tokens, missingSecrets, events)
@@ -2232,7 +2268,6 @@ func describeServiceAccount(serviceAccount *api.ServiceAccount, tokens []api.Sec
 		w.Write(LEVEL_0, "Namespace:\t%s\n", serviceAccount.Namespace)
 		printLabelsMultiline(w, "Labels", serviceAccount.Labels)
 		printAnnotationsMultiline(w, "Annotations", serviceAccount.Annotations)
-		w.WriteLine()
 
 		var (
 			emptyHeader = "                   "
@@ -2260,7 +2295,8 @@ func describeServiceAccount(serviceAccount *api.ServiceAccount, tokens []api.Sec
 			mountHeader: mountSecretNames,
 			tokenHeader: tokenSecretNames,
 		}
-		for header, names := range types {
+		for _, header := range sets.StringKeySet(types).List() {
+			names := types[header]
 			if len(names) == 0 {
 				w.Write(LEVEL_0, "%s\t<none>\n", header)
 			} else {
@@ -2274,7 +2310,6 @@ func describeServiceAccount(serviceAccount *api.ServiceAccount, tokens []api.Sec
 					prefix = emptyHeader
 				}
 			}
-			w.WriteLine()
 		}
 
 		if events != nil {
@@ -2473,12 +2508,12 @@ func (d *NodeDescriber) Describe(namespace, name string, describerSettings print
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		if ref, err := ref.GetReference(api.Scheme, node); err != nil {
+		if ref, err := ref.GetReference(legacyscheme.Scheme, node); err != nil {
 			glog.Errorf("Unable to construct reference to '%#v': %v", node, err)
 		} else {
 			// TODO: We haven't decided the namespace for Node object yet.
 			ref.UID = types.UID(ref.Name)
-			events, _ = d.Core().Events("").Search(api.Scheme, ref)
+			events, _ = d.Core().Events("").Search(legacyscheme.Scheme, ref)
 		}
 	}
 
@@ -2593,7 +2628,7 @@ func (p *StatefulSetDescriber) Describe(namespace, name string, describerSetting
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = p.client.Core().Events(namespace).Search(api.Scheme, ps)
+		events, _ = p.client.Core().Events(namespace).Search(legacyscheme.Scheme, ps)
 	}
 
 	return describeStatefulSet(ps, selector, events, running, waiting, succeeded, failed)
@@ -2641,7 +2676,7 @@ func (p *CertificateSigningRequestDescriber) Describe(namespace, name string, de
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = p.client.Core().Events(namespace).Search(api.Scheme, csr)
+		events, _ = p.client.Core().Events(namespace).Search(legacyscheme.Scheme, csr)
 	}
 
 	return describeCertificateSigningRequest(csr, cr, status, events)
@@ -2709,7 +2744,7 @@ func (d *HorizontalPodAutoscalerDescriber) Describe(namespace, name string, desc
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = d.client.Core().Events(namespace).Search(api.Scheme, hpa)
+		events, _ = d.client.Core().Events(namespace).Search(legacyscheme.Scheme, hpa)
 	}
 
 	return describeHorizontalPodAutoscaler(hpa, events, d)
@@ -2909,13 +2944,13 @@ func (dd *DeploymentDescriber) Describe(namespace, name string, describerSetting
 		return "", err
 	}
 	internalDeployment := &extensions.Deployment{}
-	if err := api.Scheme.Convert(d, internalDeployment, extensions.SchemeGroupVersion); err != nil {
+	if err := legacyscheme.Scheme.Convert(d, internalDeployment, extensions.SchemeGroupVersion); err != nil {
 		return "", err
 	}
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = dd.Core().Events(namespace).Search(api.Scheme, d)
+		events, _ = dd.Core().Events(namespace).Search(legacyscheme.Scheme, d)
 	}
 
 	return describeDeployment(d, selector, internalDeployment, events, dd)
@@ -3028,53 +3063,12 @@ func (d *ConfigMapDescriber) Describe(namespace, name string, describerSettings 
 			w.Write(LEVEL_0, "%s\n", string(v))
 		}
 		if describerSettings.ShowEvents {
-			events, err := d.Core().Events(namespace).Search(api.Scheme, configMap)
+			events, err := d.Core().Events(namespace).Search(legacyscheme.Scheme, configMap)
 			if err != nil {
 				return err
 			}
 			if events != nil {
 				DescribeEvents(events, w)
-			}
-		}
-		return nil
-	})
-}
-
-type ClusterDescriber struct {
-	fedclientset.Interface
-}
-
-func (d *ClusterDescriber) Describe(namespace, name string, describerSettings printers.DescriberSettings) (string, error) {
-	cluster, err := d.Federation().Clusters().Get(name, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	return describeCluster(cluster)
-}
-
-func describeCluster(cluster *federation.Cluster) (string, error) {
-	return tabbedString(func(out io.Writer) error {
-		w := NewPrefixWriter(out)
-		w.Write(LEVEL_0, "Name:\t%s\n", cluster.Name)
-		w.Write(LEVEL_0, "Labels:\t%s\n", labels.FormatLabels(cluster.Labels))
-
-		w.Write(LEVEL_0, "ServerAddressByClientCIDRs:\n  ClientCIDR\tServerAddress\n")
-		w.Write(LEVEL_1, "----\t----\n")
-		for _, cidrAddr := range cluster.Spec.ServerAddressByClientCIDRs {
-			w.Write(LEVEL_1, "%v \t%v\n\n", cidrAddr.ClientCIDR, cidrAddr.ServerAddress)
-		}
-
-		if len(cluster.Status.Conditions) > 0 {
-			w.Write(LEVEL_0, "Conditions:\n  Type\tStatus\tLastUpdateTime\tLastTransitionTime\tReason\tMessage\n")
-			w.Write(LEVEL_1, "----\t------\t-----------------\t------------------\t------\t-------\n")
-			for _, c := range cluster.Status.Conditions {
-				w.Write(LEVEL_1, "%v \t%v \t%s \t%s \t%v \t%v\n",
-					c.Type,
-					c.Status,
-					c.LastProbeTime.Time.Format(time.RFC1123Z),
-					c.LastTransitionTime.Time.Format(time.RFC1123Z),
-					c.Reason,
-					c.Message)
 			}
 		}
 		return nil
@@ -3102,11 +3096,61 @@ func describeNetworkPolicy(networkPolicy *networking.NetworkPolicy) (string, err
 		w := NewPrefixWriter(out)
 		w.Write(LEVEL_0, "Name:\t%s\n", networkPolicy.Name)
 		w.Write(LEVEL_0, "Namespace:\t%s\n", networkPolicy.Namespace)
+		w.Write(LEVEL_0, "Created on:\t%s\n", networkPolicy.CreationTimestamp)
 		printLabelsMultiline(w, "Labels", networkPolicy.Labels)
 		printAnnotationsMultiline(w, "Annotations", networkPolicy.Annotations)
-
+		describeNetworkPolicySpec(networkPolicy.Spec, w)
 		return nil
 	})
+}
+
+func describeNetworkPolicySpec(nps networking.NetworkPolicySpec, w PrefixWriter) {
+	w.Write(LEVEL_0, "Spec:\n")
+	w.Write(LEVEL_1, "Pod Selector: ")
+	if len(nps.PodSelector.MatchLabels) == 0 && len(nps.PodSelector.MatchExpressions) == 0 {
+		w.Write(LEVEL_2, "<none> (Allowing the specific traffic to all pods in this namespace)\n")
+	} else {
+		w.Write(LEVEL_2, "%s\n", metav1.FormatLabelSelector(&nps.PodSelector))
+	}
+	w.Write(LEVEL_1, "Allowing ingress traffic:\n")
+	printNetworkPolicySpecIngressFrom(nps.Ingress, "    ", w)
+}
+
+func printNetworkPolicySpecIngressFrom(npirs []networking.NetworkPolicyIngressRule, initialIndent string, w PrefixWriter) {
+	if len(npirs) == 0 {
+		w.WriteLine("<none> (Selected pods are isolated for ingress connectivity)")
+		return
+	}
+	for i, npir := range npirs {
+		if len(npir.Ports) == 0 {
+			w.Write(LEVEL_0, "%s%s\n", initialIndent, "To Port: <any> (traffic allowed to all ports)")
+		} else {
+			for _, port := range npir.Ports {
+				var proto api.Protocol
+				if port.Protocol != nil {
+					proto = *port.Protocol
+				} else {
+					proto = api.ProtocolTCP
+				}
+				w.Write(LEVEL_0, "%s%s: %s/%s\n", initialIndent, "To Port", port.Port, proto)
+			}
+		}
+		if len(npir.From) == 0 {
+			w.Write(LEVEL_0, "%s%s\n", initialIndent, "From: <any> (traffic not restricted by source)")
+		} else {
+			for _, from := range npir.From {
+				w.Write(LEVEL_0, "%s", initialIndent)
+				if from.PodSelector != nil {
+					w.Write(LEVEL_0, "%s: %s\n", "From Pod Selector", metav1.FormatLabelSelector(from.PodSelector))
+				} else if from.NamespaceSelector != nil {
+					w.Write(LEVEL_0, "%s: %s\n", "From Namespace Selector", metav1.FormatLabelSelector(from.NamespaceSelector))
+				}
+			}
+		}
+		if i != len(npirs)-1 {
+			w.Write(LEVEL_0, "%s%s\n", initialIndent, "----------")
+		}
+	}
 }
 
 type StorageClassDescriber struct {
@@ -3121,7 +3165,7 @@ func (s *StorageClassDescriber) Describe(namespace, name string, describerSettin
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = s.Core().Events(namespace).Search(api.Scheme, sc)
+		events, _ = s.Core().Events(namespace).Search(legacyscheme.Scheme, sc)
 	}
 
 	return describeStorageClass(sc, events)
@@ -3158,7 +3202,7 @@ func (p *PodDisruptionBudgetDescriber) Describe(namespace, name string, describe
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = p.Core().Events(namespace).Search(api.Scheme, pdb)
+		events, _ = p.Core().Events(namespace).Search(legacyscheme.Scheme, pdb)
 	}
 
 	return describePodDisruptionBudget(pdb, events)
@@ -3207,7 +3251,7 @@ func (s *PriorityClassDescriber) Describe(namespace, name string, describerSetti
 
 	var events *api.EventList
 	if describerSettings.ShowEvents {
-		events, _ = s.Core().Events(namespace).Search(api.Scheme, pc)
+		events, _ = s.Core().Events(namespace).Search(legacyscheme.Scheme, pc)
 	}
 
 	return describePriorityClass(pc, events)

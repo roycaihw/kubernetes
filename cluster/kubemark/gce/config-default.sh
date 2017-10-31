@@ -27,11 +27,13 @@ REGION=${ZONE%-*}
 NUM_NODES=${KUBEMARK_NUM_NODES:-10}
 MASTER_SIZE=${KUBEMARK_MASTER_SIZE:-n1-standard-$(get-master-size)}
 MASTER_DISK_TYPE=pd-ssd
-MASTER_DISK_SIZE=${MASTER_DISK_SIZE:-20GB}
-MASTER_ROOT_DISK_SIZE=${KUBEMARK_MASTER_ROOT_DISK_SIZE:-10GB}
+MASTER_DISK_SIZE=${MASTER_DISK_SIZE:-$(get-master-disk-size)}
+MASTER_ROOT_DISK_SIZE=${KUBEMARK_MASTER_ROOT_DISK_SIZE:-$(get-master-root-disk-size)}
 REGISTER_MASTER_KUBELET=${REGISTER_MASTER:-false}
 PREEMPTIBLE_NODE=${PREEMPTIBLE_NODE:-false}
 NODE_ACCELERATORS=${NODE_ACCELERATORS:-""}
+CREATE_CUSTOM_NETWORK=${CREATE_CUSTOM_NETWORK:-false}
+EVENT_PD=${EVENT_PD:-false}
 
 MASTER_OS_DISTRIBUTION=${KUBE_MASTER_OS_DISTRIBUTION:-gci}
 NODE_OS_DISTRIBUTION=${KUBE_NODE_OS_DISTRIBUTION:-gci}
@@ -44,6 +46,9 @@ if [[ "${NODE_OS_DISTRIBUTION}" == "debian" ]]; then
 fi
 
 NETWORK=${KUBE_GCE_NETWORK:-e2e}
+if [[ "${CREATE_CUSTOM_NETWORK}" == true ]]; then
+  SUBNETWORK="${SUBNETWORK:-${NETWORK}-custom-subnet}"
+fi
 INSTANCE_PREFIX="${INSTANCE_PREFIX:-"default"}"
 MASTER_NAME="${INSTANCE_PREFIX}-kubemark-master"
 AGGREGATOR_MASTER_NAME="${INSTANCE_PREFIX}-kubemark-aggregator"
@@ -51,7 +56,7 @@ MASTER_TAG="kubemark-master"
 ETCD_QUORUM_READ="${ENABLE_ETCD_QUORUM_READ:-false}"
 EVENT_STORE_NAME="${INSTANCE_PREFIX}-event-store"
 MASTER_IP_RANGE="${MASTER_IP_RANGE:-10.246.0.0/24}"
-CLUSTER_IP_RANGE="${CLUSTER_IP_RANGE:-10.224.0.0/11}"
+CLUSTER_IP_RANGE="${CLUSTER_IP_RANGE:-$(get-cluster-ip-range)}"
 RUNTIME_CONFIG="${KUBE_RUNTIME_CONFIG:-}"
 TERMINATED_POD_GC_THRESHOLD=${TERMINATED_POD_GC_THRESHOLD:-100}
 KUBE_APISERVER_REQUEST_TIMEOUT=300
@@ -100,6 +105,16 @@ ALLOCATE_NODE_CIDRS=true
 
 # Optional: Enable cluster autoscaler.
 ENABLE_KUBEMARK_CLUSTER_AUTOSCALER="${ENABLE_KUBEMARK_CLUSTER_AUTOSCALER:-false}"
+# When using Cluster Autoscaler, always start with one hollow-node replica.
+# NUM_NODES should not be specified by the user. Instead we use
+# NUM_NODES=KUBEMARK_AUTOSCALER_MAX_NODES. This gives other cluster components
+# (e.g. kubemark master, Heapster) enough resources to handle maximum cluster size.
+if [[ "${ENABLE_KUBEMARK_CLUSTER_AUTOSCALER}" == "true" ]]; then
+  NUM_REPLICAS=1
+  if [[ ! -z "$NUM_NODES" ]]; then
+    echo "WARNING: Using Cluster Autoscaler, ignoring NUM_NODES parameter. Set KUBEMARK_AUTOSCALER_MAX_NODES to specify maximum size of the cluster."
+  fi
+fi
 
 # Optional: set feature gates
 FEATURE_GATES="${KUBE_FEATURE_GATES:-ExperimentalCriticalPodAnnotation=true}"
@@ -116,3 +131,7 @@ ENABLE_POD_PRIORITY="${ENABLE_POD_PRIORITY:-}"
 if [[ "${ENABLE_POD_PRIORITY}" == "true" ]]; then
     FEATURE_GATES="${FEATURE_GATES},PodPriority=true"
 fi
+
+# The number of services that are allowed to sync concurrently. Will be passed
+# into kube-controller-manager via `--concurrent-service-syncs`
+CONCURRENT_SERVICE_SYNCS="${CONCURRENT_SERVICE_SYNCS:-}"

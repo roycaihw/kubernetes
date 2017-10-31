@@ -128,7 +128,7 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 			expectedNodes += size
 		}
 		framework.ExpectNoError(framework.WaitForReadyNodes(c, expectedNodes, scaleDownTimeout))
-		nodes, err := c.Core().Nodes().List(metav1.ListOptions{})
+		nodes, err := c.CoreV1().Nodes().List(metav1.ListOptions{})
 		framework.ExpectNoError(err)
 
 		s := time.Now()
@@ -159,7 +159,7 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 	EventsLoop:
 		for start := time.Now(); time.Since(start) < scaleUpTimeout; time.Sleep(20 * time.Second) {
 			By("Waiting for NotTriggerScaleUp event")
-			events, err := f.ClientSet.Core().Events(f.Namespace.Name).List(metav1.ListOptions{})
+			events, err := f.ClientSet.CoreV1().Events(f.Namespace.Name).List(metav1.ListOptions{})
 			framework.ExpectNoError(err)
 
 			for _, e := range events.Items {
@@ -458,7 +458,7 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 		By(fmt.Sprintf("New nodes: %v\n", newNodesSet))
 		registeredNodes := sets.NewString()
 		for nodeName := range newNodesSet {
-			node, err := f.ClientSet.Core().Nodes().Get(nodeName, metav1.GetOptions{})
+			node, err := f.ClientSet.CoreV1().Nodes().Get(nodeName, metav1.GetOptions{})
 			if err == nil && node != nil {
 				registeredNodes.Insert(nodeName)
 			} else {
@@ -582,21 +582,34 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 	})
 
 	It("Should be able to scale a node group up from 0[Feature:ClusterSizeAutoscalingScaleUp]", func() {
-		framework.SkipUnlessAtLeast(len(originalSizes), 2, "At least 2 node groups are needed for scale-to-0 tests")
-		By("Manually scale smallest node group to 0")
-		minMig := ""
-		minSize := nodeCount
-		for mig, size := range originalSizes {
-			if size <= minSize {
-				minMig = mig
-				minSize = size
+		// Provider-specific setup
+		if framework.ProviderIs("gke") {
+			// GKE-specific setup
+			By("Add a new node pool with 0 nodes and min size 0")
+			const extraPoolName = "extra-pool"
+			addNodePool(extraPoolName, "n1-standard-4", 0)
+			defer deleteNodePool(extraPoolName)
+			framework.ExpectNoError(enableAutoscaler(extraPoolName, 0, 1))
+			defer disableAutoscaler(extraPoolName, 0, 1)
+		} else {
+			// on GCE, run only if there are already at least 2 node groups
+			framework.SkipUnlessAtLeast(len(originalSizes), 2, "At least 2 node groups are needed for scale-to-0 tests")
+
+			By("Manually scale smallest node group to 0")
+			minMig := ""
+			minSize := nodeCount
+			for mig, size := range originalSizes {
+				if size <= minSize {
+					minMig = mig
+					minSize = size
+				}
 			}
+			framework.ExpectNoError(framework.ResizeGroup(minMig, int32(0)))
+			framework.ExpectNoError(framework.WaitForReadyNodes(c, nodeCount-minSize, resizeTimeout))
 		}
-		framework.ExpectNoError(framework.ResizeGroup(minMig, int32(0)))
-		framework.ExpectNoError(framework.WaitForReadyNodes(c, nodeCount-minSize, resizeTimeout))
 
 		By("Make remaining nodes unschedulable")
-		nodes, err := f.ClientSet.Core().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
+		nodes, err := f.ClientSet.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
 			"spec.unschedulable": "false",
 		}.AsSelector().String()})
 		framework.ExpectNoError(err)
@@ -607,6 +620,7 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 			defer func(n v1.Node) {
 				makeNodeSchedulable(f.ClientSet, &n, false)
 			}(node)
+
 			framework.ExpectNoError(err)
 		}
 
@@ -671,7 +685,7 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 		ngNodes, err := framework.GetGroupNodes(minMig)
 		framework.ExpectNoError(err)
 		Expect(len(ngNodes) == 1).To(BeTrue())
-		node, err := f.ClientSet.Core().Nodes().Get(ngNodes[0], metav1.GetOptions{})
+		node, err := f.ClientSet.CoreV1().Nodes().Get(ngNodes[0], metav1.GetOptions{})
 		By(fmt.Sprintf("Target node for scale-down: %s", node.Name))
 		framework.ExpectNoError(err)
 
@@ -704,7 +718,7 @@ var _ = SIGDescribe("Cluster size autoscaling [Slow]", func() {
 
 		By("Block network connectivity to some nodes to simulate unhealthy cluster")
 		nodesToBreakCount := int(math.Floor(math.Max(float64(unhealthyClusterThreshold), 0.5*float64(clusterSize))))
-		nodes, err := f.ClientSet.Core().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
+		nodes, err := f.ClientSet.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
 			"spec.unschedulable": "false",
 		}.AsSelector().String()})
 		framework.ExpectNoError(err)
@@ -748,13 +762,13 @@ func execCmd(args ...string) *exec.Cmd {
 func runDrainTest(f *framework.Framework, migSizes map[string]int, namespace string, podsPerNode, pdbSize int, verifyFunction func(int)) {
 	increasedSize := manuallyIncreaseClusterSize(f, migSizes)
 
-	nodes, err := f.ClientSet.Core().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
+	nodes, err := f.ClientSet.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
 		"spec.unschedulable": "false",
 	}.AsSelector().String()})
 	framework.ExpectNoError(err)
 	numPods := len(nodes.Items) * podsPerNode
-	testId := string(uuid.NewUUID()) // So that we can label and find pods
-	labelMap := map[string]string{"test_id": testId}
+	testID := string(uuid.NewUUID()) // So that we can label and find pods
+	labelMap := map[string]string{"test_id": testID}
 	framework.ExpectNoError(runReplicatedPodOnEachNode(f, nodes.Items, namespace, podsPerNode, "reschedulable-pods", labelMap, 0))
 
 	defer framework.DeleteRCAndPods(f.ClientSet, f.InternalClientset, namespace, "reschedulable-pods")
@@ -781,7 +795,7 @@ func runDrainTest(f *framework.Framework, migSizes map[string]int, namespace str
 	verifyFunction(increasedSize)
 }
 
-func getGKEClusterUrl() string {
+func getGKEClusterURL() string {
 	out, err := execCmd("gcloud", "auth", "print-access-token").Output()
 	framework.ExpectNoError(err)
 	token := strings.Replace(string(out), "\n", "", -1)
@@ -795,7 +809,7 @@ func getGKEClusterUrl() string {
 }
 
 func isAutoscalerEnabled(expectedMaxNodeCountInTargetPool int) (bool, error) {
-	resp, err := http.Get(getGKEClusterUrl())
+	resp, err := http.Get(getGKEClusterURL())
 	if err != nil {
 		return false, err
 	}
@@ -812,43 +826,21 @@ func isAutoscalerEnabled(expectedMaxNodeCountInTargetPool int) (bool, error) {
 }
 
 func enableAutoscaler(nodePool string, minCount, maxCount int) error {
-	if nodePool == "default-pool" {
-		glog.Infof("Using gcloud to enable autoscaling for pool %s", nodePool)
+	glog.Infof("Using gcloud to enable autoscaling for pool %s", nodePool)
 
-		output, err := execCmd("gcloud", "alpha", "container", "clusters", "update", framework.TestContext.CloudConfig.Cluster,
-			"--enable-autoscaling",
-			"--min-nodes="+strconv.Itoa(minCount),
-			"--max-nodes="+strconv.Itoa(maxCount),
-			"--node-pool="+nodePool,
-			"--project="+framework.TestContext.CloudConfig.ProjectID,
-			"--zone="+framework.TestContext.CloudConfig.Zone).CombinedOutput()
+	output, err := execCmd("gcloud", "container", "clusters", "update", framework.TestContext.CloudConfig.Cluster,
+		"--enable-autoscaling",
+		"--min-nodes="+strconv.Itoa(minCount),
+		"--max-nodes="+strconv.Itoa(maxCount),
+		"--node-pool="+nodePool,
+		"--project="+framework.TestContext.CloudConfig.ProjectID,
+		"--zone="+framework.TestContext.CloudConfig.Zone).CombinedOutput()
 
-		if err != nil {
-			glog.Errorf("Failed config update result: %s", output)
-			return fmt.Errorf("Failed to enable autoscaling: %v", err)
-		}
-		glog.Infof("Config update result: %s", output)
-	} else {
-		glog.Infof("Using direct api access to enable autoscaling for pool %s", nodePool)
-		updateRequest := "{" +
-			" \"update\": {" +
-			"  \"desiredNodePoolId\": \"" + nodePool + "\"," +
-			"  \"desiredNodePoolAutoscaling\": {" +
-			"   \"enabled\": \"true\"," +
-			"   \"minNodeCount\": \"" + strconv.Itoa(minCount) + "\"," +
-			"   \"maxNodeCount\": \"" + strconv.Itoa(maxCount) + "\"" +
-			"  }" +
-			" }" +
-			"}"
-
-		url := getGKEClusterUrl()
-		glog.Infof("Using gke api url %s", url)
-		putResult, err := doPut(url, updateRequest)
-		if err != nil {
-			return fmt.Errorf("Failed to put %s: %v", url, err)
-		}
-		glog.Infof("Config update result: %s", putResult)
+	if err != nil {
+		glog.Errorf("Failed config update result: %s", output)
+		return fmt.Errorf("Failed to enable autoscaling: %v", err)
 	}
+	glog.Infof("Config update result: %s", output)
 
 	var finalErr error
 	for startTime := time.Now(); startTime.Add(gkeUpdateTimeout).After(time.Now()); time.Sleep(30 * time.Second) {
@@ -862,41 +854,19 @@ func enableAutoscaler(nodePool string, minCount, maxCount int) error {
 }
 
 func disableAutoscaler(nodePool string, minCount, maxCount int) error {
+	glog.Infof("Using gcloud to disable autoscaling for pool %s", nodePool)
 
-	if nodePool == "default-pool" {
-		glog.Infof("Using gcloud to disable autoscaling for pool %s", nodePool)
+	output, err := execCmd("gcloud", "container", "clusters", "update", framework.TestContext.CloudConfig.Cluster,
+		"--no-enable-autoscaling",
+		"--node-pool="+nodePool,
+		"--project="+framework.TestContext.CloudConfig.ProjectID,
+		"--zone="+framework.TestContext.CloudConfig.Zone).CombinedOutput()
 
-		output, err := execCmd("gcloud", "alpha", "container", "clusters", "update", framework.TestContext.CloudConfig.Cluster,
-			"--no-enable-autoscaling",
-			"--node-pool="+nodePool,
-			"--project="+framework.TestContext.CloudConfig.ProjectID,
-			"--zone="+framework.TestContext.CloudConfig.Zone).CombinedOutput()
-
-		if err != nil {
-			glog.Errorf("Failed config update result: %s", output)
-			return fmt.Errorf("Failed to disable autoscaling: %v", err)
-		}
-		glog.Infof("Config update result: %s", output)
-
-	} else {
-		glog.Infof("Using direct api access to disable autoscaling for pool %s", nodePool)
-		updateRequest := "{" +
-			" \"update\": {" +
-			"  \"desiredNodePoolId\": \"" + nodePool + "\"," +
-			"  \"desiredNodePoolAutoscaling\": {" +
-			"   \"enabled\": \"false\"," +
-			"  }" +
-			" }" +
-			"}"
-
-		url := getGKEClusterUrl()
-		glog.Infof("Using gke api url %s", url)
-		putResult, err := doPut(url, updateRequest)
-		if err != nil {
-			return fmt.Errorf("Failed to put %s: %v", url, err)
-		}
-		glog.Infof("Config update result: %s", putResult)
+	if err != nil {
+		glog.Errorf("Failed config update result: %s", output)
+		return fmt.Errorf("Failed to disable autoscaling: %v", err)
 	}
+	glog.Infof("Config update result: %s", output)
 
 	var finalErr error
 	for startTime := time.Now(); startTime.Add(gkeUpdateTimeout).After(time.Now()); time.Sleep(30 * time.Second) {
@@ -974,6 +944,8 @@ func doPut(url, content string) (string, error) {
 	return strBody, nil
 }
 
+// ReserveMemory creates a replication controller with pods that, in summation,
+// request the specified amount of memory.
 func ReserveMemory(f *framework.Framework, id string, replicas, megabytes int, expectRunning bool, timeout time.Duration) func() error {
 	By(fmt.Sprintf("Running RC which reserves %v MB of memory", megabytes))
 	request := int64(1024 * 1024 * megabytes / replicas)
@@ -1009,10 +981,10 @@ func WaitForClusterSizeFunc(c clientset.Interface, sizeFunc func(int) bool, time
 	return WaitForClusterSizeFuncWithUnready(c, sizeFunc, timeout, 0)
 }
 
-// WaitForClusterSizeWithUnready waits until the cluster size matches the given function and assumes some unready nodes.
+// WaitForClusterSizeFuncWithUnready waits until the cluster size matches the given function and assumes some unready nodes.
 func WaitForClusterSizeFuncWithUnready(c clientset.Interface, sizeFunc func(int) bool, timeout time.Duration, expectedUnready int) error {
 	for start := time.Now(); time.Since(start) < timeout; time.Sleep(20 * time.Second) {
-		nodes, err := c.Core().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
+		nodes, err := c.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
 			"spec.unschedulable": "false",
 		}.AsSelector().String()})
 		if err != nil {
@@ -1039,7 +1011,7 @@ func WaitForClusterSizeFuncWithUnready(c clientset.Interface, sizeFunc func(int)
 func waitForCaPodsReadyInNamespace(f *framework.Framework, c clientset.Interface, tolerateUnreadyCount int) error {
 	var notready []string
 	for start := time.Now(); time.Now().Before(start.Add(scaleUpTimeout)); time.Sleep(20 * time.Second) {
-		pods, err := c.Core().Pods(f.Namespace.Name).List(metav1.ListOptions{})
+		pods, err := c.CoreV1().Pods(f.Namespace.Name).List(metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get pods: %v", err)
 		}
@@ -1079,7 +1051,7 @@ func waitForAllCaPodsReadyInNamespace(f *framework.Framework, c clientset.Interf
 }
 
 func getAnyNode(c clientset.Interface) *v1.Node {
-	nodes, err := c.Core().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
+	nodes, err := c.CoreV1().Nodes().List(metav1.ListOptions{FieldSelector: fields.Set{
 		"spec.unschedulable": "false",
 	}.AsSelector().String()})
 	if err != nil {
@@ -1114,10 +1086,10 @@ func drainNode(f *framework.Framework, node *v1.Node) {
 
 	By("Manually drain the single node")
 	podOpts := metav1.ListOptions{FieldSelector: fields.OneTermEqualSelector(api.PodHostField, node.Name).String()}
-	pods, err := f.ClientSet.Core().Pods(metav1.NamespaceAll).List(podOpts)
+	pods, err := f.ClientSet.CoreV1().Pods(metav1.NamespaceAll).List(podOpts)
 	framework.ExpectNoError(err)
 	for _, pod := range pods.Items {
-		err = f.ClientSet.Core().Pods(pod.Namespace).Delete(pod.Name, metav1.NewDeleteOptions(0))
+		err = f.ClientSet.CoreV1().Pods(pod.Namespace).Delete(pod.Name, metav1.NewDeleteOptions(0))
 		framework.ExpectNoError(err)
 	}
 }
@@ -1125,7 +1097,7 @@ func drainNode(f *framework.Framework, node *v1.Node) {
 func makeNodeUnschedulable(c clientset.Interface, node *v1.Node) error {
 	By(fmt.Sprintf("Taint node %s", node.Name))
 	for j := 0; j < 3; j++ {
-		freshNode, err := c.Core().Nodes().Get(node.Name, metav1.GetOptions{})
+		freshNode, err := c.CoreV1().Nodes().Get(node.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -1139,7 +1111,7 @@ func makeNodeUnschedulable(c clientset.Interface, node *v1.Node) error {
 			Value:  "DisabledForTest",
 			Effect: v1.TaintEffectNoSchedule,
 		})
-		_, err = c.Core().Nodes().Update(freshNode)
+		_, err = c.CoreV1().Nodes().Update(freshNode)
 		if err == nil {
 			return nil
 		}
@@ -1151,20 +1123,22 @@ func makeNodeUnschedulable(c clientset.Interface, node *v1.Node) error {
 	return fmt.Errorf("Failed to taint node in allowed number of retries")
 }
 
+// CriticalAddonsOnlyError implements the `error` interface, and signifies the
+// presence of the `CriticalAddonsOnly` taint on the node.
 type CriticalAddonsOnlyError struct{}
 
-func (_ CriticalAddonsOnlyError) Error() string {
+func (CriticalAddonsOnlyError) Error() string {
 	return fmt.Sprintf("CriticalAddonsOnly taint found on node")
 }
 
 func makeNodeSchedulable(c clientset.Interface, node *v1.Node, failOnCriticalAddonsOnly bool) error {
 	By(fmt.Sprintf("Remove taint from node %s", node.Name))
 	for j := 0; j < 3; j++ {
-		freshNode, err := c.Core().Nodes().Get(node.Name, metav1.GetOptions{})
+		freshNode, err := c.CoreV1().Nodes().Get(node.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		newTaints := make([]v1.Taint, 0)
+		var newTaints []v1.Taint
 		for _, taint := range freshNode.Spec.Taints {
 			if failOnCriticalAddonsOnly && taint.Key == criticalAddonsOnlyTaint {
 				return CriticalAddonsOnlyError{}
@@ -1178,7 +1152,7 @@ func makeNodeSchedulable(c clientset.Interface, node *v1.Node, failOnCriticalAdd
 			return nil
 		}
 		freshNode.Spec.Taints = newTaints
-		_, err = c.Core().Nodes().Update(freshNode)
+		_, err = c.CoreV1().Nodes().Update(freshNode)
 		if err == nil {
 			return nil
 		}
@@ -1207,7 +1181,7 @@ func runAntiAffinityPods(f *framework.Framework, namespace string, pods int, id 
 	if err != nil {
 		return err
 	}
-	_, err = f.ClientSet.Core().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
+	_, err = f.ClientSet.CoreV1().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1231,7 +1205,7 @@ func runVolumeAntiAffinityPods(f *framework.Framework, namespace string, pods in
 	if err != nil {
 		return err
 	}
-	_, err = f.ClientSet.Core().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
+	_, err = f.ClientSet.CoreV1().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1313,7 +1287,7 @@ func runReplicatedPodOnEachNode(f *framework.Framework, nodes []v1.Node, namespa
 	if err != nil {
 		return err
 	}
-	rc, err := f.ClientSet.Core().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
+	rc, err := f.ClientSet.CoreV1().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1327,7 +1301,7 @@ func runReplicatedPodOnEachNode(f *framework.Framework, nodes []v1.Node, namespa
 		// (we retry 409 errors in case rc reference got out of sync)
 		for j := 0; j < 3; j++ {
 			*rc.Spec.Replicas = int32((i + 1) * podsPerNode)
-			rc, err = f.ClientSet.Core().ReplicationControllers(namespace).Update(rc)
+			rc, err = f.ClientSet.CoreV1().ReplicationControllers(namespace).Update(rc)
 			if err == nil {
 				break
 			}
@@ -1335,14 +1309,14 @@ func runReplicatedPodOnEachNode(f *framework.Framework, nodes []v1.Node, namespa
 				return err
 			}
 			glog.Warningf("Got 409 conflict when trying to scale RC, retries left: %v", 3-j)
-			rc, err = f.ClientSet.Core().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
+			rc, err = f.ClientSet.CoreV1().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 		}
 
 		err = wait.PollImmediate(5*time.Second, podTimeout, func() (bool, error) {
-			rc, err = f.ClientSet.Core().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
+			rc, err = f.ClientSet.CoreV1().ReplicationControllers(namespace).Get(id, metav1.GetOptions{})
 			if err != nil || rc.Status.ReadyReplicas < int32((i+1)*podsPerNode) {
 				return false, nil
 			}
@@ -1520,7 +1494,7 @@ func waitForScaleUpStatus(c clientset.Interface, cond func(s *scaleUpStatus) boo
 func addKubeSystemPdbs(f *framework.Framework) (func(), error) {
 	By("Create PodDisruptionBudgets for kube-system components, so they can be migrated if required")
 
-	newPdbs := make([]string, 0)
+	var newPdbs []string
 	cleanup := func() {
 		var finalErr error
 		for _, newPdbName := range newPdbs {
@@ -1538,21 +1512,21 @@ func addKubeSystemPdbs(f *framework.Framework) (func(), error) {
 	}
 
 	type pdbInfo struct {
-		label         string
-		min_available int
+		label        string
+		minAvailable int
 	}
 	pdbsToAdd := []pdbInfo{
-		{label: "kube-dns", min_available: 1},
-		{label: "kube-dns-autoscaler", min_available: 0},
-		{label: "metrics-server", min_available: 0},
-		{label: "kubernetes-dashboard", min_available: 0},
-		{label: "glbc", min_available: 0},
+		{label: "kube-dns", minAvailable: 1},
+		{label: "kube-dns-autoscaler", minAvailable: 0},
+		{label: "metrics-server", minAvailable: 0},
+		{label: "kubernetes-dashboard", minAvailable: 0},
+		{label: "glbc", minAvailable: 0},
 	}
 	for _, pdbData := range pdbsToAdd {
 		By(fmt.Sprintf("Create PodDisruptionBudget for %v", pdbData.label))
 		labelMap := map[string]string{"k8s-app": pdbData.label}
 		pdbName := fmt.Sprintf("test-pdb-for-%v", pdbData.label)
-		minAvailable := intstr.FromInt(pdbData.min_available)
+		minAvailable := intstr.FromInt(pdbData.minAvailable)
 		pdb := &policy.PodDisruptionBudget{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pdbName,

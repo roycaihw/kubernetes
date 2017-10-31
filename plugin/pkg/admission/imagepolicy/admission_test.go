@@ -346,7 +346,7 @@ func (m *mockService) HTTPStatusCode() int { return m.statusCode }
 
 // newImagePolicyWebhook creates a temporary kubeconfig file from the provided arguments and attempts to load
 // a new newImagePolicyWebhook from it.
-func newImagePolicyWebhook(callbackURL string, clientCert, clientKey, ca []byte, cacheTime time.Duration, defaultAllow bool) (*imagePolicyWebhook, error) {
+func newImagePolicyWebhook(callbackURL string, clientCert, clientKey, ca []byte, cacheTime time.Duration, defaultAllow bool) (*Plugin, error) {
 	tempfile, err := ioutil.TempFile("", "")
 	if err != nil {
 		return nil, err
@@ -404,7 +404,10 @@ func newImagePolicyWebhook(callbackURL string, clientCert, clientKey, ca []byte,
 	}
 	defer configFile.Close()
 	wh, err := NewImagePolicyWebhook(configFile)
-	return wh.(*imagePolicyWebhook), err
+	if err != nil {
+		return nil, err
+	}
+	return wh, err
 }
 
 func TestTLSConfig(t *testing.T) {
@@ -510,7 +513,7 @@ type webhookCacheTestCase struct {
 	expectedCached     bool
 }
 
-func testWebhookCacheCases(t *testing.T, serv *mockService, wh *imagePolicyWebhook, attr admission.Attributes, tests []webhookCacheTestCase) {
+func testWebhookCacheCases(t *testing.T, serv *mockService, wh *Plugin, attr admission.Attributes, tests []webhookCacheTestCase) {
 	for _, test := range tests {
 		serv.statusCode = test.statusCode
 		err := wh.Admit(attr)

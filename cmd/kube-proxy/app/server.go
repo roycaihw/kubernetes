@@ -41,6 +41,7 @@ import (
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	clientgoclientset "k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/record"
@@ -82,15 +83,6 @@ const (
 	proxyModeKernelspace = "kernelspace"
 )
 
-// checkKnownProxyMode returns true if proxyMode is valid.
-func checkKnownProxyMode(proxyMode string) bool {
-	switch proxyMode {
-	case "", proxyModeUserspace, proxyModeIPTables, proxyModeIPVS, proxyModeKernelspace:
-		return true
-	}
-	return false
-}
-
 // Options contains everything necessary to create and run a proxy server.
 type Options struct {
 	// ConfigFile is the location of the proxy server's configuration file.
@@ -121,7 +113,8 @@ type Options struct {
 func AddFlags(options *Options, fs *pflag.FlagSet) {
 	fs.StringVar(&options.ConfigFile, "config", options.ConfigFile, "The path to the configuration file.")
 	fs.StringVar(&options.WriteConfigTo, "write-config-to", options.WriteConfigTo, "If set, write the default configuration values to this file and exit.")
-	fs.MarkDeprecated("cleanup-iptables", "This flag is replaced by cleanup-proxyrules.")
+	fs.BoolVar(&options.CleanupAndExit, "cleanup-iptables", options.CleanupAndExit, "If true cleanup iptables and ipvs rules and exit.")
+	fs.MarkDeprecated("cleanup-iptables", "This flag is replaced by --cleanup.")
 	fs.BoolVar(&options.CleanupAndExit, "cleanup", options.CleanupAndExit, "If true cleanup iptables and ipvs rules and exit.")
 
 	// All flags below here are deprecated and will eventually be removed.
@@ -200,6 +193,10 @@ func (o *Options) Complete() error {
 func (o *Options) Validate(args []string) error {
 	if len(args) != 0 {
 		return errors.New("no arguments are supported")
+	}
+
+	if errs := Validate(o.config); len(errs) != 0 {
+		return errs.ToAggregate()
 	}
 
 	return nil
@@ -333,8 +330,8 @@ func NewProxyCommand() *cobra.Command {
 		Use: "kube-proxy",
 		Long: `The Kubernetes network proxy runs on each node. This
 reflects services as defined in the Kubernetes API on each node and can do simple
-TCP,UDP stream forwarding or round robin TCP,UDP forwarding across a set of backends.
-Service cluster ips and ports are currently found through Docker-links-compatible
+TCP and UDP stream forwarding or round robin TCP and UDP forwarding across a set of backends.
+Service cluster IPs and ports are currently found through Docker-links-compatible
 environment variables specifying ports opened by the service proxy. There is an optional
 addon that provides cluster DNS for these cluster IPs. The user must create a service
 with the apiserver API to configure the proxy.`,
@@ -388,15 +385,19 @@ type ProxyServer struct {
 // createClients creates a kube client and an event client from the given config and masterOverride.
 // TODO remove masterOverride when CLI flags are removed.
 func createClients(config componentconfig.ClientConnectionConfiguration, masterOverride string) (clientset.Interface, v1core.EventsGetter, error) {
-	if len(config.KubeConfigFile) == 0 && len(masterOverride) == 0 {
-		glog.Warningf("Neither --kubeconfig nor --master was specified. Using default API client. This might not work.")
-	}
+	var kubeConfig *rest.Config
+	var err error
 
-	// This creates a client, first loading any specified kubeconfig
-	// file, and then overriding the Master flag, if non-empty.
-	kubeConfig, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: config.KubeConfigFile},
-		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterOverride}}).ClientConfig()
+	if len(config.KubeConfigFile) == 0 && len(masterOverride) == 0 {
+		glog.Info("Neither kubeconfig file nor master URL was specified. Falling back to in-cluster config.")
+		kubeConfig, err = rest.InClusterConfig()
+	} else {
+		// This creates a client, first loading any specified kubeconfig
+		// file, and then overriding the Master flag, if non-empty.
+		kubeConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			&clientcmd.ClientConfigLoadingRules{ExplicitPath: config.KubeConfigFile},
+			&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterOverride}}).ClientConfig()
+	}
 	if err != nil {
 		return nil, nil, err
 	}
