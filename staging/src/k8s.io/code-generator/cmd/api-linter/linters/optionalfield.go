@@ -20,8 +20,13 @@ func (c optionalFieldAPIConvention) Validate(t *types.Type) ([]string, error) {
 			if hasAPITagValue(m.CommentLines, tagValueFalse) {
 				continue
 			}
+			// Get underlying member type for alias type
+			mt := m.Type
+			for mt.Kind == types.Alias {
+				mt = mt.Underlying
+			}
 			// Optional fields should be nillable (pointer, map or slice)
-			if hasOptionalTag(&m) && !(m.Type.Kind == types.Pointer || m.Type.Kind == types.Map || m.Type.Kind == types.Slice) {
+			if hasOptionalTag(&m) && !(mt.Kind == types.Pointer || mt.Kind == types.Map || mt.Kind == types.Slice) {
 				violationIDs = append(violationIDs, m.Name)
 			}
 		}
