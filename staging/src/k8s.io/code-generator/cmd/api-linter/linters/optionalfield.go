@@ -10,10 +10,6 @@ func (c optionalFieldAPIConvention) Name() string {
 	return "optional_fields_linter_pointers"
 }
 
-func (c optionalFieldAPIConvention) Message() string {
-	return "optional fields should be pointers"
-}
-
 func (c optionalFieldAPIConvention) Validate(t *types.Type) ([]string, error) {
 	violationIDs := make([]string, 0)
 
@@ -24,7 +20,8 @@ func (c optionalFieldAPIConvention) Validate(t *types.Type) ([]string, error) {
 			if hasAPITagValue(m.CommentLines, tagValueFalse) {
 				continue
 			}
-			if hasOptionalTag(&m) && m.Type.Kind != types.Pointer {
+			// Optional fields should be nillable (pointer, map or slice)
+			if hasOptionalTag(&m) && !(m.Type.Kind == types.Pointer || m.Type.Kind == types.Map || m.Type.Kind == types.Slice) {
 				violationIDs = append(violationIDs, m.Name)
 			}
 		}
