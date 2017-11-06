@@ -92,7 +92,7 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	return generator.Packages{
 		&generator.DefaultPackage{
 			PackageName: "dummy",
-			PackagePath: "k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/api-linter/dummy",
+			PackagePath: "k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/api-linter/.dummy",
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				filename := ""
 				if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {
