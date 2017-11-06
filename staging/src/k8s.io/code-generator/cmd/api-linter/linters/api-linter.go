@@ -136,9 +136,14 @@ type apiLinter struct {
 	whitelistFilename string
 }
 
+// apiViolation uniquely identifies one API violation. All three fields (linterName, typeName and violationID) should not contain ','
+// to work properly with whitelist parsing (whitelist entries in the format of: linterName,typeName,violationID).
 type apiViolation struct {
-	linterName  string
-	typeName    string
+	// Validator's name from APIValidator.Name()
+	linterName string
+	// Type being validated
+	typeName string
+	// Returned from APIValidator.Validate(t *types.Type). It uniquely identifies one API violation within the validator namespace.
 	violationID string
 }
 
@@ -211,10 +216,11 @@ func (l *apiLinter) Finalize(c *generator.Context, w io.Writer) error {
 // APIValidator validates one API convention on an API type.
 type APIValidator interface {
 	// Validate(t *types.Type) evaluates API convention on type t and returns a list of
-	// API violation identifier.
+	// API violation identifier. API violation identifier should not contain ','.
 	Validate(t *types.Type) ([]string, error)
 
-	// Name() returns the name of APIValidator: linterName.
+	// Name() returns the name of APIValidator: linterName. linterName should not contain
+	// ','.
 	Name() string
 }
 
