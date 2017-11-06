@@ -1,7 +1,9 @@
 # API linter
 
-The API linter follows the same rules as openapi-gen, and validates API conventions on every type or package
-that requires API definition generation. The following rules are the same from openapi-gen:
+This directory contains the gengo framework for API linter `api-linter.go` and
+other implementations of API convention validators. Each validator should
+implement the interface `linters.APIValidator`, and be passed to
 
-- To generate definition for a specific type or package add "+k8s:openapi-gen=true" tag to the type/package comment lines.
-- To exclude a type or a member from a tagged package/type, add "+k8s:openapi-gen=false" tag to the comment lines.
+    func newAPILinter(sanitizedName, filename string, apiValidators []APIValidator) generator.Generator
+
+as part of argument `apiValidators`.

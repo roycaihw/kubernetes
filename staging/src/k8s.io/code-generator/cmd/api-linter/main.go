@@ -17,12 +17,24 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"k8s.io/code-generator/cmd/api-linter/linters"
 	"k8s.io/gengo/args"
 
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 )
+
+const helpText = `# API linter
+
+The API linter follows the same rules as openapi-gen, and validates API conventions on every type or package
+that requires API definition generation. The following rules are the same from openapi-gen:
+
+- To generate definition for a specific type or package add "+k8s:openapi-gen=true" tag to the type/package comment lines.
+- To exclude a type or a member from a tagged package/type, add "+k8s:openapi-gen=false" tag to the comment lines.
+`
 
 func main() {
 	arguments := args.Default()
@@ -33,6 +45,12 @@ func main() {
 	}
 	pflag.CommandLine.StringVar(&customArgs.WhitelistFilename, "whitelist-file", customArgs.WhitelistFilename, "Specify a csv file that contains the whitelist.")
 	arguments.CustomArgs = customArgs
+
+	pflag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "%s\n", helpText)
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		pflag.PrintDefaults()
+	}
 
 	// Run it.
 	if err := arguments.Execute(

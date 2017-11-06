@@ -6,6 +6,7 @@ go_library(
         "api-linter.go",
         "optionalfield.go",
     ],
+    importpath = "k8s.io/code-generator/cmd/api-linter/linters",
     visibility = ["//visibility:public"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
@@ -13,6 +14,7 @@ go_library(
         "//vendor/k8s.io/gengo/generator:go_default_library",
         "//vendor/k8s.io/gengo/namer:go_default_library",
         "//vendor/k8s.io/gengo/types:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/util:go_default_library",
     ],
 )
 
