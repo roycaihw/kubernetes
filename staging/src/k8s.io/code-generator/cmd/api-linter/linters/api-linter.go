@@ -89,10 +89,18 @@ func DefaultNameSystem() string {
 
 // Packages returns a API linter that validates API conventions and generates a dummy package.
 func Packages(context *generator.Context, arguments *args.GeneratorArgs) generator.Packages {
+	// Boilerplate header for dummy package required by Kubernetes standard verification
+	boilerplate, err := arguments.LoadGoBoilerplate()
+	if err != nil {
+		glog.Fatalf("Failed loading boilerplate: %v", err)
+	}
+	header := append([]byte(fmt.Sprintf("// +build !%s\n\n", arguments.GeneratedBuildTag)), boilerplate...)
+
 	return generator.Packages{
 		&generator.DefaultPackage{
 			PackageName: "dummy",
 			PackagePath: "k8s.io/kubernetes/staging/src/k8s.io/code-generator/cmd/api-linter/.dummy",
+			HeaderText:  header,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
 				filename := ""
 				if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {

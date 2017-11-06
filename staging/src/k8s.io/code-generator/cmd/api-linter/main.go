@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"k8s.io/code-generator/cmd/api-linter/linters"
 	"k8s.io/gengo/args"
@@ -39,6 +40,7 @@ that requires API definition generation. The following rules are the same from o
 func main() {
 	arguments := args.Default()
 	arguments.OutputFileBaseName = "api_linter_dummy"
+	arguments.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), "k8s.io/kubernetes/hack/boilerplate/boilerplate.go.txt")
 
 	customArgs := &linters.CustomArgs{
 		WhitelistFilename: "",
