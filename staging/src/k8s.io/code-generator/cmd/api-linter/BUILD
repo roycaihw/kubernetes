@@ -35,6 +35,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//staging/src/k8s.io/code-generator/cmd/api-linter/dummy:all-srcs",
         "//staging/src/k8s.io/code-generator/cmd/api-linter/linters:all-srcs",
     ],
     tags = ["automanaged"],
