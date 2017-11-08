@@ -215,7 +215,6 @@ func (l *apiLinter) Finalize(c *generator.Context, w io.Writer) error {
 		}
 	}
 	if hasViolation {
-		glog.Errorf("Number of violations: %d", len(l.violations))
 		return fmt.Errorf("linter API conventions violations exist; see stderr for details")
 	}
 	return nil
