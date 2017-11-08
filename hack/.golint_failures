@@ -228,6 +228,8 @@ pkg/probe/exec
 pkg/probe/http
 pkg/probe/tcp
 pkg/proxy
+pkg/proxy/apis/kubeproxyconfig
+pkg/proxy/apis/kubeproxyconfig/v1alpha1
 pkg/proxy/iptables
 pkg/proxy/userspace
 pkg/proxy/util
@@ -670,8 +672,12 @@ staging/src/k8s.io/client-go/rest/fake
 staging/src/k8s.io/client-go/scale
 staging/src/k8s.io/client-go/scale/fake
 staging/src/k8s.io/client-go/scale/scheme
+staging/src/k8s.io/client-go/scale/scheme/appsint
+staging/src/k8s.io/client-go/scale/scheme/appsv1beta1
+staging/src/k8s.io/client-go/scale/scheme/appsv1beta2
 staging/src/k8s.io/client-go/scale/scheme/autoscalingv1
 staging/src/k8s.io/client-go/scale/scheme/extensionsint
+staging/src/k8s.io/client-go/scale/scheme/extensionsv1beta1
 staging/src/k8s.io/client-go/scale/scheme/extensionsv1beta1
 staging/src/k8s.io/client-go/testing
 staging/src/k8s.io/client-go/tools/cache

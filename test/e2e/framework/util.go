@@ -78,6 +78,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/api/testapi"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
+	appsinternal "k8s.io/kubernetes/pkg/apis/apps"
 	batchinternal "k8s.io/kubernetes/pkg/apis/batch"
 	extensionsinternal "k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
@@ -154,14 +155,6 @@ const (
 	// When these values are updated, also update cmd/kubelet/app/options/options.go
 	currentPodInfraContainerImageName    = "gcr.io/google_containers/pause"
 	currentPodInfraContainerImageVersion = "3.0"
-
-	// How long each node is given during a process that restarts all nodes
-	// before the test is considered failed. (Note that the total time to
-	// restart all nodes will be this number times the number of nodes.)
-	RestartPerNodeTimeout = 5 * time.Minute
-
-	// How often to Poll the statues of a restart.
-	RestartPoll = 20 * time.Second
 
 	// How long a node is allowed to become "Ready" after it is restarted before
 	// the test is considered failed.
@@ -2802,9 +2795,9 @@ func getRuntimeObjectForKind(c clientset.Interface, kind schema.GroupKind, ns, n
 	switch kind {
 	case api.Kind("ReplicationController"):
 		return c.CoreV1().ReplicationControllers(ns).Get(name, metav1.GetOptions{})
-	case extensionsinternal.Kind("ReplicaSet"):
+	case extensionsinternal.Kind("ReplicaSet"), appsinternal.Kind("ReplicaSet"):
 		return c.Extensions().ReplicaSets(ns).Get(name, metav1.GetOptions{})
-	case extensionsinternal.Kind("Deployment"):
+	case extensionsinternal.Kind("Deployment"), appsinternal.Kind("Deployment"):
 		return c.Extensions().Deployments(ns).Get(name, metav1.GetOptions{})
 	case extensionsinternal.Kind("DaemonSet"):
 		return c.Extensions().DaemonSets(ns).Get(name, metav1.GetOptions{})
@@ -2819,9 +2812,9 @@ func deleteResource(c clientset.Interface, kind schema.GroupKind, ns, name strin
 	switch kind {
 	case api.Kind("ReplicationController"):
 		return c.CoreV1().ReplicationControllers(ns).Delete(name, deleteOption)
-	case extensionsinternal.Kind("ReplicaSet"):
+	case extensionsinternal.Kind("ReplicaSet"), appsinternal.Kind("ReplicaSet"):
 		return c.Extensions().ReplicaSets(ns).Delete(name, deleteOption)
-	case extensionsinternal.Kind("Deployment"):
+	case extensionsinternal.Kind("Deployment"), appsinternal.Kind("Deployment"):
 		return c.Extensions().Deployments(ns).Delete(name, deleteOption)
 	case extensionsinternal.Kind("DaemonSet"):
 		return c.Extensions().DaemonSets(ns).Delete(name, deleteOption)
