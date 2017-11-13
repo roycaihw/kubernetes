@@ -107,7 +107,7 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 					filename = customArgs.WhitelistFilename
 				}
 				apiValidators := []APIValidator{
-					optionalFieldAPIConvention{},
+					goJSONNameMatchAPIConvention{},
 				}
 				return []generator.Generator{newAPILinter(arguments.OutputFileBaseName, filename, apiValidators)}
 			},

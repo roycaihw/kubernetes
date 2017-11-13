@@ -1,10 +1,10 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
     srcs = [
         "api-linter.go",
-        "optionalfield.go",
+        "goJSONNameMatch.go",
     ],
     importpath = "k8s.io/code-generator/cmd/api-linter/linters",
     visibility = ["//visibility:public"],
@@ -30,4 +30,11 @@ filegroup(
     srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["goJSONNameMatch_test.go"],
+    importpath = "k8s.io/code-generator/cmd/api-linter/linters",
+    library = ":go_default_library",
 )
