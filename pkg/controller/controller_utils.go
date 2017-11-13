@@ -42,9 +42,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/integer"
 	clientretry "k8s.io/client-go/util/retry"
-	_ "k8s.io/kubernetes/pkg/api/install"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
-	"k8s.io/kubernetes/pkg/api/validation"
+	_ "k8s.io/kubernetes/pkg/apis/core/install"
+	"k8s.io/kubernetes/pkg/apis/core/validation"
 	hashutil "k8s.io/kubernetes/pkg/util/hash"
 	taintutils "k8s.io/kubernetes/pkg/util/taints"
 
@@ -410,7 +410,7 @@ type RealRSControl struct {
 var _ RSControlInterface = &RealRSControl{}
 
 func (r RealRSControl) PatchReplicaSet(namespace, name string, data []byte) error {
-	_, err := r.KubeClient.Extensions().ReplicaSets(namespace).Patch(name, types.StrategicMergePatchType, data)
+	_, err := r.KubeClient.ExtensionsV1beta1().ReplicaSets(namespace).Patch(name, types.StrategicMergePatchType, data)
 	return err
 }
 

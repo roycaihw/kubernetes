@@ -26,8 +26,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -35,9 +37,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/rest/fake"
-	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/api/testapi"
+	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/kubectl"
 	cmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
@@ -447,7 +449,7 @@ func (f *FakeFactory) ApproximatePodTemplateForObject(obj runtime.Object) (*api.
 	return f.ApproximatePodTemplateForObject(obj)
 }
 
-func (f *FakeFactory) UpdatePodSpecForObject(obj runtime.Object, fn func(*api.PodSpec) error) (bool, error) {
+func (f *FakeFactory) UpdatePodSpecForObject(obj runtime.Object, fn func(*v1.PodSpec) error) (bool, error) {
 	return false, nil
 }
 
@@ -479,6 +481,19 @@ func (f *FakeFactory) PrinterForMapping(cmd *cobra.Command, isLocal bool, output
 func (f *FakeFactory) NewBuilder() *resource.Builder {
 	mapper, typer := f.Object()
 	return resource.NewBuilder(mapper, f.CategoryExpander(), typer, resource.ClientMapperFunc(f.ClientForMapping), f.Decoder(true))
+}
+
+func (f *FakeFactory) NewUnstructuredBuilder() *resource.Builder {
+	mapper, typer, err := f.UnstructuredObject()
+	if err != nil {
+		cmdutil.CheckErr(err)
+	}
+	return resource.NewBuilder(
+		mapper,
+		f.CategoryExpander(),
+		typer,
+		resource.ClientMapperFunc(f.UnstructuredClientForMapping),
+		unstructured.UnstructuredJSONScheme)
 }
 
 func (f *FakeFactory) DefaultResourceFilterOptions(cmd *cobra.Command, withNamespace bool) *printers.PrintOptions {
@@ -756,6 +771,19 @@ func (f *fakeAPIFactory) PrinterForMapping(cmd *cobra.Command, isLocal bool, out
 func (f *fakeAPIFactory) NewBuilder() *resource.Builder {
 	mapper, typer := f.Object()
 	return resource.NewBuilder(mapper, f.CategoryExpander(), typer, resource.ClientMapperFunc(f.ClientForMapping), f.Decoder(true))
+}
+
+func (f *fakeAPIFactory) NewUnstructuredBuilder() *resource.Builder {
+	mapper, typer, err := f.UnstructuredObject()
+	if err != nil {
+		cmdutil.CheckErr(err)
+	}
+	return resource.NewBuilder(
+		mapper,
+		f.CategoryExpander(),
+		typer,
+		resource.ClientMapperFunc(f.UnstructuredClientForMapping),
+		unstructured.UnstructuredJSONScheme)
 }
 
 func (f *fakeAPIFactory) SuggestedPodTemplateResources() []schema.GroupResource {

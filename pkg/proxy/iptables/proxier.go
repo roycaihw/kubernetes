@@ -41,9 +41,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/helper"
 	apiservice "k8s.io/kubernetes/pkg/api/service"
+	api "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/apis/core/helper"
 	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/proxy"
 	"k8s.io/kubernetes/pkg/proxy/healthcheck"
@@ -1516,6 +1516,18 @@ func (proxier *Proxier) syncProxyRules() {
 			)
 			writeLine(proxier.natRules, args...)
 		} else {
+			// First write session affinity rules only over local endpoints, if applicable.
+			if svcInfo.sessionAffinityType == api.ServiceAffinityClientIP {
+				for _, endpointChain := range localEndpointChains {
+					writeLine(proxier.natRules,
+						"-A", string(svcXlbChain),
+						"-m", "comment", "--comment", svcNameString,
+						"-m", "recent", "--name", string(endpointChain),
+						"--rcheck", "--seconds", strconv.Itoa(svcInfo.stickyMaxAgeSeconds), "--reap",
+						"-j", string(endpointChain))
+				}
+			}
+
 			// Setup probability filter rules only over local endpoints
 			for i, endpointChain := range localEndpointChains {
 				// Balancing rules in the per-service chain.
@@ -1609,7 +1621,7 @@ func (proxier *Proxier) syncProxyRules() {
 
 	// Finish housekeeping.
 	// TODO: these could be made more consistent.
-	for _, svcIP := range staleServices.List() {
+	for _, svcIP := range staleServices.UnsortedList() {
 		if err := utilproxy.ClearUDPConntrackForIP(proxier.exec, svcIP); err != nil {
 			glog.Errorf("Failed to delete stale service IP %s connections, error: %v", svcIP, err)
 		}
