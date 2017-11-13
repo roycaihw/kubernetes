@@ -51,7 +51,8 @@ func (c goJSONNameMatchAPIConvention) Validate(t *types.Type) ([]string, error) 
 			jsonTag := reflect.StructTag(m.Tags).Get("json")
 			jsonName := strings.Split(jsonTag, ",")[0]
 			// Skip empty json name
-			if jsonName == "" {
+			// Object and list meta are special cases. Skip when json name is "metadata"
+			if jsonName == "" || jsonName == "metadata" {
 				continue
 			}
 
