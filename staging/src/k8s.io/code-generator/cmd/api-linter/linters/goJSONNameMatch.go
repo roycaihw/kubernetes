@@ -50,9 +50,9 @@ func (c goJSONNameMatchAPIConvention) Validate(t *types.Type) ([]string, error) 
 			goName := m.Name
 			jsonTag := reflect.StructTag(m.Tags).Get("json")
 			jsonName := strings.Split(jsonTag, ",")[0]
-			// Skip empty json name
+			// Skip empty json name "" and omitted json name "-"
 			// Object and list meta are special cases. Skip when json name is "metadata"
-			if jsonName == "" || jsonName == "metadata" {
+			if jsonName == "" || jsonName == "-" || jsonName == "metadata" {
 				continue
 			}
 
