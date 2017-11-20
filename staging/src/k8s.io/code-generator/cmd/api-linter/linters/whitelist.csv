@@ -2,6 +2,8 @@ go_json_name_match,io.k8s.apimachinery.pkg.apis.meta.v1.APIResourceList,APIResou
 go_json_name_match,io.k8s.api.core.v1.AzureDiskVolumeSource,DataDiskURI:diskURI
 go_json_name_match,io.k8s.api.core.v1.ContainerStatus,LastTerminationState:lastState
 go_json_name_match,io.k8s.api.core.v1.GlusterfsVolumeSource,EndpointsName:endpoints
+go_json_name_match,io.k8s.api.core.v1.ISCSIPersistentVolumeSource,DiscoveryCHAPAuth:chapAuthDiscovery
+go_json_name_match,io.k8s.api.core.v1.ISCSIPersistentVolumeSource,SessionCHAPAuth:chapAuthSession
 go_json_name_match,io.k8s.api.core.v1.ISCSIVolumeSource,DiscoveryCHAPAuth:chapAuthDiscovery
 go_json_name_match,io.k8s.api.core.v1.ISCSIVolumeSource,SessionCHAPAuth:chapAuthSession
 go_json_name_match,io.k8s.api.core.v1.PersistentVolumeSource,CephFS:cephfs
@@ -18,8 +20,8 @@ go_json_name_match,io.k8s.api.core.v1.RBDVolumeSource,RadosUser:user
 go_json_name_match,io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause,Type:reason
 go_json_name_match,io.k8s.api.core.v1.VolumeSource,CephFS:cephfs
 go_json_name_match,io.k8s.api.core.v1.VolumeSource,StorageOS:storageos
-go_json_name_match,io.k8s.kubernetes.pkg.apis.componentconfig.v1alpha1.ClientConnectionConfiguration,KubeConfigFile:kubeconfig
 go_json_name_match,io.k8s.kubernetes.pkg.proxy.apis.kubeproxyconfig.v1alpha1.ClientConnectionConfiguration,KubeConfigFile:kubeconfig
+go_json_name_match,io.k8s.kubernetes.pkg.apis.componentconfig.v1alpha1.ClientConnectionConfiguration,KubeConfigFile:kubeconfig
 go_json_name_match,io.k8s.kubernetes.pkg.proxy.apis.kubeproxyconfig.v1alpha1.KubeProxyConfiguration,UDPIdleTimeout:udpTimeoutMilliseconds
 go_json_name_match,io.k8s.kubernetes.pkg.kubelet.apis.kubeletconfig.v1alpha1.KubeletConfiguration,ResolverConfig:resolvConf
 go_json_name_match,io.k8s.kubernetes.pkg.kubelet.apis.kubeletconfig.v1alpha1.KubeletConfiguration,CPUCFSQuota:cpuCFSQuota
