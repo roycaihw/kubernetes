@@ -18,14 +18,12 @@ package util
 
 import (
 	"fmt"
-	"io"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/kubectl"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	"k8s.io/kubernetes/pkg/kubectl/resource"
 	"k8s.io/kubernetes/pkg/printers"
 	printersinternal "k8s.io/kubernetes/pkg/printers/internalversion"
 
@@ -74,30 +72,6 @@ func AddNoHeadersFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("no-headers", false, "When using the default or custom-column output format, don't print headers (default print headers).")
 }
 
-// PrintSuccess prints message after finishing mutating operations
-func PrintSuccess(mapper meta.RESTMapper, shortOutput bool, out io.Writer, resource string, name string, dryRun bool, operation string) {
-	resource, _ = mapper.ResourceSingularizer(resource)
-	dryRunMsg := ""
-	if dryRun {
-		dryRunMsg = " (dry run)"
-	}
-	if shortOutput {
-		// -o name: prints resource/name
-		if len(resource) > 0 {
-			fmt.Fprintf(out, "%s/%s\n", resource, name)
-		} else {
-			fmt.Fprintf(out, "%s\n", name)
-		}
-	} else {
-		// understandable output by default
-		if len(resource) > 0 {
-			fmt.Fprintf(out, "%s \"%s\" %s%s\n", resource, name, operation, dryRunMsg)
-		} else {
-			fmt.Fprintf(out, "\"%s\" %s%s\n", name, operation, dryRunMsg)
-		}
-	}
-}
-
 // ValidateOutputArgs validates -o flag args for mutations
 func ValidateOutputArgs(cmd *cobra.Command) error {
 	outputMode := GetFlagString(cmd, "output")
@@ -136,24 +110,6 @@ func PrinterForCommand(cmd *cobra.Command, outputOpts *printers.OutputOptions, m
 	}
 
 	return maybeWrapSortingPrinter(cmd, printer), nil
-}
-
-// PrintResourceInfoForCommand receives a *cobra.Command and a *resource.Info and
-// attempts to print an info object based on the specified output format. If the
-// object passed is non-generic, it attempts to print the object using a HumanReadablePrinter.
-// Requires that printer flags have been added to cmd (see AddPrinterFlags).
-func PrintResourceInfoForCommand(cmd *cobra.Command, info *resource.Info, f Factory, out io.Writer) error {
-	printer, err := f.PrinterForCommand(cmd, false, nil, printers.PrintOptions{})
-	if err != nil {
-		return err
-	}
-	if !printer.IsGeneric() {
-		printer, err = f.PrinterForMapping(cmd, false, nil, nil, false)
-		if err != nil {
-			return err
-		}
-	}
-	return printer.PrintObj(info.Object, out)
 }
 
 // extractOutputOptions parses printer specific commandline args and returns

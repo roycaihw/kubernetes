@@ -18,7 +18,6 @@ package dns
 
 import (
 	"fmt"
-	"net"
 	"runtime"
 
 	apps "k8s.io/api/apps/v1beta2"
@@ -59,7 +58,7 @@ func kubeDNSAddon(cfg *kubeadmapi.MasterConfiguration, client clientset.Interfac
 		return err
 	}
 
-	dnsip, err := getDNSIP(client)
+	dnsip, err := kubeadmconstants.GetDNSIP(cfg.Networking.ServiceSubnet)
 	if err != nil {
 		return err
 	}
@@ -148,7 +147,7 @@ func coreDNSAddon(cfg *kubeadmapi.MasterConfiguration, client clientset.Interfac
 		return fmt.Errorf("error when parsing CoreDNS configMap template: %v", err)
 	}
 
-	dnsip, err := getDNSIP(client)
+	dnsip, err := kubeadmconstants.GetDNSIP(cfg.Networking.ServiceSubnet)
 	if err != nil {
 		return err
 	}
@@ -242,23 +241,4 @@ func createDNSService(dnsService *v1.Service, serviceBytes []byte, client client
 		}
 	}
 	return nil
-}
-
-// getDNSIP fetches the kubernetes service's ClusterIP and appends a "0" to it in order to get the DNS IP
-func getDNSIP(client clientset.Interface) (net.IP, error) {
-	k8ssvc, err := client.CoreV1().Services(metav1.NamespaceDefault).Get("kubernetes", metav1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("couldn't fetch information about the kubernetes service: %v", err)
-	}
-
-	if len(k8ssvc.Spec.ClusterIP) == 0 {
-		return nil, fmt.Errorf("couldn't fetch a valid clusterIP from the kubernetes service")
-	}
-
-	// Build an IP by taking the kubernetes service's clusterIP and appending a "0" and checking that it's valid
-	dnsIP := net.ParseIP(fmt.Sprintf("%s0", k8ssvc.Spec.ClusterIP))
-	if dnsIP == nil {
-		return nil, fmt.Errorf("could not parse dns ip %q: %v", dnsIP, err)
-	}
-	return dnsIP, nil
 }

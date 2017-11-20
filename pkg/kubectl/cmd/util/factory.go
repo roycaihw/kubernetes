@@ -42,6 +42,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	coreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/kubectl"
+	"k8s.io/kubernetes/pkg/kubectl/categories"
 	"k8s.io/kubernetes/pkg/kubectl/cmd/util/openapi"
 	"k8s.io/kubernetes/pkg/kubectl/plugins"
 	"k8s.io/kubernetes/pkg/kubectl/resource"
@@ -188,11 +189,8 @@ type ClientAccessFactory interface {
 type ObjectMappingFactory interface {
 	// Returns interfaces for dealing with arbitrary runtime.Objects.
 	Object() (meta.RESTMapper, runtime.ObjectTyper)
-	// Returns interfaces for dealing with arbitrary
-	// runtime.Unstructured. This performs API calls to discover types.
-	UnstructuredObject() (meta.RESTMapper, runtime.ObjectTyper, error)
 	// Returns interface for expanding categories like `all`.
-	CategoryExpander() resource.CategoryExpander
+	CategoryExpander() categories.CategoryExpander
 	// Returns a RESTClient for working with the specified RESTMapping or an error. This is intended
 	// for working with arbitrary resources and is not guaranteed to point to a Kubernetes APIServer.
 	ClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient, error)
@@ -243,10 +241,16 @@ type BuilderFactory interface {
 	PrinterForMapping(cmd *cobra.Command, isLocal bool, outputOpts *printers.OutputOptions, mapping *meta.RESTMapping, withNamespace bool) (printers.ResourcePrinter, error)
 	// PrintObject prints an api object given command line flags to modify the output format
 	PrintObject(cmd *cobra.Command, isLocal bool, mapper meta.RESTMapper, obj runtime.Object, out io.Writer) error
-	// One stop shopping for a structured Builder
+	// PrintResourceInfoForCommand receives a *cobra.Command and a *resource.Info and
+	// attempts to print an info object based on the specified output format. If the
+	// object passed is non-generic, it attempts to print the object using a HumanReadablePrinter.
+	// Requires that printer flags have been added to cmd (see AddPrinterFlags).
+	PrintResourceInfoForCommand(cmd *cobra.Command, info *resource.Info, out io.Writer) error
+	// PrintSuccess prints message after finishing mutating operations
+	PrintSuccess(mapper meta.RESTMapper, shortOutput bool, out io.Writer, resource, name string, dryRun bool, operation string)
+	// NewBuilder returns an object that assists in loading objects from both disk and the server
+	// and which implements the common patterns for CLI interactions with generic resources.
 	NewBuilder() *resource.Builder
-	// One stop shopping for a unstructured Builder
-	NewUnstructuredBuilder() *resource.Builder
 	// PluginLoader provides the implementation to be used to load cli plugins.
 	PluginLoader() plugins.PluginLoader
 	// PluginRunner provides the implementation to be used to run cli plugins.

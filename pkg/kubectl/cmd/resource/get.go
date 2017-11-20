@@ -75,7 +75,7 @@ var (
 		You can filter the list using a label selector and the --selector flag. If the
 		desired resource type is namespaced you will only see results in your current
 		namespace unless you pass --all-namespaces.
-		
+
 		This command will hide resources that have completed, such as pods that are
 		in the Succeeded or Failed phases. You can see the full results for any
 		resource by providing the --show-all flag. Uninitialized objects are not
@@ -114,7 +114,7 @@ var (
 )
 
 const (
-	useOpenAPIPrintColumnFlagLabel = "experimental-use-openapi-print-columns"
+	useOpenAPIPrintColumnFlagLabel = "use-openapi-print-columns"
 )
 
 // NewCmdGet creates a command object for the generic "get" action, which
@@ -145,7 +145,7 @@ func NewCmdGet(f cmdutil.Factory, out io.Writer, errOut io.Writer) *cobra.Comman
 		Example: getExample,
 		Run: func(cmd *cobra.Command, args []string) {
 			cmdutil.CheckErr(options.Complete(f, cmd, args))
-			cmdutil.CheckErr(options.Validate())
+			cmdutil.CheckErr(options.Validate(cmd))
 			cmdutil.CheckErr(options.Run(f, cmd, args))
 		},
 		SuggestFor: []string{"list", "ps"},
@@ -209,9 +209,15 @@ func (options *GetOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args 
 }
 
 // Validate checks the set of flags provided by the user.
-func (options *GetOptions) Validate() error {
+func (options *GetOptions) Validate(cmd *cobra.Command) error {
 	if len(options.Raw) > 0 && (options.Watch || options.WatchOnly || len(options.LabelSelector) > 0 || options.Export) {
 		return fmt.Errorf("--raw may not be specified with other flags that filter the server request or alter the output")
+	}
+	if cmdutil.GetFlagBool(cmd, "show-labels") {
+		outputOption := cmd.Flags().Lookup("output").Value.String()
+		if outputOption != "" && outputOption != "wide" {
+			return fmt.Errorf("--show-labels option cannot be used with %s printer", outputOption)
+		}
 	}
 	return nil
 }
@@ -226,7 +232,8 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 		return options.watch(f, cmd, args)
 	}
 
-	r := f.NewUnstructuredBuilder().
+	r := f.NewBuilder().
+		Unstructured().
 		NamespaceParam(options.Namespace).DefaultNamespace().AllNamespaces(options.AllNamespaces).
 		FilenameParam(options.ExplicitNamespace, &options.FilenameOptions).
 		LabelSelectorParam(options.LabelSelector).
@@ -303,13 +310,15 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 	for ix := range objs {
 		var mapping *meta.RESTMapping
 		var original runtime.Object
-
+		var info *resource.Info
 		if sorter != nil {
-			mapping = infos[sorter.OriginalPosition(ix)].Mapping
-			original = infos[sorter.OriginalPosition(ix)].Object
+			info = infos[sorter.OriginalPosition(ix)]
+			mapping = info.Mapping
+			original = info.Object
 		} else {
-			mapping = infos[ix].Mapping
-			original = infos[ix].Object
+			info = infos[ix]
+			mapping = info.Mapping
+			original = info.Object
 		}
 		if shouldGetNewPrinterForMapping(printer, lastMapping, mapping) {
 			if printer != nil {
@@ -348,11 +357,10 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 			lastMapping = mapping
 		}
 
-		// try to convert before apply filter func
-		decodedObj, _ := kubectl.DecodeUnknownObject(original)
+		typedObj := info.AsInternal()
 
 		// filter objects if filter has been defined for current object
-		if isFiltered, err := filterFuncs.Filter(decodedObj, filterOpts); isFiltered {
+		if isFiltered, err := filterFuncs.Filter(typedObj, filterOpts); isFiltered {
 			if err == nil {
 				filteredResourceCount++
 				continue
@@ -382,7 +390,7 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 				resourcePrinter.EnsurePrintWithKind(resourceName)
 			}
 
-			if err := printer.PrintObj(decodedObj, w); err != nil {
+			if err := printer.PrintObj(typedObj, w); err != nil {
 				if !errs.Has(err.Error()) {
 					errs.Insert(err.Error())
 					allErrs = append(allErrs, err)
@@ -390,7 +398,7 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 			}
 			continue
 		}
-		objToPrint := decodedObj
+		objToPrint := typedObj
 		if printer.IsGeneric() {
 			// use raw object as recieved from the builder when using generic
 			// printer instead of decodedObj
@@ -438,7 +446,8 @@ func (options *GetOptions) watch(f cmdutil.Factory, cmd *cobra.Command, args []s
 	// unless explicitly set --include-uninitialized=false
 	includeUninitialized := cmdutil.ShouldIncludeUninitialized(cmd, len(args) == 2)
 
-	r := f.NewUnstructuredBuilder().
+	r := f.NewBuilder().
+		Unstructured().
 		NamespaceParam(options.Namespace).DefaultNamespace().AllNamespaces(options.AllNamespaces).
 		FilenameParam(options.ExplicitNamespace, &options.FilenameOptions).
 		LabelSelectorParam(options.LabelSelector).
@@ -450,8 +459,7 @@ func (options *GetOptions) watch(f cmdutil.Factory, cmd *cobra.Command, args []s
 		SingleResourceType().
 		Latest().
 		Do()
-	err := r.Err()
-	if err != nil {
+	if err := r.Err(); err != nil {
 		return err
 	}
 	infos, err := r.Infos()
@@ -641,9 +649,7 @@ func (options *GetOptions) printGeneric(printer printers.ResourcePrinter, r *res
 }
 
 func addOpenAPIPrintColumnFlags(cmd *cobra.Command) {
-	cmd.Flags().Bool(useOpenAPIPrintColumnFlagLabel, false, "If true, use x-kubernetes-print-column metadata (if present) from the OpenAPI schema for displaying a resource.")
-	// marking it deprecated so that it is hidden from usage/help text.
-	cmd.Flags().MarkDeprecated(useOpenAPIPrintColumnFlagLabel, "This flag is experimental and may be removed in the future.")
+	cmd.Flags().Bool(useOpenAPIPrintColumnFlagLabel, true, "If true, use x-kubernetes-print-column metadata (if present) from the OpenAPI schema for displaying a resource.")
 }
 
 func shouldGetNewPrinterForMapping(printer printers.ResourcePrinter, lastMapping, mapping *meta.RESTMapping) bool {

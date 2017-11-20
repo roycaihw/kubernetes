@@ -113,7 +113,7 @@ type configFactory struct {
 	// RequiredDuringScheduling affinity is not symmetric, but there is an implicit PreferredDuringScheduling affinity rule
 	// corresponding to every RequiredDuringScheduling affinity rule.
 	// HardPodAffinitySymmetricWeight represents the weight of implicit PreferredDuringScheduling affinity rule, in the range 0-100.
-	hardPodAffinitySymmetricWeight int
+	hardPodAffinitySymmetricWeight int32
 
 	// Equivalence class cache
 	equivalencePodCache *core.EquivalenceCache
@@ -136,17 +136,16 @@ func NewConfigFactory(
 	statefulSetInformer appsinformers.StatefulSetInformer,
 	serviceInformer coreinformers.ServiceInformer,
 	pdbInformer policyinformers.PodDisruptionBudgetInformer,
-	hardPodAffinitySymmetricWeight int,
+	hardPodAffinitySymmetricWeight int32,
 	enableEquivalenceClassCache bool,
 ) scheduler.Configurator {
 	stopEverything := make(chan struct{})
 	schedulerCache := schedulercache.New(30*time.Second, stopEverything)
 
-	schedulingQueue := &core.FIFO{FIFO: cache.NewFIFO(cache.MetaNamespaceKeyFunc)}
 	c := &configFactory{
 		client:                         client,
 		podLister:                      schedulerCache,
-		podQueue:                       schedulingQueue,
+		podQueue:                       core.NewSchedulingQueue(),
 		pVLister:                       pvInformer.Lister(),
 		pVCLister:                      pvcInformer.Lister(),
 		serviceLister:                  serviceInformer.Lister(),
@@ -195,20 +194,21 @@ func NewConfigFactory(
 			},
 			Handler: cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) {
-					if err := c.podQueue.Add(obj); err != nil {
+					if err := c.podQueue.Add(obj.(*v1.Pod)); err != nil {
 						runtime.HandleError(fmt.Errorf("unable to queue %T: %v", obj, err))
 					}
 				},
 				UpdateFunc: func(oldObj, newObj interface{}) {
-					if c.skipPodUpdate(newObj.(*v1.Pod)) {
+					pod := newObj.(*v1.Pod)
+					if c.skipPodUpdate(pod) {
 						return
 					}
-					if err := c.podQueue.Update(newObj); err != nil {
+					if err := c.podQueue.Update(pod); err != nil {
 						runtime.HandleError(fmt.Errorf("unable to update %T: %v", newObj, err))
 					}
 				},
 				DeleteFunc: func(obj interface{}) {
-					if err := c.podQueue.Delete(obj); err != nil {
+					if err := c.podQueue.Delete(obj.(*v1.Pod)); err != nil {
 						runtime.HandleError(fmt.Errorf("unable to dequeue %T: %v", obj, err))
 					}
 				},
@@ -377,6 +377,7 @@ func (c *configFactory) onPvcAdd(obj interface{}) {
 		}
 		c.invalidatePredicatesForPvc(pvc)
 	}
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 func (c *configFactory) onPvcDelete(obj interface{}) {
@@ -398,6 +399,7 @@ func (c *configFactory) onPvcDelete(obj interface{}) {
 		}
 		c.invalidatePredicatesForPvc(pvc)
 	}
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 func (c *configFactory) invalidatePredicatesForPvc(pvc *v1.PersistentVolumeClaim) {
@@ -410,6 +412,7 @@ func (c *configFactory) onServiceAdd(obj interface{}) {
 	if c.enableEquivalenceClassCache {
 		c.equivalencePodCache.InvalidateCachedPredicateItemOfAllNodes(serviceAffinitySet)
 	}
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 func (c *configFactory) onServiceUpdate(oldObj interface{}, newObj interface{}) {
@@ -421,12 +424,14 @@ func (c *configFactory) onServiceUpdate(oldObj interface{}, newObj interface{}) 
 			c.equivalencePodCache.InvalidateCachedPredicateItemOfAllNodes(serviceAffinitySet)
 		}
 	}
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 func (c *configFactory) onServiceDelete(obj interface{}) {
 	if c.enableEquivalenceClassCache {
 		c.equivalencePodCache.InvalidateCachedPredicateItemOfAllNodes(serviceAffinitySet)
 	}
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 // GetNodeStore provides the cache to the nodes, mostly internal use, but may also be called by mock-tests.
@@ -434,7 +439,7 @@ func (c *configFactory) GetNodeLister() corelisters.NodeLister {
 	return c.nodeLister
 }
 
-func (c *configFactory) GetHardPodAffinitySymmetricWeight() int {
+func (c *configFactory) GetHardPodAffinitySymmetricWeight() int32 {
 	return c.hardPodAffinitySymmetricWeight
 }
 
@@ -462,6 +467,8 @@ func (c *configFactory) addPodToCache(obj interface{}) {
 	if err := c.schedulerCache.AddPod(pod); err != nil {
 		glog.Errorf("scheduler cache AddPod failed: %v", err)
 	}
+
+	c.podQueue.AssignedPodAdded(pod)
 	// NOTE: Updating equivalence cache of addPodToCache has been
 	// handled optimistically in InvalidateCachedPredicateItemForPodAdd.
 }
@@ -483,6 +490,7 @@ func (c *configFactory) updatePodInCache(oldObj, newObj interface{}) {
 	}
 
 	c.invalidateCachedPredicatesOnUpdatePod(newPod, oldPod)
+	c.podQueue.AssignedPodUpdated(newPod)
 }
 
 func (c *configFactory) invalidateCachedPredicatesOnUpdatePod(newPod *v1.Pod, oldPod *v1.Pod) {
@@ -527,6 +535,7 @@ func (c *configFactory) deletePodFromCache(obj interface{}) {
 	}
 
 	c.invalidateCachedPredicatesOnDeletePod(pod)
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 func (c *configFactory) invalidateCachedPredicatesOnDeletePod(pod *v1.Pod) {
@@ -561,6 +570,7 @@ func (c *configFactory) addNodeToCache(obj interface{}) {
 		glog.Errorf("scheduler cache AddNode failed: %v", err)
 	}
 
+	c.podQueue.MoveAllToActiveQueue()
 	// NOTE: add a new node does not affect existing predicates in equivalence cache
 }
 
@@ -581,6 +591,7 @@ func (c *configFactory) updateNodeInCache(oldObj, newObj interface{}) {
 	}
 
 	c.invalidateCachedPredicatesOnNodeUpdate(newNode, oldNode)
+	c.podQueue.MoveAllToActiveQueue()
 }
 
 func (c *configFactory) invalidateCachedPredicatesOnNodeUpdate(newNode *v1.Node, oldNode *v1.Node) {
@@ -902,8 +913,7 @@ func (f *configFactory) getPluginArgs() (*PluginFactoryArgs, error) {
 }
 
 func (f *configFactory) getNextPod() *v1.Pod {
-	if obj, err := f.podQueue.Pop(); err == nil {
-		pod := obj.(*v1.Pod)
+	if pod, err := f.podQueue.Pop(); err == nil {
 		glog.V(4).Infof("About to try and schedule pod %v", pod.Name)
 		return pod
 	} else {

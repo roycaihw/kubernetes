@@ -1165,12 +1165,14 @@ func hasRemainingContent(c clientset.Interface, clientPool dynamic.ClientPool, n
 	}
 
 	// find out what content is supported on the server
-	resources, err := c.Discovery().ServerPreferredNamespacedResources()
-	if err != nil && !isDynamicDiscoveryError(err) {
+	// Since extension apiserver is not always available, e.g. metrics server sometimes goes down,
+	// add retry here.
+	resources, err := waitForServerPreferredNamespacedResources(c.Discovery(), 30*time.Second)
+	if err != nil {
 		return false, err
 	}
 	groupVersionResources, err := discovery.GroupVersionResources(resources)
-	if err != nil && !isDynamicDiscoveryError(err) {
+	if err != nil {
 		return false, err
 	}
 
@@ -2727,6 +2729,19 @@ func WaitForControlledPodsRunning(c clientset.Interface, ns, name string, kind s
 		return fmt.Errorf("Error while waiting for replication controller %s pods to be running: %v", name, err)
 	}
 	return nil
+}
+
+// Wait up to PodListTimeout for getting pods of the specified controller name and return them.
+func WaitForControlledPods(c clientset.Interface, ns, name string, kind schema.GroupKind) (pods *v1.PodList, err error) {
+	rtObject, err := getRuntimeObjectForKind(c, kind, ns, name)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := getSelectorFromRuntimeObject(rtObject)
+	if err != nil {
+		return nil, err
+	}
+	return WaitForPodsWithLabel(c, ns, selector)
 }
 
 // Returns true if all the specified pods are scheduled, else returns false.
@@ -4560,7 +4575,7 @@ func CoreDump(dir string) {
 		Logf("Dumping logs locally to: %s", dir)
 		cmd = exec.Command(path.Join(TestContext.RepoRoot, "cluster", "log-dump", "log-dump.sh"), dir)
 	}
-	cmd.Env = append(os.Environ(), fmt.Sprintf("SYSTEMD_SERVICES=%s", parseSystemdServices(TestContext.SystemdServices)))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("LOG_DUMP_SYSTEMD_SERVICES=%s", parseSystemdServices(TestContext.SystemdServices)))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -5086,4 +5101,26 @@ func DsFromManifest(url string) (*extensions.DaemonSet, error) {
 		return nil, fmt.Errorf("failed to decode DaemonSet spec: %v", err)
 	}
 	return &controller, nil
+}
+
+// waitForServerPreferredNamespacedResources waits until server preferred namespaced resources could be successfully discovered.
+// TODO: Fix https://github.com/kubernetes/kubernetes/issues/55768 and remove the following retry.
+func waitForServerPreferredNamespacedResources(d discovery.DiscoveryInterface, timeout time.Duration) ([]*metav1.APIResourceList, error) {
+	Logf("Waiting up to %v for server preferred namespaced resources to be successfully discovered", timeout)
+	var resources []*metav1.APIResourceList
+	if err := wait.PollImmediate(Poll, timeout, func() (bool, error) {
+		var err error
+		resources, err = d.ServerPreferredNamespacedResources()
+		if err == nil || isDynamicDiscoveryError(err) {
+			return true, nil
+		}
+		if !discovery.IsGroupDiscoveryFailedError(err) {
+			return false, err
+		}
+		Logf("Error discoverying server preferred namespaced resources: %v, retrying in %v.", err, Poll)
+		return false, nil
+	}); err != nil {
+		return nil, err
+	}
+	return resources, nil
 }

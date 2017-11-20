@@ -41,6 +41,9 @@ const (
 
 	// SupportIPVSProxyMode is alpha in v1.8
 	SupportIPVSProxyMode = "SupportIPVSProxyMode"
+
+	// DynamicKubeletConfig is alpha in v1.9
+	DynamicKubeletConfig = "DynamicKubeletConfig"
 )
 
 var v190 = version.MustParseSemantic("v1.9.0-alpha.1")
@@ -52,6 +55,7 @@ var InitFeatureGates = FeatureList{
 	HighAvailability:     {FeatureSpec: utilfeature.FeatureSpec{Default: false, PreRelease: utilfeature.Alpha}, MinimumVersion: v190},
 	SupportIPVSProxyMode: {FeatureSpec: utilfeature.FeatureSpec{Default: false, PreRelease: utilfeature.Alpha}, MinimumVersion: v190},
 	CoreDNS:              {FeatureSpec: utilfeature.FeatureSpec{Default: false, PreRelease: utilfeature.Alpha}, MinimumVersion: v190},
+	DynamicKubeletConfig: {FeatureSpec: utilfeature.FeatureSpec{Default: false, PreRelease: utilfeature.Alpha}, MinimumVersion: v190},
 }
 
 // Feature represents a feature being gated
@@ -123,7 +127,7 @@ func KnownFeatures(f *FeatureList) []string {
 	return known
 }
 
-// NewFeatureGate parse a string of the form "key1=value1,key2=value2,..." into a
+// NewFeatureGate parses a string of the form "key1=value1,key2=value2,..." into a
 // map[string]bool of known keys or returns an error.
 func NewFeatureGate(f *FeatureList, value string) (map[string]bool, error) {
 	featureGate := map[string]bool{}

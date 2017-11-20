@@ -1,4 +1,3 @@
-
 cluster/images/etcd-version-monitor
 cmd/gke-certificates-controller/app
 cmd/hyperkube
@@ -59,7 +58,6 @@ pkg/apis/imagepolicy
 pkg/apis/imagepolicy/v1alpha1
 pkg/apis/networking
 pkg/apis/policy
-pkg/apis/policy/v1alpha1
 pkg/apis/policy/v1beta1
 pkg/apis/policy/validation
 pkg/apis/rbac/v1
@@ -71,9 +69,8 @@ pkg/apis/settings
 pkg/apis/settings/v1alpha1
 pkg/apis/storage
 pkg/apis/storage/util
-pkg/apis/storage/v1
 pkg/apis/storage/v1/util
-pkg/apis/storage/v1beta1
+pkg/apis/storage/v1alpha1
 pkg/apis/storage/v1beta1/util
 pkg/auth/authorizer/abac
 pkg/capabilities
@@ -96,6 +93,7 @@ pkg/controller/certificates
 pkg/controller/certificates/approver
 pkg/controller/certificates/signer
 pkg/controller/cloud
+pkg/controller/clusterroleaggregation
 pkg/controller/cronjob
 pkg/controller/daemon
 pkg/controller/daemon/util
@@ -139,6 +137,7 @@ pkg/kubeapiserver/authorizer/modes
 pkg/kubeapiserver/options
 pkg/kubeapiserver/server
 pkg/kubectl
+pkg/kubectl/categories
 pkg/kubectl/cmd
 pkg/kubectl/cmd/auth
 pkg/kubectl/cmd/config
@@ -174,7 +173,6 @@ pkg/kubelet/container/testing
 pkg/kubelet/custommetrics
 pkg/kubelet/dockershim
 pkg/kubelet/dockershim/cm
-pkg/kubelet/dockershim/errors
 pkg/kubelet/dockershim/libdocker
 pkg/kubelet/dockershim/remote
 pkg/kubelet/dockershim/testing
@@ -355,6 +353,7 @@ pkg/util/labels
 pkg/util/mount
 pkg/util/netsh/testing
 pkg/util/node
+pkg/util/normalizer
 pkg/util/oom
 pkg/util/parsers
 pkg/util/procfs
@@ -458,6 +457,7 @@ staging/src/k8s.io/api/rbac/v1beta1
 staging/src/k8s.io/api/scheduling/v1alpha1
 staging/src/k8s.io/api/settings/v1alpha1
 staging/src/k8s.io/api/storage/v1
+staging/src/k8s.io/api/storage/v1alpha1
 staging/src/k8s.io/api/storage/v1beta1
 staging/src/k8s.io/apiextensions-apiserver/examples/client-go/pkg/apis/cr
 staging/src/k8s.io/apiextensions-apiserver/examples/client-go/pkg/apis/cr/v1
@@ -504,7 +504,6 @@ staging/src/k8s.io/apimachinery/pkg/apis/meta/v1alpha1
 staging/src/k8s.io/apimachinery/pkg/apis/testapigroup
 staging/src/k8s.io/apimachinery/pkg/apis/testapigroup/v1
 staging/src/k8s.io/apimachinery/pkg/conversion
-staging/src/k8s.io/apimachinery/pkg/conversion/unstructured
 staging/src/k8s.io/apimachinery/pkg/labels
 staging/src/k8s.io/apimachinery/pkg/runtime/schema
 staging/src/k8s.io/apimachinery/pkg/runtime/serializer
@@ -542,7 +541,10 @@ staging/src/k8s.io/apiserver/pkg/admission
 staging/src/k8s.io/apiserver/pkg/admission/configuration
 staging/src/k8s.io/apiserver/pkg/admission/plugin/initialization
 staging/src/k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle
-staging/src/k8s.io/apiserver/pkg/admission/plugin/webhook
+staging/src/k8s.io/apiserver/pkg/admission/plugin/webhook/config
+staging/src/k8s.io/apiserver/pkg/admission/plugin/webhook/mutating
+staging/src/k8s.io/apiserver/pkg/admission/plugin/webhook/testcerts
+staging/src/k8s.io/apiserver/pkg/admission/plugin/webhook/validating
 staging/src/k8s.io/apiserver/pkg/apis/apiserver
 staging/src/k8s.io/apiserver/pkg/apis/apiserver/v1alpha1
 staging/src/k8s.io/apiserver/pkg/apis/audit
@@ -551,6 +553,8 @@ staging/src/k8s.io/apiserver/pkg/apis/audit/v1beta1
 staging/src/k8s.io/apiserver/pkg/apis/audit/validation
 staging/src/k8s.io/apiserver/pkg/apis/example
 staging/src/k8s.io/apiserver/pkg/apis/example/v1
+staging/src/k8s.io/apiserver/pkg/apis/example2
+staging/src/k8s.io/apiserver/pkg/apis/example2/v1
 staging/src/k8s.io/apiserver/pkg/audit
 staging/src/k8s.io/apiserver/pkg/audit/policy
 staging/src/k8s.io/apiserver/pkg/authentication/authenticatorfactory
@@ -576,6 +580,7 @@ staging/src/k8s.io/apiserver/pkg/features
 staging/src/k8s.io/apiserver/pkg/registry/generic
 staging/src/k8s.io/apiserver/pkg/registry/generic/registry
 staging/src/k8s.io/apiserver/pkg/registry/generic/rest
+staging/src/k8s.io/apiserver/pkg/registry/generic/testing
 staging/src/k8s.io/apiserver/pkg/registry/rest
 staging/src/k8s.io/apiserver/pkg/registry/rest/resttest
 staging/src/k8s.io/apiserver/pkg/server
@@ -666,6 +671,8 @@ staging/src/k8s.io/client-go/kubernetes/typed/settings/v1alpha1
 staging/src/k8s.io/client-go/kubernetes/typed/settings/v1alpha1/fake
 staging/src/k8s.io/client-go/kubernetes/typed/storage/v1
 staging/src/k8s.io/client-go/kubernetes/typed/storage/v1/fake
+staging/src/k8s.io/client-go/kubernetes/typed/storage/v1alpha1
+staging/src/k8s.io/client-go/kubernetes/typed/storage/v1alpha1/fake
 staging/src/k8s.io/client-go/kubernetes/typed/storage/v1beta1
 staging/src/k8s.io/client-go/kubernetes/typed/storage/v1beta1/fake
 staging/src/k8s.io/client-go/plugin/pkg/auth/authenticator/token/oidc/testing

@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
+	genericregistrytest "k8s.io/apiserver/pkg/registry/generic/testing"
 	"k8s.io/apiserver/pkg/registry/rest"
 	storeerr "k8s.io/apiserver/pkg/storage/errors"
 	etcdtesting "k8s.io/apiserver/pkg/storage/etcd/testing"
@@ -98,7 +99,7 @@ func TestCreate(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.Deployment.Store.DestroyFunc()
-	test := registrytest.New(t, storage.Deployment.Store)
+	test := genericregistrytest.New(t, storage.Deployment.Store)
 	deployment := validNewDeployment()
 	deployment.ObjectMeta = metav1.ObjectMeta{}
 	test.TestCreate(
@@ -118,7 +119,7 @@ func TestUpdate(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.Deployment.Store.DestroyFunc()
-	test := registrytest.New(t, storage.Deployment.Store)
+	test := genericregistrytest.New(t, storage.Deployment.Store)
 	test.TestUpdate(
 		// valid
 		validNewDeployment(),
@@ -151,7 +152,7 @@ func TestDelete(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.Deployment.Store.DestroyFunc()
-	test := registrytest.New(t, storage.Deployment.Store)
+	test := genericregistrytest.New(t, storage.Deployment.Store)
 	test.TestDelete(validNewDeployment())
 }
 
@@ -159,7 +160,7 @@ func TestGet(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.Deployment.Store.DestroyFunc()
-	test := registrytest.New(t, storage.Deployment.Store)
+	test := genericregistrytest.New(t, storage.Deployment.Store)
 	test.TestGet(validNewDeployment())
 }
 
@@ -167,7 +168,7 @@ func TestList(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.Deployment.Store.DestroyFunc()
-	test := registrytest.New(t, storage.Deployment.Store)
+	test := genericregistrytest.New(t, storage.Deployment.Store)
 	test.TestList(validNewDeployment())
 }
 
@@ -175,7 +176,7 @@ func TestWatch(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.Deployment.Store.DestroyFunc()
-	test := registrytest.New(t, storage.Deployment.Store)
+	test := genericregistrytest.New(t, storage.Deployment.Store)
 	test.TestWatch(
 		validNewDeployment(),
 		// matching labels

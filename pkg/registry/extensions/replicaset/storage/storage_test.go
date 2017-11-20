@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/diff"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
+	genericregistrytest "k8s.io/apiserver/pkg/registry/generic/testing"
 	"k8s.io/apiserver/pkg/registry/rest"
 	etcdtesting "k8s.io/apiserver/pkg/storage/etcd/testing"
 	"k8s.io/kubernetes/pkg/apis/autoscaling"
@@ -95,7 +96,7 @@ func TestCreate(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.ReplicaSet.Store.DestroyFunc()
-	test := registrytest.New(t, storage.ReplicaSet.Store)
+	test := genericregistrytest.New(t, storage.ReplicaSet.Store)
 	rs := validNewReplicaSet()
 	rs.ObjectMeta = metav1.ObjectMeta{}
 	test.TestCreate(
@@ -116,7 +117,7 @@ func TestUpdate(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.ReplicaSet.Store.DestroyFunc()
-	test := registrytest.New(t, storage.ReplicaSet.Store)
+	test := genericregistrytest.New(t, storage.ReplicaSet.Store)
 	test.TestUpdate(
 		// valid
 		validNewReplicaSet(),
@@ -144,7 +145,7 @@ func TestDelete(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.ReplicaSet.Store.DestroyFunc()
-	test := registrytest.New(t, storage.ReplicaSet.Store)
+	test := genericregistrytest.New(t, storage.ReplicaSet.Store)
 	test.TestDelete(validNewReplicaSet())
 }
 
@@ -203,7 +204,7 @@ func TestGet(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.ReplicaSet.Store.DestroyFunc()
-	test := registrytest.New(t, storage.ReplicaSet.Store)
+	test := genericregistrytest.New(t, storage.ReplicaSet.Store)
 	test.TestGet(validNewReplicaSet())
 }
 
@@ -211,7 +212,7 @@ func TestList(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.ReplicaSet.Store.DestroyFunc()
-	test := registrytest.New(t, storage.ReplicaSet.Store)
+	test := genericregistrytest.New(t, storage.ReplicaSet.Store)
 	test.TestList(validNewReplicaSet())
 }
 
@@ -219,7 +220,7 @@ func TestWatch(t *testing.T) {
 	storage, server := newStorage(t)
 	defer server.Terminate(t)
 	defer storage.ReplicaSet.Store.DestroyFunc()
-	test := registrytest.New(t, storage.ReplicaSet.Store)
+	test := genericregistrytest.New(t, storage.ReplicaSet.Store)
 	test.TestWatch(
 		validNewReplicaSet(),
 		// matching labels

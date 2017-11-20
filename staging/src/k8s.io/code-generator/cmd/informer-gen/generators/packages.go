@@ -71,7 +71,7 @@ func generatedBy() string {
 func objectMetaForPackage(p *types.Package) (*types.Type, bool, error) {
 	generatingForPackage := false
 	for _, t := range p.Types {
-		if !util.MustParseClientGenTags(t.SecondClosestCommentLines).GenerateClient {
+		if !util.MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...)).GenerateClient {
 			continue
 		}
 		generatingForPackage = true
@@ -176,7 +176,7 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 
 		var typesToGenerate []*types.Type
 		for _, t := range p.Types {
-			tags := util.MustParseClientGenTags(t.SecondClosestCommentLines)
+			tags := util.MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
 			if !tags.GenerateClient || tags.NoVerbs || !tags.HasVerb("list") || !tags.HasVerb("watch") {
 				continue
 			}
@@ -195,7 +195,8 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		groupVersionsEntry, ok := targetGroupVersions[groupPkgName]
 		if !ok {
 			groupVersionsEntry = clientgentypes.GroupVersions{
-				Group: gv.Group,
+				PackageName: groupPkgName,
+				Group:       gv.Group,
 			}
 		}
 		groupVersionsEntry.Versions = append(groupVersionsEntry.Versions, gv.Version)
@@ -214,16 +215,16 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 	if len(externalGroupVersions) != 0 {
 		packageList = append(packageList, factoryInterfacePackage(externalVersionPackagePath, boilerplate, customArgs.VersionedClientSetPackage))
 		packageList = append(packageList, factoryPackage(externalVersionPackagePath, boilerplate, groupGoNames, externalGroupVersions, customArgs.VersionedClientSetPackage, typesForGroupVersion))
-		for groupPkgName, groupVersionsEntry := range externalGroupVersions {
-			packageList = append(packageList, groupPackage(externalVersionPackagePath, groupPkgName, groupVersionsEntry, boilerplate))
+		for _, gvs := range externalGroupVersions {
+			packageList = append(packageList, groupPackage(externalVersionPackagePath, gvs, boilerplate))
 		}
 	}
 
 	if len(internalGroupVersions) != 0 {
 		packageList = append(packageList, factoryInterfacePackage(internalVersionPackagePath, boilerplate, customArgs.InternalClientSetPackage))
 		packageList = append(packageList, factoryPackage(internalVersionPackagePath, boilerplate, groupGoNames, internalGroupVersions, customArgs.InternalClientSetPackage, typesForGroupVersion))
-		for groupPkgName, groupVersionsEntry := range internalGroupVersions {
-			packageList = append(packageList, groupPackage(internalVersionPackagePath, groupPkgName, groupVersionsEntry, boilerplate))
+		for _, gvs := range internalGroupVersions {
+			packageList = append(packageList, groupPackage(internalVersionPackagePath, gvs, boilerplate))
 		}
 	}
 
@@ -286,8 +287,9 @@ func factoryInterfacePackage(basePackage string, boilerplate []byte, clientSetPa
 	}
 }
 
-func groupPackage(basePackage string, groupPkgName string, groupVersions clientgentypes.GroupVersions, boilerplate []byte) generator.Package {
-	packagePath := filepath.Join(basePackage, groupPkgName)
+func groupPackage(basePackage string, groupVersions clientgentypes.GroupVersions, boilerplate []byte) generator.Package {
+	packagePath := filepath.Join(basePackage, groupVersions.PackageName)
+	groupPkgName := strings.Split(string(groupVersions.Group), ".")[0]
 
 	return &generator.DefaultPackage{
 		PackageName: groupPkgName,
@@ -306,7 +308,7 @@ func groupPackage(basePackage string, groupPkgName string, groupVersions clientg
 			return generators
 		},
 		FilterFunc: func(c *generator.Context, t *types.Type) bool {
-			tags := util.MustParseClientGenTags(t.SecondClosestCommentLines)
+			tags := util.MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
 			return tags.GenerateClient && tags.HasVerb("list") && tags.HasVerb("watch")
 		},
 	}
@@ -349,7 +351,7 @@ func versionPackage(basePackage string, groupPkgName string, gv clientgentypes.G
 			return generators
 		},
 		FilterFunc: func(c *generator.Context, t *types.Type) bool {
-			tags := util.MustParseClientGenTags(t.SecondClosestCommentLines)
+			tags := util.MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
 			return tags.GenerateClient && tags.HasVerb("list") && tags.HasVerb("watch")
 		},
 	}
