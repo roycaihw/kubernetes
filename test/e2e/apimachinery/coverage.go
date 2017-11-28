@@ -33,7 +33,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-type resource struct {
+type apiResource struct {
 	group      string
 	version    string
 	name       string
@@ -42,62 +42,6 @@ type resource struct {
 }
 
 var _ = SIGDescribe("Coverage", func() {
-
-	// It("should be able to list pods endpoint", func() {
-	// 	ns := f.Namespace.Name
-
-	// 	gvr := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
-	// 	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-	// 	framework.ExpectNoError(err, "getting group version resources for dynamic client")
-	// 	apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: true}
-	// 	podList, err := client.Resource(&apiResource, ns).List(metav1.ListOptions{})
-
-	// 	By("using client to send list request")
-	// 	Expect(err).ToNot(HaveOccurred())
-	// 	glog.Infof(">>>>>>pod list: %v", podList)
-	// })
-
-	// It("should be able to create pods endpoint", func() {
-	// 	ns := f.Namespace.Name
-
-	// 	gvr := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
-	// 	testPod := v1.Pod{
-	// 		TypeMeta: metav1.TypeMeta{
-	// 			Kind:       "Pod",
-	// 			APIVersion: "v1",
-	// 		},
-	// 		ObjectMeta: metav1.ObjectMeta{Name: "testing-manual-pod"},
-	// 		Spec: v1.PodSpec{
-	// 			Containers: []v1.Container{
-	// 				{
-	// 					Name:  "kubernetes-pause",
-	// 					Image: "gcr.io/google-containers/pause:2.0",
-	// 				},
-	// 			},
-	// 		},
-	// 	}
-	// 	jsonPod, err := json.Marshal(testPod)
-	// 	framework.ExpectNoError(err, "marshalling test-pod for create using dynamic client")
-
-	// 	unstruct := &unstructuredv1.Unstructured{}
-	// 	err = unstruct.UnmarshalJSON(jsonPod)
-	// 	framework.ExpectNoError(err, "unmarshalling test-pod as unstructured for create using dynamic client")
-
-	// 	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-	// 	framework.ExpectNoError(err, "getting group version resources for dynamic client")
-
-	// 	apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: true}
-	// 	unstruct, err = client.Resource(&apiResource, ns).Create(unstruct)
-
-	// 	By("using client to send create request")
-	// 	// _, err := client.List(metav1.ListOptions{})
-	// 	Expect(err).ToNot(HaveOccurred())
-
-	// 	podList, err := client.Resource(&apiResource, ns).List(metav1.ListOptions{})
-	// 	By("getting pod list after creation")
-	// 	Expect(err).ToNot(HaveOccurred())
-	// 	glog.Infof(">>>>>>pod list: %v", podList)
-	// })
 
 	// It("should be able to create pods endpoint from yaml file", func() {
 	// 	ns := f.Namespace.Name
@@ -136,78 +80,84 @@ var _ = SIGDescribe("Coverage", func() {
 	// })
 
 	f := framework.NewDefaultFramework("coverage")
-
-	tables := make([]resource, 0)
-
-	glog.Infof("reporoot: %v\n", framework.TestContext.RepoRoot)
-	surfaceFile, err := os.Open(filepath.Join("/usr/local/google/home/haoweic/Projects/k8s-p1/src/k8s.io/kubernetes/test/e2e/apimachinery/testdata", "resources.csv"))
-	// Expect(err).ToNot(HaveOccurred(), "failed to read api surface file")
+	tables, err := readTables()
 	if err != nil {
-		glog.Infof("failed to read api surface file: %v", err)
+		glog.Fatalf("failed to read tables: %v", err)
 	}
-	defer surfaceFile.Close()
-
-	scanner := bufio.NewScanner(surfaceFile)
-	for scanner.Scan() {
-		glog.Infof(">>>>%v\n", scanner.Text())
-		parts := strings.Split(scanner.Text(), ",")
-		var r resource
-		r.group = strings.Split(parts[0], "/")[0]
-		r.version = strings.Split(parts[0], "/")[1]
-		r.name = parts[1]
-
-		namespaced, _ := strconv.ParseBool(parts[2])
-		// 	Expect(err).ToNot(HaveOccurred())
-		r.namespaced = namespaced
-
-		r.verbs = parts[3:]
-		tables = append(tables, r)
-		glog.Infof("table entry: %v\n", r)
-	}
-	// err = scanner.Err()
-	// Expect(err).ToNot(HaveOccurred(), "failed to bufio scan on api surface file")
-
-	glog.Infof("table size: %v", len(tables))
 
 	for _, table := range tables {
 		itTable := table
-		for _, verb := range itTable.verbs {
-			itVerb := verb
-			if itVerb == "list" {
-				rule := fmt.Sprintf("should be able to list resource %v %v %v", itTable.group, itTable.version, itTable.name)
-				glog.Infof("%v", rule)
-				It(rule, func() {
-					ns := f.Namespace.Name
-					glog.Infof("<<<<<group: %v, version: %v, resource: %v, namespaced: %v.\n", itTable.group, itTable.version, itTable.name, itTable.namespaced)
+		rule := fmt.Sprintf("should be able to support expected CRUD operations for resource (g: %s, v: %s, r: %s)", itTable.group, itTable.version, itTable.name)
+		It(rule, func() {
+			listResource(f, itTable)
+		})
+	}
+})
 
-					gvr := schema.GroupVersionResource{Group: itTable.group, Version: itTable.version, Resource: itTable.name}
-					client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-					framework.ExpectNoError(err, "getting group version resources for dynamic client")
-					apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: itTable.namespaced}
-					resourceList, err := client.Resource(&apiResource, ns).List(metav1.ListOptions{})
+func readTables() ([]apiResource, error) {
+	tables := make([]apiResource, 0)
 
-					By("using client to send list request")
-					Expect(err).ToNot(HaveOccurred())
-					glog.Infof(">>>>>>resource list: %v", resourceList)
-				})
-			}
+	resourcesFile, err := os.Open(filepath.Join("/usr/local/google/home/haoweic/Projects/k8s-p1/src/k8s.io/kubernetes/test/e2e/apimachinery/testdata", "resources.csv"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to open api resources file: %v", err)
+	}
+	defer resourcesFile.Close()
+
+	scanner := bufio.NewScanner(resourcesFile)
+	for scanner.Scan() {
+		var r apiResource
+		parts := strings.Split(scanner.Text(), ",")
+		if len(parts) < 4 {
+			return nil, fmt.Errorf("unexpected resource format: %s", scanner.Text())
 		}
+		groupVersion := strings.Split(parts[0], "/")
+		if len(groupVersion) == 1 {
+			r.version = groupVersion[0]
+		} else if len(groupVersion) == 2 {
+			r.group = groupVersion[0]
+			r.version = groupVersion[1]
+		} else {
+			return nil, fmt.Errorf("unexpected resource group version format: %s", parts[0])
+		}
+		r.name = parts[1]
+		namespaced, err := strconv.ParseBool(parts[2])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse resource namespaced property: %v", err)
+		}
+		r.namespaced = namespaced
+		r.verbs = parts[3:]
+		tables = append(tables, r)
+	}
+	err = scanner.Err()
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan api resources file: %v", err)
 	}
 
-	It("should be able to list cronjobs endpoint", func() {
-		ns := f.Namespace.Name
+	return tables, nil
+}
 
-		gvr := schema.GroupVersionResource{Group: "batch", Version: "v1beta1", Resource: "cronjobs"}
-		client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-		framework.ExpectNoError(err, "getting group version resources for dynamic client")
-		apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: true}
-		_, err = client.Resource(&apiResource, ns).List(metav1.ListOptions{})
+func hasVerb(verbs []string, verb string) bool {
+	for _, v := range verbs {
+		if v == verb {
+			return true
+		}
+	}
+	return false
+}
 
-		// c := f.ClientSet
-		// client := c.CoreV1().PodTemplates(ns)
+func createResource(f *framework.Framework, r apiResource) {
+}
 
-		By("using client to send list request")
-		// _, err := client.List(metav1.ListOptions{})
-		Expect(err).ToNot(HaveOccurred())
-	})
-})
+func listResource(f *framework.Framework, r apiResource) {
+	if !hasVerb(r.verbs, "list") {
+		return
+	}
+	target := fmt.Sprintf("list resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
+	By(target)
+	gvr := schema.GroupVersionResource{Group: r.group, Version: r.version, Resource: r.name}
+	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
+	Expect(err).NotTo(HaveOccurred(), "failed to create dynamic client for resource %v", r)
+	resource := metav1.APIResource{Name: gvr.Resource, Namespaced: r.namespaced}
+	_, err = client.Resource(&resource, f.Namespace.Name).List(metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred(), "failed to list resource %v", r)
+}
