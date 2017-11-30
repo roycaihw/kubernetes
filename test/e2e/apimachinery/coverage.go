@@ -18,67 +18,43 @@ package apimachinery
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	unstructuredv1 "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-type apiResource struct {
-	group      string
-	version    string
-	name       string
-	namespaced bool
-	verbs      []string
+type resourceMap map[resourceMeta]*resource
+
+type resourceMeta struct {
+	group   string
+	version string
+	name    string
+}
+
+type resource struct {
+	group        string
+	version      string
+	name         string
+	namespaced   bool
+	verbs        []string
+	subresources resourceMap
 }
 
 var _ = SIGDescribe("Coverage", func() {
-
-	// It("should be able to create pods endpoint from yaml file", func() {
-	// 	ns := f.Namespace.Name
-
-	// 	gvr := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
-	// 	By("reading yaml file data")
-	// 	file, err := os.Open(filepath.Join(framework.TestContext.RepoRoot, "test/e2e/apimachinery/testdata", "pod.yaml"))
-	// 	defer file.Close()
-
-	// 	Expect(err).ToNot(HaveOccurred())
-	// 	reader := yaml.NewYAMLReader(bufio.NewReader(file))
-	// 	yamlPod, err := reader.Read()
-	// 	Expect(err).ToNot(HaveOccurred())
-
-	// 	jsonPod, err := yaml.ToJSON(yamlPod)
-	// 	framework.ExpectNoError(err, "converting yaml to json")
-
-	// 	unstruct := &unstructuredv1.Unstructured{}
-	// 	err = unstruct.UnmarshalJSON(jsonPod)
-	// 	framework.ExpectNoError(err, "unmarshalling test-pod as unstructured for create using dynamic client")
-
-	// 	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-	// 	framework.ExpectNoError(err, "getting group version resources for dynamic client")
-
-	// 	apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: true}
-	// 	unstruct, err = client.Resource(&apiResource, ns).Create(unstruct)
-
-	// 	By("using client to send create request")
-	// 	// _, err := client.List(metav1.ListOptions{})
-	// 	Expect(err).ToNot(HaveOccurred())
-
-	// 	podList, err := client.Resource(&apiResource, ns).List(metav1.ListOptions{})
-	// 	By("getting pod list after creation")
-	// 	Expect(err).ToNot(HaveOccurred())
-	// 	glog.Infof(">>>>>>pod list: %v", podList)
-	// })
-
 	f := framework.NewDefaultFramework("coverage")
 	tables, err := readTables()
 	if err != nil {
@@ -86,51 +62,97 @@ var _ = SIGDescribe("Coverage", func() {
 	}
 
 	for _, table := range tables {
-		itTable := table
-		rule := fmt.Sprintf("should be able to support expected CRUD operations for resource (g: %s, v: %s, r: %s)", itTable.group, itTable.version, itTable.name)
+		r := table
+		rule := fmt.Sprintf("should be able to support expected CRUD operations for resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
 		It(rule, func() {
-			listResource(f, itTable)
+			gvr := schema.GroupVersionResource{Group: r.group, Version: r.version, Resource: r.name}
+			client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
+			Expect(err).NotTo(HaveOccurred(), "failed to create dynamic client for resource %v", r)
+			resource := metav1.APIResource{Name: gvr.Resource, Namespaced: r.namespaced}
+			unstruct := r.dumpResourceYAML()
+			name := getResourceName(unstruct)
+
+			// Iterate through verbs in serial, skip verbs that don't exist
+			err = r.listResource(f, client, resource)
+			Expect(err).ToNot(HaveOccurred(), "failed to list resource %v", r)
+			err = r.createResource(f, client, resource, unstruct)
+			Expect(err).ToNot(HaveOccurred(), "failed to create resource %v", r)
+			err = r.getResource(f, client, resource, name)
+			Expect(err).ToNot(HaveOccurred(), "failed to get resource %v", r)
+			err = r.deleteResource(f, client, resource, name)
+			Expect(err).ToNot(HaveOccurred(), "failed to delete resource %v", r)
 		})
 	}
 })
 
-func readTables() ([]apiResource, error) {
-	tables := make([]apiResource, 0)
+func readTables() (resourceMap, error) {
+	tables := resourceMap{}
 
+	// TODO (roycaihw): use framework reporoot or bindata
 	resourcesFile, err := os.Open(filepath.Join("/usr/local/google/home/haoweic/Projects/k8s-p1/src/k8s.io/kubernetes/test/e2e/apimachinery/testdata", "resources.csv"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to open api resources file: %v", err)
 	}
 	defer resourcesFile.Close()
 
-	scanner := bufio.NewScanner(resourcesFile)
-	for scanner.Scan() {
-		var r apiResource
-		parts := strings.Split(scanner.Text(), ",")
-		if len(parts) < 4 {
-			return nil, fmt.Errorf("unexpected resource format: %s", scanner.Text())
+	reader := csv.NewReader(bufio.NewReader(resourcesFile))
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to read api resources file: %v", err)
 		}
-		groupVersion := strings.Split(parts[0], "/")
-		if len(groupVersion) == 1 {
-			r.version = groupVersion[0]
-		} else if len(groupVersion) == 2 {
-			r.group = groupVersion[0]
-			r.version = groupVersion[1]
-		} else {
-			return nil, fmt.Errorf("unexpected resource group version format: %s", parts[0])
+
+		// Resource record in format: group,version,name,namespaced,verb
+		if len(record) != 5 {
+			return nil, fmt.Errorf("unexpected resource record length: %v, want: 5, got: %d", record, len(record))
 		}
-		r.name = parts[1]
-		namespaced, err := strconv.ParseBool(parts[2])
+
+		namespaced, err := strconv.ParseBool(record[3])
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse resource namespaced property: %v", err)
+			return nil, fmt.Errorf("failed to parse resource (%v) namespaced property: %v", record, err)
 		}
-		r.namespaced = namespaced
-		r.verbs = parts[3:]
-		tables = append(tables, r)
-	}
-	err = scanner.Err()
-	if err != nil {
-		return nil, fmt.Errorf("failed to scan api resources file: %v", err)
+
+		m := resourceMeta{
+			group:   record[0],
+			version: record[1],
+			name:    record[2],
+		}
+		if tables[m] == nil {
+			tables[m] = new(resource)
+			*tables[m] = resource{
+				group:      record[0],
+				version:    record[1],
+				name:       record[2],
+				namespaced: namespaced,
+				verbs:      []string{record[4]},
+			}
+		} else {
+			tables[m].verbs = append(tables[m].verbs, record[4])
+		}
+
+		// if !strings.Contains(record[2], "/") {
+		// 	// If record is a resource
+		// 	m.name = record[2]
+		// 	tables[m].namespaced = namespaced
+		// 	if tables[m].verbs == nil {
+		// 		tables[m].verbs = make([]string, 0)
+		// 	}
+		// 	tables[m].verbs = append(tables[m].verbs, record[4])
+		// } else {
+		// 	// If record is a subresource
+		// 	m.name = strings.Split(record[2], "/")[0]
+		// 	subname := strings.Split(record[2], "/")[1]
+		// 	if tables[m].subresources == nil {
+		// 		tables[m].subresources = make(map[string]subresourceProperty)
+		// 	}
+		// 	tables[m].subresources[subname].namespaced = namespaced
+		// 	if tables[m].subresources[subname].verbs == nil {
+		// 		tables[m].subresources[subname].verbs = make([]string, 0)
+		// 	}
+		// 	tables[m].subresources[subname].verbs = append(tables[m].subresources[subname].verbs, record[4])
+		// }
 	}
 
 	return tables, nil
@@ -145,19 +167,77 @@ func hasVerb(verbs []string, verb string) bool {
 	return false
 }
 
-func createResource(f *framework.Framework, r apiResource) {
+func (r resource) dumpResourceYAML() *unstructuredv1.Unstructured {
+	unstruct := &unstructuredv1.Unstructured{}
+	if !hasVerb(r.verbs, "create") {
+		return unstruct
+	}
+
+	// TODO (roycaihw): figure out using framework reporoot or bindata
+	yamlFile, err := os.Open(filepath.Join("/usr/local/google/home/haoweic/Projects/k8s-p1/src/k8s.io/kubernetes/test/e2e/apimachinery/testdata", r.name+".yaml"))
+	defer yamlFile.Close()
+	Expect(err).ToNot(HaveOccurred(), "failed to open yaml file for resource %v", r)
+
+	reader := yaml.NewYAMLReader(bufio.NewReader(yamlFile))
+	yamlResource, err := reader.Read()
+	Expect(err).ToNot(HaveOccurred(), "failed to read yaml file for resource %v", r)
+
+	jsonResource, err := yaml.ToJSON(yamlResource)
+	Expect(err).ToNot(HaveOccurred(), "failed to convert yaml to json for resource %v", r)
+
+	err = unstruct.UnmarshalJSON(jsonResource)
+	Expect(err).ToNot(HaveOccurred(), "failed to unmarshal json for resource %v", r)
+
+	return unstruct
 }
 
-func listResource(f *framework.Framework, r apiResource) {
+func getResourceName(unstruct *unstructuredv1.Unstructured) string {
+	if len(unstruct.Object) == 0 {
+		return ""
+	}
+	return unstruct.Object["metadata"].(map[string]interface{})["name"].(string)
+}
+
+func (r resource) listResource(f *framework.Framework, client dynamic.Interface, resource metav1.APIResource) error {
 	if !hasVerb(r.verbs, "list") {
-		return
+		return nil
 	}
 	target := fmt.Sprintf("list resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
 	By(target)
-	gvr := schema.GroupVersionResource{Group: r.group, Version: r.version, Resource: r.name}
-	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-	Expect(err).NotTo(HaveOccurred(), "failed to create dynamic client for resource %v", r)
-	resource := metav1.APIResource{Name: gvr.Resource, Namespaced: r.namespaced}
-	_, err = client.Resource(&resource, f.Namespace.Name).List(metav1.ListOptions{})
-	Expect(err).ToNot(HaveOccurred(), "failed to list resource %v", r)
+
+	_, err := client.Resource(&resource, f.Namespace.Name).List(metav1.ListOptions{})
+	return err
+}
+
+func (r resource) createResource(f *framework.Framework, client dynamic.Interface, resource metav1.APIResource, unstruct *unstructuredv1.Unstructured) error {
+	if !hasVerb(r.verbs, "create") {
+		return nil
+	}
+	target := fmt.Sprintf("create resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
+	By(target)
+
+	_, err := client.Resource(&resource, f.Namespace.Name).Create(unstruct)
+	return err
+}
+
+func (r resource) getResource(f *framework.Framework, client dynamic.Interface, resource metav1.APIResource, name string) error {
+	if !hasVerb(r.verbs, "get") {
+		return nil
+	}
+	target := fmt.Sprintf("get resource (g: %s, v: %s, r: %s) name: %s", r.group, r.version, r.name, name)
+	By(target)
+
+	_, err := client.Resource(&resource, f.Namespace.Name).Get(name, metav1.GetOptions{})
+	return err
+}
+
+func (r resource) deleteResource(f *framework.Framework, client dynamic.Interface, resource metav1.APIResource, name string) error {
+	if !hasVerb(r.verbs, "delete") {
+		return nil
+	}
+	target := fmt.Sprintf("delete resource (g: %s, v: %s, r: %s) name: %s", r.group, r.version, r.name, name)
+	By(target)
+
+	err := client.Resource(&resource, f.Namespace.Name).Delete(name, &metav1.DeleteOptions{})
+	return err
 }
