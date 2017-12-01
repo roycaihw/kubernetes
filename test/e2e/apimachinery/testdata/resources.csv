@@ -6,6 +6,11 @@ apps,v1beta1,deployments,true,list
 apps,v1beta1,deployments,true,patch
 apps,v1beta1,deployments,true,update
 apps,v1beta1,deployments,true,watch
+apps,v1beta1,deployments/scale,true,get
+apps,v1beta1,deployments/scale,true,patch
+apps,v1beta1,deployments/status,true,get
+apps,v1beta1,deployments/status,true,patch
+apps,v1beta1,deployments/status,true,update
 extensions,v1beta1,daemonsets,true,create
 extensions,v1beta1,daemonsets,true,delete
 extensions,v1beta1,daemonsets,true,deletecollection
