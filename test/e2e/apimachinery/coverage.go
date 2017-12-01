@@ -32,6 +32,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unstructuredv1 "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -39,6 +40,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/kubernetes/test/e2e/framework"
+)
+
+const (
+	retryMax = 10
 )
 
 var (
@@ -85,7 +90,7 @@ func testResource(f *framework.Framework, r *resource, parentName string) {
 	apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: r.namespaced}
 	unstruct := r.dumpResourceYAML()
 	if parentName == "" {
-		parentName = getResourceName(unstruct)
+		parentName = unstruct.GetName()
 	}
 
 	// Iterate through verbs in serial, skip verbs that don't exist
@@ -93,10 +98,46 @@ func testResource(f *framework.Framework, r *resource, parentName string) {
 	Expect(err).ToNot(HaveOccurred(), "failed to list resource %v", r)
 	err = r.createResource(f, client, apiResource, unstruct)
 	Expect(err).ToNot(HaveOccurred(), "failed to create resource %v", r)
-	unstructGot, err := r.getResource(f, client, apiResource, parentName)
-	Expect(err).ToNot(HaveOccurred(), "failed to get resource %v", r)
-	err = r.updateResource(f, client, apiResource, unstructGot)
+
+	// Print target
+	r.byGetResource(parentName)
+	for {
+		var unstructGot *unstructuredv1.Unstructured
+
+		// TODO: wait.Poll doesn't support passing variables into ConditionFunc
+		retryTimes := 0
+		for {
+			if retryTimes > retryMax {
+				glog.Errorf("retry times limit exceeded in updating resource: %v", r)
+				break
+			}
+			unstructGot, err = r.getResource(f, client, apiResource, parentName)
+			retryTimes++
+			if errors.IsBadRequest(err) {
+				continue
+			}
+			break
+		}
+
+		Expect(err).ToNot(HaveOccurred(), "failed to get resource %v", r)
+		// Expect(err).ToNot(HaveOccurred()) doesn't break loop itself
+		if err != nil {
+			break
+		}
+
+		err = r.updateResource(f, client, apiResource, unstructGot)
+		// Update conflict error requires user to alter the request and retry,
+		// therefore we do not use polling to limit the retry times.
+		if errors.IsConflict(err) {
+			continue
+		}
+		break
+	}
+
+	// Print target
+	r.byUpdateResource()
 	Expect(err).ToNot(HaveOccurred(), "failed to update resource %v", r)
+
 	err = r.watchResource(f, client, apiResource)
 	Expect(err).ToNot(HaveOccurred(), "failed to watch resource %v", r)
 	err = r.patchResource(f, client, apiResource, parentName)
@@ -240,14 +281,6 @@ func (r *resource) dumpResourceYAML() *unstructuredv1.Unstructured {
 	return unstruct
 }
 
-func getResourceName(unstruct *unstructuredv1.Unstructured) string {
-	if len(unstruct.Object) == 0 {
-		return ""
-	}
-	// TODO (roycaihw): error handling
-	return unstruct.Object["metadata"].(map[string]interface{})["name"].(string)
-}
-
 func (r *resource) listResource(f *framework.Framework, client dynamic.Interface, apiResource metav1.APIResource) error {
 	if !hasVerb(r.verbs, "list") {
 		return nil
@@ -270,23 +303,35 @@ func (r *resource) createResource(f *framework.Framework, client dynamic.Interfa
 	return err
 }
 
+// Split target printing because updateResource involves retry
+func (r *resource) byUpdateResource() {
+	if hasVerb(r.verbs, "update") {
+		target := fmt.Sprintf("update resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
+		By(target)
+	}
+}
+
 func (r *resource) updateResource(f *framework.Framework, client dynamic.Interface, apiResource metav1.APIResource, unstruct *unstructuredv1.Unstructured) error {
 	if !hasVerb(r.verbs, "update") {
 		return nil
 	}
-	target := fmt.Sprintf("update resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
-	By(target)
 
 	_, err := client.Resource(&apiResource, f.Namespace.Name).Update(unstruct)
 	return err
+}
+
+// Split target printing because getResource involves retry
+func (r *resource) byGetResource(name string) {
+	if hasVerb(r.verbs, "get") {
+		target := fmt.Sprintf("get resource (g: %s, v: %s, r: %s) name: %s", r.group, r.version, r.name, name)
+		By(target)
+	}
 }
 
 func (r *resource) getResource(f *framework.Framework, client dynamic.Interface, apiResource metav1.APIResource, name string) (*unstructuredv1.Unstructured, error) {
 	if !hasVerb(r.verbs, "get") {
 		return &unstructuredv1.Unstructured{}, nil
 	}
-	target := fmt.Sprintf("get resource (g: %s, v: %s, r: %s) name: %s", r.group, r.version, r.name, name)
-	By(target)
 
 	unstructGot, err := client.Resource(&apiResource, f.Namespace.Name).Get(name, metav1.GetOptions{})
 	return unstructGot, err
