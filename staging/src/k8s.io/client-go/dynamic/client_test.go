@@ -73,6 +73,7 @@ func getClientServer(gv *schema.GroupVersion, h func(http.ResponseWriter, *http.
 
 func TestList(t *testing.T) {
 	tcs := []struct {
+		resource  string
 		name      string
 		namespace string
 		path      string
@@ -80,8 +81,9 @@ func TestList(t *testing.T) {
 		want      *unstructured.UnstructuredList
 	}{
 		{
-			name: "normal_list",
-			path: "/api/gtest/vtest/rtest",
+			resource: "rtest",
+			name:     "normal_list",
+			path:     "/api/gtest/vtest/rtest",
 			resp: getListJSON("vTest", "rTestList",
 				getJSON("vTest", "rTest", "item1"),
 				getJSON("vTest", "rTest", "item2")),
@@ -97,6 +99,7 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
+			resource:  "rtest",
 			name:      "namespaced_list",
 			namespace: "nstest",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest",
@@ -114,10 +117,47 @@ func TestList(t *testing.T) {
 				},
 			},
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_list",
+			path:     "/api/gtest/vtest/rtest/srtest",
+			resp: getListJSON("vTest", "srTestList",
+				getJSON("vTest", "srTest", "item1"),
+				getJSON("vTest", "srTest", "item2")),
+			want: &unstructured.UnstructuredList{
+				Object: map[string]interface{}{
+					"apiVersion": "vTest",
+					"kind":       "srTestList",
+				},
+				Items: []unstructured.Unstructured{
+					*getObject("vTest", "srTest", "item1"),
+					*getObject("vTest", "srTest", "item2"),
+				},
+			},
+		},
+		{
+			resource:  "rtest/srtest",
+			name:      "namespaced_list",
+			namespace: "nstest",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/srtest",
+			resp: getListJSON("vTest", "srTestList",
+				getJSON("vTest", "srTest", "item1"),
+				getJSON("vTest", "srTest", "item2")),
+			want: &unstructured.UnstructuredList{
+				Object: map[string]interface{}{
+					"apiVersion": "vTest",
+					"kind":       "srTestList",
+				},
+				Items: []unstructured.Unstructured{
+					*getObject("vTest", "srTest", "item1"),
+					*getObject("vTest", "srTest", "item2"),
+				},
+			},
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "GET" {
 				t.Errorf("List(%q) got HTTP method %s. wanted GET", tc.name, r.Method)
@@ -150,6 +190,7 @@ func TestList(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	tcs := []struct {
+		resource  string
 		namespace string
 		name      string
 		path      string
@@ -157,22 +198,39 @@ func TestGet(t *testing.T) {
 		want      *unstructured.Unstructured
 	}{
 		{
-			name: "normal_get",
-			path: "/api/gtest/vtest/rtest/normal_get",
-			resp: getJSON("vTest", "rTest", "normal_get"),
-			want: getObject("vTest", "rTest", "normal_get"),
+			resource: "rtest",
+			name:     "normal_get",
+			path:     "/api/gtest/vtest/rtest/normal_get",
+			resp:     getJSON("vTest", "rTest", "normal_get"),
+			want:     getObject("vTest", "rTest", "normal_get"),
 		},
 		{
+			resource:  "rtest",
 			namespace: "nstest",
 			name:      "namespaced_get",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_get",
 			resp:      getJSON("vTest", "rTest", "namespaced_get"),
 			want:      getObject("vTest", "rTest", "namespaced_get"),
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_get",
+			path:     "/api/gtest/vtest/rtest/normal_get/srtest",
+			resp:     getJSON("vTest", "srTest", "normal_get"),
+			want:     getObject("vTest", "srTest", "normal_get"),
+		},
+		{
+			resource:  "rtest/srtest",
+			namespace: "nstest",
+			name:      "namespaced_get",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_get/srtest",
+			resp:      getJSON("vTest", "srTest", "namespaced_get"),
+			want:      getObject("vTest", "srTest", "namespaced_get"),
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "GET" {
 				t.Errorf("Get(%q) got HTTP method %s. wanted GET", tc.name, r.Method)
@@ -209,23 +267,37 @@ func TestDelete(t *testing.T) {
 		Status:   metav1.StatusSuccess,
 	}
 	tcs := []struct {
+		resource  string
 		namespace string
 		name      string
 		path      string
 	}{
 		{
-			name: "normal_delete",
-			path: "/api/gtest/vtest/rtest/normal_delete",
+			resource: "rtest",
+			name:     "normal_delete",
+			path:     "/api/gtest/vtest/rtest/normal_delete",
 		},
 		{
+			resource:  "rtest",
 			namespace: "nstest",
 			name:      "namespaced_delete",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_delete",
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_delete",
+			path:     "/api/gtest/vtest/rtest/normal_delete/srtest",
+		},
+		{
+			resource:  "rtest/srtest",
+			namespace: "nstest",
+			name:      "namespaced_delete",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_delete/srtest",
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "DELETE" {
 				t.Errorf("Delete(%q) got HTTP method %s. wanted DELETE", tc.name, r.Method)
@@ -258,23 +330,37 @@ func TestDeleteCollection(t *testing.T) {
 		Status:   metav1.StatusSuccess,
 	}
 	tcs := []struct {
+		resource  string
 		namespace string
 		name      string
 		path      string
 	}{
 		{
-			name: "normal_delete_collection",
-			path: "/api/gtest/vtest/rtest",
+			resource: "rtest",
+			name:     "normal_delete_collection",
+			path:     "/api/gtest/vtest/rtest",
 		},
 		{
+			resource:  "rtest",
 			namespace: "nstest",
 			name:      "namespaced_delete_collection",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest",
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_delete_collection",
+			path:     "/api/gtest/vtest/rtest/srtest",
+		},
+		{
+			resource:  "rtest/srtest",
+			namespace: "nstest",
+			name:      "namespaced_delete_collection",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/srtest",
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "DELETE" {
 				t.Errorf("DeleteCollection(%q) got HTTP method %s. wanted DELETE", tc.name, r.Method)
@@ -303,26 +389,42 @@ func TestDeleteCollection(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	tcs := []struct {
+		resource  string
 		name      string
 		namespace string
 		obj       *unstructured.Unstructured
 		path      string
 	}{
 		{
-			name: "normal_create",
-			path: "/api/gtest/vtest/rtest",
-			obj:  getObject("vTest", "rTest", "normal_create"),
+			resource: "rtest",
+			name:     "normal_create",
+			path:     "/api/gtest/vtest/rtest",
+			obj:      getObject("vTest", "rTest", "normal_create"),
 		},
 		{
+			resource:  "rtest",
 			name:      "namespaced_create",
 			namespace: "nstest",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest",
 			obj:       getObject("vTest", "rTest", "namespaced_create"),
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_create",
+			path:     "/api/gtest/vtest/rtest/srtest",
+			obj:      getObject("vTest", "srTest", "normal_create"),
+		},
+		{
+			resource:  "rtest/srtest",
+			name:      "namespaced_create",
+			namespace: "nstest",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/srtest",
+			obj:       getObject("vTest", "srTest", "namespaced_create"),
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "POST" {
 				t.Errorf("Create(%q) got HTTP method %s. wanted POST", tc.name, r.Method)
@@ -362,26 +464,42 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	tcs := []struct {
+		resource  string
 		name      string
 		namespace string
 		obj       *unstructured.Unstructured
 		path      string
 	}{
 		{
-			name: "normal_update",
-			path: "/api/gtest/vtest/rtest/normal_update",
-			obj:  getObject("vTest", "rTest", "normal_update"),
+			resource: "rtest",
+			name:     "normal_update",
+			path:     "/api/gtest/vtest/rtest/normal_update",
+			obj:      getObject("vTest", "rTest", "normal_update"),
 		},
 		{
+			resource:  "rtest",
 			name:      "namespaced_update",
 			namespace: "nstest",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_update",
 			obj:       getObject("vTest", "rTest", "namespaced_update"),
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_update",
+			path:     "/api/gtest/vtest/rtest/normal_update/srtest",
+			obj:      getObject("vTest", "srTest", "normal_update"),
+		},
+		{
+			resource:  "rtest/srtest",
+			name:      "namespaced_update",
+			namespace: "nstest",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_update/srtest",
+			obj:       getObject("vTest", "srTest", "namespaced_update"),
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "PUT" {
 				t.Errorf("Update(%q) got HTTP method %s. wanted PUT", tc.name, r.Method)
@@ -421,6 +539,7 @@ func TestUpdate(t *testing.T) {
 
 func TestWatch(t *testing.T) {
 	tcs := []struct {
+		resource  string
 		name      string
 		namespace string
 		events    []watch.Event
@@ -428,9 +547,10 @@ func TestWatch(t *testing.T) {
 		query     string
 	}{
 		{
-			name:  "normal_watch",
-			path:  "/api/gtest/vtest/rtest",
-			query: "watch=true",
+			resource: "rtest",
+			name:     "normal_watch",
+			path:     "/api/gtest/vtest/rtest",
+			query:    "watch=true",
 			events: []watch.Event{
 				{Type: watch.Added, Object: getObject("vTest", "rTest", "normal_watch")},
 				{Type: watch.Modified, Object: getObject("vTest", "rTest", "normal_watch")},
@@ -438,6 +558,7 @@ func TestWatch(t *testing.T) {
 			},
 		},
 		{
+			resource:  "rtest",
 			name:      "namespaced_watch",
 			namespace: "nstest",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest",
@@ -448,10 +569,33 @@ func TestWatch(t *testing.T) {
 				{Type: watch.Deleted, Object: getObject("vTest", "rTest", "namespaced_watch")},
 			},
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_watch",
+			path:     "/api/gtest/vtest/rtest/srtest",
+			query:    "watch=true",
+			events: []watch.Event{
+				{Type: watch.Added, Object: getObject("vTest", "srTest", "normal_watch")},
+				{Type: watch.Modified, Object: getObject("vTest", "srTest", "normal_watch")},
+				{Type: watch.Deleted, Object: getObject("vTest", "srTest", "normal_watch")},
+			},
+		},
+		{
+			resource:  "rtest/srtest",
+			name:      "namespaced_watch",
+			namespace: "nstest",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/srtest",
+			query:     "watch=true",
+			events: []watch.Event{
+				{Type: watch.Added, Object: getObject("vTest", "srTest", "namespaced_watch")},
+				{Type: watch.Modified, Object: getObject("vTest", "srTest", "namespaced_watch")},
+				{Type: watch.Deleted, Object: getObject("vTest", "srTest", "namespaced_watch")},
+			},
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "GET" {
 				t.Errorf("Watch(%q) got HTTP method %s. wanted GET", tc.name, r.Method)
@@ -492,6 +636,7 @@ func TestWatch(t *testing.T) {
 
 func TestPatch(t *testing.T) {
 	tcs := []struct {
+		resource  string
 		name      string
 		namespace string
 		patch     []byte
@@ -499,22 +644,39 @@ func TestPatch(t *testing.T) {
 		path      string
 	}{
 		{
-			name:  "normal_patch",
-			path:  "/api/gtest/vtest/rtest/normal_patch",
-			patch: getJSON("vTest", "rTest", "normal_patch"),
-			want:  getObject("vTest", "rTest", "normal_patch"),
+			resource: "rtest",
+			name:     "normal_patch",
+			path:     "/api/gtest/vtest/rtest/normal_patch",
+			patch:    getJSON("vTest", "rTest", "normal_patch"),
+			want:     getObject("vTest", "rTest", "normal_patch"),
 		},
 		{
+			resource:  "rtest",
 			name:      "namespaced_patch",
 			namespace: "nstest",
 			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_patch",
 			patch:     getJSON("vTest", "rTest", "namespaced_patch"),
 			want:      getObject("vTest", "rTest", "namespaced_patch"),
 		},
+		{
+			resource: "rtest/srtest",
+			name:     "normal_patch",
+			path:     "/api/gtest/vtest/rtest/normal_patch/srtest",
+			patch:    getJSON("vTest", "srTest", "normal_patch"),
+			want:     getObject("vTest", "srTest", "normal_patch"),
+		},
+		{
+			resource:  "rtest/srtest",
+			name:      "namespaced_patch",
+			namespace: "nstest",
+			path:      "/api/gtest/vtest/namespaces/nstest/rtest/namespaced_patch/srtest",
+			patch:     getJSON("vTest", "srTest", "namespaced_patch"),
+			want:      getObject("vTest", "srTest", "namespaced_patch"),
+		},
 	}
 	for _, tc := range tcs {
 		gv := &schema.GroupVersion{Group: "gtest", Version: "vtest"}
-		resource := &metav1.APIResource{Name: "rtest", Namespaced: len(tc.namespace) != 0}
+		resource := &metav1.APIResource{Name: tc.resource, Namespaced: len(tc.namespace) != 0}
 		cl, srv, err := getClientServer(gv, func(w http.ResponseWriter, r *http.Request) {
 			if r.Method != "PATCH" {
 				t.Errorf("Patch(%q) got HTTP method %s. wanted PATCH", tc.name, r.Method)
