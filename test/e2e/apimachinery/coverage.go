@@ -264,7 +264,11 @@ func (r *resource) dumpResourceYAML() *unstructuredv1.Unstructured {
 	}
 
 	// TODO (roycaihw): use framework reporoot or bindata
-	yamlFile, err := os.Open(filepath.Join("/usr/local/google/home/haoweic/Projects/k8s-p1/src/k8s.io/kubernetes/test/e2e/apimachinery/testdata", r.name+".yaml"))
+	group := r.group
+	if group == "" {
+		group = "core"
+	}
+	yamlFile, err := os.Open(filepath.Join("/usr/local/google/home/haoweic/Projects/k8s-p1/src/k8s.io/kubernetes/test/e2e/apimachinery/testdata/yamlfiles/", fmt.Sprintf("%s/%s/%s", group, r.version, r.name)+".yaml"))
 	defer yamlFile.Close()
 	Expect(err).ToNot(HaveOccurred(), "failed to open yaml file for resource %v", r)
 
