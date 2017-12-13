@@ -104,7 +104,7 @@ func testResource(f *framework.Framework, r *resource, parentName string) {
 	totalResource++
 	gvr := schema.GroupVersionResource{Group: r.group, Version: r.version, Resource: r.name}
 	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
-	glog.Infof(">>>>>>>>>>>>>>>>>>Client: %v", client)
+	// glog.Infof(">>>>>>>>>>>>>>>>>>Client: %v", client)
 	Expect(err).NotTo(HaveOccurred(), "failed to create dynamic client for resource %v", r)
 	apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: r.namespaced}
 	unstruct := r.dumpResourceYAML()
