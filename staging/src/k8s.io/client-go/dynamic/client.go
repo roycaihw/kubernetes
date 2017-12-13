@@ -26,6 +26,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/golang/glog"
+
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -103,7 +105,9 @@ func NewClient(conf *restclient.Config) (*Client, error) {
 		conf.UserAgent = restclient.DefaultKubernetesUserAgent()
 	}
 
+	glog.Infof(">>>>>>>>>>>>>>>>>>>>conf: %v", *conf)
 	cl, err := restclient.RESTClientFor(conf)
+
 	if err != nil {
 		return nil, err
 	}
@@ -145,12 +149,7 @@ type ResourceClient struct {
 	parameterCodec runtime.ParameterCodec
 }
 
-// List returns a list of objects for this resource.
-func (rc *ResourceClient) List(opts metav1.ListOptions) (runtime.Object, error) {
-	parameterEncoder := rc.parameterCodec
-	if parameterEncoder == nil {
-		parameterEncoder = defaultParameterEncoder
-	}
+func (rc *ResourceClient) parseResourceSubresourceName() (string, []string) {
 	resourceName := ""
 	subresourceName := []string{}
 	if strings.Contains(rc.resource.Name, "/") {
@@ -159,6 +158,17 @@ func (rc *ResourceClient) List(opts metav1.ListOptions) (runtime.Object, error) 
 	} else {
 		resourceName = rc.resource.Name
 	}
+
+	return resourceName, subresourceName
+}
+
+// List returns a list of objects for this resource.
+func (rc *ResourceClient) List(opts metav1.ListOptions) (runtime.Object, error) {
+	parameterEncoder := rc.parameterCodec
+	if parameterEncoder == nil {
+		parameterEncoder = defaultParameterEncoder
+	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	return rc.cl.Get().
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
@@ -175,14 +185,7 @@ func (rc *ResourceClient) Get(name string, opts metav1.GetOptions) (*unstructure
 		parameterEncoder = defaultParameterEncoder
 	}
 	result := new(unstructured.Unstructured)
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
-	} else {
-		resourceName = rc.resource.Name
-	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	err := rc.cl.Get().
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
@@ -196,14 +199,7 @@ func (rc *ResourceClient) Get(name string, opts metav1.GetOptions) (*unstructure
 
 // Delete deletes the resource with the specified name.
 func (rc *ResourceClient) Delete(name string, opts *metav1.DeleteOptions) error {
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
-	} else {
-		resourceName = rc.resource.Name
-	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	return rc.cl.Delete().
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
@@ -220,14 +216,7 @@ func (rc *ResourceClient) DeleteCollection(deleteOptions *metav1.DeleteOptions, 
 	if parameterEncoder == nil {
 		parameterEncoder = defaultParameterEncoder
 	}
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
-	} else {
-		resourceName = rc.resource.Name
-	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	return rc.cl.Delete().
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
@@ -241,21 +230,34 @@ func (rc *ResourceClient) DeleteCollection(deleteOptions *metav1.DeleteOptions, 
 // Create creates the provided resource.
 func (rc *ResourceClient) Create(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	result := new(unstructured.Unstructured)
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
+	var err error
+
+	if !strings.Contains(rc.resource.Name, "/") {
+		err = rc.cl.Post().
+			NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
+			Resource(rc.resource.Name).
+			Body(obj).
+			Do().
+			Into(result)
 	} else {
-		resourceName = rc.resource.Name
+		// If the provided resource is a subresource, the POST request should contain
+		// object name. Examples of subresources that support create verb:
+		//
+		//	core/v1/pods/binding
+		//	core/v1/pods/eviction
+		//	extensions/v1beta1/deployments/rollback
+		//	apps/v1beta1/deployments/rollback
+		resourceName, subresourceName := rc.parseResourceSubresourceName()
+		err = rc.cl.Post().
+			NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
+			Resource(resourceName).
+			SubResource(subresourceName...).
+			Name(obj.GetName()).
+			Body(obj).
+			Do().
+			Into(result)
 	}
-	err := rc.cl.Post().
-		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
-		Resource(resourceName).
-		SubResource(subresourceName...).
-		Body(obj).
-		Do().
-		Into(result)
+
 	return result, err
 }
 
@@ -265,14 +267,7 @@ func (rc *ResourceClient) Update(obj *unstructured.Unstructured) (*unstructured.
 	if len(obj.GetName()) == 0 {
 		return result, errors.New("object missing name")
 	}
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
-	} else {
-		resourceName = rc.resource.Name
-	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	err := rc.cl.Put().
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
@@ -291,14 +286,7 @@ func (rc *ResourceClient) Watch(opts metav1.ListOptions) (watch.Interface, error
 		parameterEncoder = defaultParameterEncoder
 	}
 	opts.Watch = true
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
-	} else {
-		resourceName = rc.resource.Name
-	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	return rc.cl.Get().
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
@@ -309,14 +297,7 @@ func (rc *ResourceClient) Watch(opts metav1.ListOptions) (watch.Interface, error
 
 func (rc *ResourceClient) Patch(name string, pt types.PatchType, data []byte) (*unstructured.Unstructured, error) {
 	result := new(unstructured.Unstructured)
-	resourceName := ""
-	subresourceName := []string{}
-	if strings.Contains(rc.resource.Name, "/") {
-		resourceName = strings.Split(rc.resource.Name, "/")[0]
-		subresourceName = strings.Split(rc.resource.Name, "/")[1:]
-	} else {
-		resourceName = rc.resource.Name
-	}
+	resourceName, subresourceName := rc.parseResourceSubresourceName()
 	err := rc.cl.Patch(pt).
 		NamespaceIfScoped(rc.ns, rc.resource.Namespaced).
 		Resource(resourceName).
