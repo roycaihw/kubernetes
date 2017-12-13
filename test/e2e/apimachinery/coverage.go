@@ -47,7 +47,9 @@ const (
 )
 
 var (
-	patch, _ = json.Marshal(jsonpatch.Patch{})
+	patch, _      = json.Marshal(jsonpatch.Patch{})
+	totalResource = 0
+	passResource  = 0
 )
 
 type resourceMap map[resourceMeta]*resource
@@ -74,6 +76,20 @@ var _ = SIGDescribe("Coverage", func() {
 		glog.Fatalf("failed to read tables: %v", err)
 	}
 
+	// It("should be able to create a deployment rollback", func() {
+	// 	By("create a deployment with typed client")
+	// 	podLabels := map[string]string{"name": "audit-deployment-pod"}
+	// 	d := framework.NewDeployment("audit-deployment", int32(1), podLabels, "redis", imageutils.GetE2EImage(imageutils.Redis), extensions.RecreateDeploymentStrategyType)
+
+	// 	_, err := f.ClientSet.Extensions().Deployments(f.Namespace.Name).Create(d)
+	// 	framework.ExpectNoError(err, "failed to create audit-deployment")
+	// 	err = f.ClientSet.Extensions().Deployments(f.Namespace.Name).Rollback(&extensions.DeploymentRollback{
+	// 		Name:       "audit-deployment",
+	// 		RollbackTo: extensions.RollbackConfig{},
+	// 	})
+	// 	framework.ExpectNoError(err, "failed to rollback audit-deployment")
+	// })
+
 	for _, table := range tables {
 		r := table
 		rule := fmt.Sprintf("should be able to support expected CRUD operations for resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
@@ -81,11 +97,14 @@ var _ = SIGDescribe("Coverage", func() {
 			testResource(f, r, "")
 		})
 	}
+	glog.Infof("total resources: %d, pass resources: %d", totalResource, passResource)
 })
 
 func testResource(f *framework.Framework, r *resource, parentName string) {
+	totalResource++
 	gvr := schema.GroupVersionResource{Group: r.group, Version: r.version, Resource: r.name}
 	client, err := f.ClientPool.ClientForGroupVersionResource(gvr)
+	glog.Infof(">>>>>>>>>>>>>>>>>>Client: %v", client)
 	Expect(err).NotTo(HaveOccurred(), "failed to create dynamic client for resource %v", r)
 	apiResource := metav1.APIResource{Name: gvr.Resource, Namespaced: r.namespaced}
 	unstruct := r.dumpResourceYAML()
@@ -96,7 +115,11 @@ func testResource(f *framework.Framework, r *resource, parentName string) {
 	// Iterate through verbs in serial, skip verbs that don't exist
 	err = r.listResource(f, client, apiResource)
 	Expect(err).ToNot(HaveOccurred(), "failed to list resource %v", r)
+	// if strings.Contains(r.name, "rollback") {
+	// 	err = r.createNamedResource(f, client, apiResource, unstruct, parentName)
+	// } else {
 	err = r.createResource(f, client, apiResource, unstruct)
+	// }
 	Expect(err).ToNot(HaveOccurred(), "failed to create resource %v", r)
 
 	// Print target
@@ -152,6 +175,7 @@ func testResource(f *framework.Framework, r *resource, parentName string) {
 	Expect(err).ToNot(HaveOccurred(), "failed to delete resource %v", r)
 	err = r.deleteCollectionResource(f, client, apiResource)
 	Expect(err).ToNot(HaveOccurred(), "failed to deletecollection resource %v", r)
+	passResource++
 }
 
 func readTables() (resourceMap, error) {
@@ -295,6 +319,17 @@ func (r *resource) listResource(f *framework.Framework, client dynamic.Interface
 	_, err := client.Resource(&apiResource, f.Namespace.Name).List(metav1.ListOptions{})
 	return err
 }
+
+// func (r *resource) createNamedResource(f *framework.Framework, client dynamic.Interface, apiResource metav1.APIResource, unstruct *unstructuredv1.Unstructured, name string) error {
+// 	if !hasVerb(r.verbs, "create") {
+// 		return nil
+// 	}
+// 	target := fmt.Sprintf("create resource (g: %s, v: %s, r: %s)", r.group, r.version, r.name)
+// 	By(target)
+//
+// 	_, err := client.Resource(&apiResource, f.Namespace.Name).CreateNamed(name, unstruct)
+// 	return err
+// }
 
 func (r *resource) createResource(f *framework.Framework, client dynamic.Interface, apiResource metav1.APIResource, unstruct *unstructuredv1.Unstructured) error {
 	if !hasVerb(r.verbs, "create") {

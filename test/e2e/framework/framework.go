@@ -44,6 +44,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework/metrics"
 	testutils "k8s.io/kubernetes/test/utils"
 
+	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -139,6 +140,7 @@ func NewFramework(baseName string, options FrameworkOptions, client clientset.In
 
 // BeforeEach gets a client and makes a namespace.
 func (f *Framework) BeforeEach() {
+	glog.Infof("------------------->>>>>> before each")
 	// The fact that we need this feels like a bug in ginkgo.
 	// https://github.com/onsi/ginkgo/issues/222
 	f.cleanupHandle = AddCleanupAction(f.AfterEach)
