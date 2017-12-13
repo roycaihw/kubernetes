@@ -112,6 +112,15 @@ func testResource(f *framework.Framework, r *resource, parentName string) {
 		parentName = unstruct.GetName()
 	}
 
+	// TODO (roycaihw): This is only for v1/events now. Think about if we want to add a column in
+	// testdata (csv file), to make the yaml file dynamically configurable.
+	fields := []string{"involvedObject", "namespace"}
+	ions, ok := unstructuredv1.NestedString(unstruct.Object, fields...)
+	if ok {
+		glog.Infof("resource %v requires reference namespace change, was %v, changed to %v", r, ions, f.Namespace.Name)
+		unstructuredv1.SetNestedField(unstruct.Object, f.Namespace.Name, fields...)
+	}
+
 	// Iterate through verbs in serial, skip verbs that don't exist
 	err = r.listResource(f, client, apiResource)
 	Expect(err).ToNot(HaveOccurred(), "failed to list resource %v", r)
