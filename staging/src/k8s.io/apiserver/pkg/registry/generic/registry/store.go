@@ -37,7 +37,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/apiserver/pkg/endpoints/request"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -681,7 +680,7 @@ func (e *Store) Get(ctx genericapirequest.Context, name string, options *metav1.
 // qualifiedResourceFromContext attempts to retrieve a GroupResource from the context's request info.
 // If the context has no request info, DefaultQualifiedResource is used.
 func (e *Store) qualifiedResourceFromContext(ctx genericapirequest.Context) schema.GroupResource {
-	if info, ok := request.RequestInfoFrom(ctx); ok {
+	if info, ok := genericapirequest.RequestInfoFrom(ctx); ok {
 		return schema.GroupResource{Group: info.APIGroup, Resource: info.Resource}
 	}
 	// some implementations access storage directly and thus the context has no RequestInfo
@@ -699,12 +698,17 @@ var (
 // priority, there are three factors affect whether to add/remove the
 // FinalizerOrphanDependents: options, existing finalizers of the object,
 // and e.DeleteStrategy.DefaultGarbageCollectionPolicy.
-func shouldOrphanDependents(e *Store, accessor metav1.Object, options *metav1.DeleteOptions) bool {
-	if gcStrategy, ok := e.DeleteStrategy.(rest.GarbageCollectionDeleteStrategy); ok {
-		if gcStrategy.DefaultGarbageCollectionPolicy() == rest.Unsupported {
-			// return  false to indicate that we should NOT orphan
-			return false
-		}
+func shouldOrphanDependents(ctx genericapirequest.Context, e *Store, accessor metav1.Object, options *metav1.DeleteOptions) bool {
+	// Get default GC policy from this REST object type
+	gcStrategy, ok := e.DeleteStrategy.(rest.GarbageCollectionDeleteStrategy)
+	var defaultGCPolicy rest.GarbageCollectionPolicy
+	if ok {
+		defaultGCPolicy = gcStrategy.DefaultGarbageCollectionPolicy(ctx)
+	}
+
+	if defaultGCPolicy == rest.Unsupported {
+		// return  false to indicate that we should NOT orphan
+		return false
 	}
 
 	// An explicit policy was set at deletion time, that overrides everything
@@ -733,10 +737,8 @@ func shouldOrphanDependents(e *Store, accessor metav1.Object, options *metav1.De
 	}
 
 	// Get default orphan policy from this REST object type if it exists
-	if gcStrategy, ok := e.DeleteStrategy.(rest.GarbageCollectionDeleteStrategy); ok {
-		if gcStrategy.DefaultGarbageCollectionPolicy() == rest.OrphanDependents {
-			return true
-		}
+	if defaultGCPolicy == rest.OrphanDependents {
+		return true
 	}
 	return false
 }
@@ -746,9 +748,9 @@ func shouldOrphanDependents(e *Store, accessor metav1.Object, options *metav1.De
 // priority, there are three factors affect whether to add/remove the
 // FinalizerDeleteDependents: options, existing finalizers of the object, and
 // e.DeleteStrategy.DefaultGarbageCollectionPolicy.
-func shouldDeleteDependents(e *Store, accessor metav1.Object, options *metav1.DeleteOptions) bool {
-	// Get default orphan policy from this REST object type
-	if gcStrategy, ok := e.DeleteStrategy.(rest.GarbageCollectionDeleteStrategy); ok && gcStrategy.DefaultGarbageCollectionPolicy() == rest.Unsupported {
+func shouldDeleteDependents(ctx genericapirequest.Context, e *Store, accessor metav1.Object, options *metav1.DeleteOptions) bool {
+	// Get default GC policy from this REST object type
+	if gcStrategy, ok := e.DeleteStrategy.(rest.GarbageCollectionDeleteStrategy); ok && gcStrategy.DefaultGarbageCollectionPolicy(ctx) == rest.Unsupported {
 		// return false to indicate that we should NOT delete in foreground
 		return false
 	}
@@ -789,12 +791,12 @@ func shouldDeleteDependents(e *Store, accessor metav1.Object, options *metav1.De
 // The finalizers returned are intended to be handled by the garbage collector.
 // If garbage collection is disabled for the store, this function returns false
 // to ensure finalizers aren't set which will never be cleared.
-func deletionFinalizersForGarbageCollection(e *Store, accessor metav1.Object, options *metav1.DeleteOptions) (bool, []string) {
+func deletionFinalizersForGarbageCollection(ctx genericapirequest.Context, e *Store, accessor metav1.Object, options *metav1.DeleteOptions) (bool, []string) {
 	if !e.EnableGarbageCollection {
 		return false, []string{}
 	}
-	shouldOrphan := shouldOrphanDependents(e, accessor, options)
-	shouldDeleteDependentInForeground := shouldDeleteDependents(e, accessor, options)
+	shouldOrphan := shouldOrphanDependents(ctx, e, accessor, options)
+	shouldDeleteDependentInForeground := shouldDeleteDependents(ctx, e, accessor, options)
 	newFinalizers := []string{}
 
 	// first remove both finalizers, add them back if needed.
@@ -880,7 +882,7 @@ func (e *Store) updateForGracefulDeletionAndFinalizers(ctx genericapirequest.Con
 			if err != nil {
 				return nil, err
 			}
-			needsUpdate, newFinalizers := deletionFinalizersForGarbageCollection(e, existingAccessor, options)
+			needsUpdate, newFinalizers := deletionFinalizersForGarbageCollection(ctx, e, existingAccessor, options)
 			if needsUpdate {
 				existingAccessor.SetFinalizers(newFinalizers)
 			}
@@ -972,7 +974,7 @@ func (e *Store) Delete(ctx genericapirequest.Context, name string, options *meta
 
 	// Handle combinations of graceful deletion and finalization by issuing
 	// the correct updates.
-	shouldUpdateFinalizers, _ := deletionFinalizersForGarbageCollection(e, accessor, options)
+	shouldUpdateFinalizers, _ := deletionFinalizersForGarbageCollection(ctx, e, accessor, options)
 	// TODO: remove the check, because we support no-op updates now.
 	if graceful || pendingFinalizers || shouldUpdateFinalizers {
 		err, ignoreNotFound, deleteImmediately, out, lastExisting = e.updateForGracefulDeletionAndFinalizers(ctx, name, key, options, preconditions, obj)

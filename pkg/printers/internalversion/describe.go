@@ -943,7 +943,7 @@ func printAzureDiskVolumeSource(d *api.AzureDiskVolumeSource, w PrefixWriter) {
 func printVsphereVolumeSource(vsphere *api.VsphereVirtualDiskVolumeSource, w PrefixWriter) {
 	w.Write(LEVEL_2, "Type:\tvSphereVolume (a Persistent Disk resource in vSphere)\n"+
 		"    VolumePath:\t%v\n"+
-		"    FSType:\t%v\n",
+		"    FSType:\t%v\n"+
 		"    StoragePolicyName:\t%v\n",
 		vsphere.VolumePath, vsphere.FSType, vsphere.StoragePolicyName)
 }
@@ -1076,12 +1076,22 @@ func printAzureFilePersistentVolumeSource(azureFile *api.AzureFilePersistentVolu
 		azureFile.SecretName, ns, azureFile.ShareName, azureFile.ReadOnly)
 }
 
+func printFlexPersistentVolumeSource(flex *api.FlexPersistentVolumeSource, w PrefixWriter) {
+	w.Write(LEVEL_2, "Type:\tFlexVolume (a generic volume resource that is provisioned/attached using an exec based plugin)\n"+
+		"    Driver:\t%v\n"+
+		"    FSType:\t%v\n"+
+		"    SecretRef:\t%v\n"+
+		"    ReadOnly:\t%v\n"+
+		"    Options:\t%v\n",
+		flex.Driver, flex.FSType, flex.SecretRef, flex.ReadOnly, flex.Options)
+}
+
 func printFlexVolumeSource(flex *api.FlexVolumeSource, w PrefixWriter) {
 	w.Write(LEVEL_2, "Type:\tFlexVolume (a generic volume resource that is provisioned/attached using an exec based plugin)\n"+
 		"    Driver:\t%v\n"+
 		"    FSType:\t%v\n"+
 		"    SecretRef:\t%v\n"+
-		"    ReadOnly:\t%v\n",
+		"    ReadOnly:\t%v\n"+
 		"    Options:\t%v\n",
 		flex.Driver, flex.FSType, flex.SecretRef, flex.ReadOnly, flex.Options)
 }
@@ -1096,7 +1106,7 @@ func printFlockerVolumeSource(flocker *api.FlockerVolumeSource, w PrefixWriter) 
 func printCSIPersistentVolumeSource(csi *api.CSIPersistentVolumeSource, w PrefixWriter) {
 	w.Write(LEVEL_2, "Type:\tCSI (a Container Storage Interface (CSI) volume source)\n"+
 		"    Driver:\t%v\n"+
-		"    VolumeHandle:\t%v\n",
+		"    VolumeHandle:\t%v\n"+
 		"    ReadOnly:\t%v\n",
 		csi.Driver, csi.VolumeHandle, csi.ReadOnly)
 }
@@ -1136,6 +1146,9 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 		}
 		w.Write(LEVEL_0, "Reclaim Policy:\t%v\n", pv.Spec.PersistentVolumeReclaimPolicy)
 		w.Write(LEVEL_0, "Access Modes:\t%s\n", helper.GetAccessModesAsString(pv.Spec.AccessModes))
+		if pv.Spec.VolumeMode != nil {
+			w.Write(LEVEL_0, "VolumeMode:\t%v\n", *pv.Spec.VolumeMode)
+		}
 		storage := pv.Spec.Capacity[api.ResourceStorage]
 		w.Write(LEVEL_0, "Capacity:\t%s\n", storage.String())
 		w.Write(LEVEL_0, "Message:\t%s\n", pv.Status.Message)
@@ -1181,7 +1194,7 @@ func describePersistentVolume(pv *api.PersistentVolume, events *api.EventList) (
 		case pv.Spec.AzureFile != nil:
 			printAzureFilePersistentVolumeSource(pv.Spec.AzureFile, w)
 		case pv.Spec.FlexVolume != nil:
-			printFlexVolumeSource(pv.Spec.FlexVolume, w)
+			printFlexPersistentVolumeSource(pv.Spec.FlexVolume, w)
 		case pv.Spec.Flocker != nil:
 			printFlockerVolumeSource(pv.Spec.Flocker, w)
 		case pv.Spec.CSI != nil:
@@ -1221,10 +1234,15 @@ func describePersistentVolumeClaim(pvc *api.PersistentVolumeClaim, events *api.E
 		w.Write(LEVEL_0, "Name:\t%s\n", pvc.Name)
 		w.Write(LEVEL_0, "Namespace:\t%s\n", pvc.Namespace)
 		w.Write(LEVEL_0, "StorageClass:\t%s\n", helper.GetPersistentVolumeClaimClass(pvc))
-		w.Write(LEVEL_0, "Status:\t%v\n", pvc.Status.Phase)
+		if pvc.ObjectMeta.DeletionTimestamp != nil {
+			w.Write(LEVEL_0, "Status:\tTerminating (since %s)\n", pvc.ObjectMeta.DeletionTimestamp.Time.Format(time.RFC1123Z))
+		} else {
+			w.Write(LEVEL_0, "Status:\t%v\n", pvc.Status.Phase)
+		}
 		w.Write(LEVEL_0, "Volume:\t%s\n", pvc.Spec.VolumeName)
 		printLabelsMultiline(w, "Labels", pvc.Labels)
 		printAnnotationsMultiline(w, "Annotations", pvc.Annotations)
+		w.Write(LEVEL_0, "Finalizers:\t%v\n", pvc.ObjectMeta.Finalizers)
 		storage := pvc.Spec.Resources.Requests[api.ResourceStorage]
 		capacity := ""
 		accessModes := ""
@@ -1235,6 +1253,9 @@ func describePersistentVolumeClaim(pvc *api.PersistentVolumeClaim, events *api.E
 		}
 		w.Write(LEVEL_0, "Capacity:\t%s\n", capacity)
 		w.Write(LEVEL_0, "Access Modes:\t%s\n", accessModes)
+		if pvc.Spec.VolumeMode != nil {
+			w.Write(LEVEL_0, "VolumeMode:\t%v\n", *pvc.Spec.VolumeMode)
+		}
 		if events != nil {
 			DescribeEvents(events, w)
 		}
@@ -1294,11 +1315,13 @@ func describeContainerBasicInfo(container api.Container, status api.ContainerSta
 	if strings.Contains(portString, ",") {
 		w.Write(LEVEL_2, "Ports:\t%s\n", portString)
 	} else {
-		if len(portString) == 0 {
-			w.Write(LEVEL_2, "Port:\t<none>\n")
-		} else {
-			w.Write(LEVEL_2, "Port:\t%s\n", portString)
-		}
+		w.Write(LEVEL_2, "Port:\t%s\n", stringOrNone(portString))
+	}
+	hostPortString := describeContainerHostPorts(container.Ports)
+	if strings.Contains(hostPortString, ",") {
+		w.Write(LEVEL_2, "Host Ports:\t%s\n", hostPortString)
+	} else {
+		w.Write(LEVEL_2, "Host Port:\t%s\n", stringOrNone(hostPortString))
 	}
 }
 
@@ -1306,6 +1329,14 @@ func describeContainerPorts(cPorts []api.ContainerPort) string {
 	ports := make([]string, 0, len(cPorts))
 	for _, cPort := range cPorts {
 		ports = append(ports, fmt.Sprintf("%d/%s", cPort.ContainerPort, cPort.Protocol))
+	}
+	return strings.Join(ports, ", ")
+}
+
+func describeContainerHostPorts(cPorts []api.ContainerPort) string {
+	ports := make([]string, 0, len(cPorts))
+	for _, cPort := range cPorts {
+		ports = append(ports, fmt.Sprintf("%d/%s", cPort.HostPort, cPort.Protocol))
 	}
 	return strings.Join(ports, ", ")
 }
@@ -1365,6 +1396,7 @@ func describeContainerProbe(container api.Container, w PrefixWriter) {
 }
 
 func describeContainerVolumes(container api.Container, w PrefixWriter) {
+	// Show volumeMounts
 	none := ""
 	if len(container.VolumeMounts) == 0 {
 		none = "\t<none>"
@@ -1382,6 +1414,14 @@ func describeContainerVolumes(container api.Container, w PrefixWriter) {
 			flags = append(flags, fmt.Sprintf("path=%q", mount.SubPath))
 		}
 		w.Write(LEVEL_3, "%s from %s (%s)\n", mount.MountPath, mount.Name, strings.Join(flags, ","))
+	}
+	// Show volumeDevices if exists
+	if len(container.VolumeDevices) > 0 {
+		w.Write(LEVEL_2, "Devices:%s\n", none)
+		sort.Sort(SortableVolumeDevices(container.VolumeDevices))
+		for _, device := range container.VolumeDevices {
+			w.Write(LEVEL_3, "%s from %s\n", device.DevicePath, device.Name)
+		}
 	}
 }
 
@@ -2034,12 +2074,7 @@ func describeIngressTLS(w PrefixWriter, ingTLS []extensions.IngressTLS) {
 func describeIngressAnnotations(w PrefixWriter, annotations map[string]string) {
 	w.Write(LEVEL_0, "Annotations:\n")
 	for k, v := range annotations {
-		if !strings.HasPrefix(k, "ingress") {
-			continue
-		}
-		parts := strings.Split(k, "/")
-		name := parts[len(parts)-1]
-		w.Write(LEVEL_1, "%v:\t%s\n", name, v)
+		w.Write(LEVEL_1, "%v:\t%s\n", k, v)
 	}
 	return
 }
@@ -2605,10 +2640,11 @@ func describeNode(node *api.Node, nodeNonTerminatedPodsList *api.PodList, events
 		if len(node.Spec.ExternalID) > 0 {
 			w.Write(LEVEL_0, "ExternalID:\t%s\n", node.Spec.ExternalID)
 		}
+		if len(node.Spec.ProviderID) > 0 {
+			w.Write(LEVEL_0, "ProviderID:\t%s\n", node.Spec.ProviderID)
+		}
 		if canViewPods && nodeNonTerminatedPodsList != nil {
-			if err := describeNodeResource(nodeNonTerminatedPodsList, node, w); err != nil {
-				return err
-			}
+			describeNodeResource(nodeNonTerminatedPodsList, node, w)
 		} else {
 			w.Write(LEVEL_0, "Pods:\tnot authorized\n")
 		}
@@ -2848,7 +2884,7 @@ func describeHorizontalPodAutoscaler(hpa *autoscaling.HorizontalPodAutoscaler, e
 	})
 }
 
-func describeNodeResource(nodeNonTerminatedPodsList *api.PodList, node *api.Node, w PrefixWriter) error {
+func describeNodeResource(nodeNonTerminatedPodsList *api.PodList, node *api.Node, w PrefixWriter) {
 	w.Write(LEVEL_0, "Non-terminated Pods:\t(%d in total)\n", len(nodeNonTerminatedPodsList.Items))
 	w.Write(LEVEL_1, "Namespace\tName\t\tCPU Requests\tCPU Limits\tMemory Requests\tMemory Limits\n")
 	w.Write(LEVEL_1, "---------\t----\t\t------------\t----------\t---------------\t-------------\n")
@@ -2858,10 +2894,7 @@ func describeNodeResource(nodeNonTerminatedPodsList *api.PodList, node *api.Node
 	}
 
 	for _, pod := range nodeNonTerminatedPodsList.Items {
-		req, limit, err := resourcehelper.PodRequestsAndLimits(&pod)
-		if err != nil {
-			return err
-		}
+		req, limit := resourcehelper.PodRequestsAndLimits(&pod)
 		cpuReq, cpuLimit, memoryReq, memoryLimit := req[api.ResourceCPU], limit[api.ResourceCPU], req[api.ResourceMemory], limit[api.ResourceMemory]
 		fractionCpuReq := float64(cpuReq.MilliValue()) / float64(allocatable.Cpu().MilliValue()) * 100
 		fractionCpuLimit := float64(cpuLimit.MilliValue()) / float64(allocatable.Cpu().MilliValue()) * 100
@@ -2874,10 +2907,7 @@ func describeNodeResource(nodeNonTerminatedPodsList *api.PodList, node *api.Node
 
 	w.Write(LEVEL_0, "Allocated resources:\n  (Total limits may be over 100 percent, i.e., overcommitted.)\n  CPU Requests\tCPU Limits\tMemory Requests\tMemory Limits\n")
 	w.Write(LEVEL_1, "------------\t----------\t---------------\t-------------\n")
-	reqs, limits, err := getPodsTotalRequestsAndLimits(nodeNonTerminatedPodsList)
-	if err != nil {
-		return err
-	}
+	reqs, limits := getPodsTotalRequestsAndLimits(nodeNonTerminatedPodsList)
 	cpuReqs, cpuLimits, memoryReqs, memoryLimits := reqs[api.ResourceCPU], limits[api.ResourceCPU], reqs[api.ResourceMemory], limits[api.ResourceMemory]
 	fractionCpuReqs := float64(cpuReqs.MilliValue()) / float64(allocatable.Cpu().MilliValue()) * 100
 	fractionCpuLimits := float64(cpuLimits.MilliValue()) / float64(allocatable.Cpu().MilliValue()) * 100
@@ -2886,16 +2916,12 @@ func describeNodeResource(nodeNonTerminatedPodsList *api.PodList, node *api.Node
 	w.Write(LEVEL_1, "%s (%d%%)\t%s (%d%%)\t%s (%d%%)\t%s (%d%%)\n",
 		cpuReqs.String(), int64(fractionCpuReqs), cpuLimits.String(), int64(fractionCpuLimits),
 		memoryReqs.String(), int64(fractionMemoryReqs), memoryLimits.String(), int64(fractionMemoryLimits))
-	return nil
 }
 
-func getPodsTotalRequestsAndLimits(podList *api.PodList) (reqs map[api.ResourceName]resource.Quantity, limits map[api.ResourceName]resource.Quantity, err error) {
+func getPodsTotalRequestsAndLimits(podList *api.PodList) (reqs map[api.ResourceName]resource.Quantity, limits map[api.ResourceName]resource.Quantity) {
 	reqs, limits = map[api.ResourceName]resource.Quantity{}, map[api.ResourceName]resource.Quantity{}
 	for _, pod := range podList.Items {
-		podReqs, podLimits, err := resourcehelper.PodRequestsAndLimits(&pod)
-		if err != nil {
-			return nil, nil, err
-		}
+		podReqs, podLimits := resourcehelper.PodRequestsAndLimits(&pod)
 		for podReqName, podReqValue := range podReqs {
 			if value, ok := reqs[podReqName]; !ok {
 				reqs[podReqName] = *podReqValue.Copy()
@@ -3366,6 +3392,9 @@ func describePodSecurityPolicy(psp *extensions.PodSecurityPolicy) (string, error
 		w.Write(LEVEL_1, "Allowed Capabilities:\t%s\n", capsToString(psp.Spec.AllowedCapabilities))
 		w.Write(LEVEL_1, "Allowed Volume Types:\t%s\n", fsTypeToString(psp.Spec.Volumes))
 
+		if len(psp.Spec.AllowedFlexVolumes) > 0 {
+			w.Write(LEVEL_1, "Allowed FlexVolume Types:\t%s\n", flexVolumesToString(psp.Spec.AllowedFlexVolumes))
+		}
 		w.Write(LEVEL_1, "Allow Host Network:\t%t\n", psp.Spec.HostNetwork)
 		w.Write(LEVEL_1, "Allow Host Ports:\t%s\n", hostPortRangeToString(psp.Spec.HostPorts))
 		w.Write(LEVEL_1, "Allow Host PID:\t%t\n", psp.Spec.HostPID)
@@ -3399,10 +3428,14 @@ func describePodSecurityPolicy(psp *extensions.PodSecurityPolicy) (string, error
 }
 
 func stringOrNone(s string) string {
+	return stringOrDefaultValue(s, "<none>")
+}
+
+func stringOrDefaultValue(s, defaultValue string) string {
 	if len(s) > 0 {
 		return s
 	}
-	return "<none>"
+	return defaultValue
 }
 
 func fsTypeToString(volumes []extensions.FSType) string {
@@ -3411,6 +3444,14 @@ func fsTypeToString(volumes []extensions.FSType) string {
 		strVolumes = append(strVolumes, string(v))
 	}
 	return stringOrNone(strings.Join(strVolumes, ","))
+}
+
+func flexVolumesToString(flexVolumes []extensions.AllowedFlexVolume) string {
+	volumes := []string{}
+	for _, flexVolume := range flexVolumes {
+		volumes = append(volumes, "driver="+flexVolume.Driver)
+	}
+	return stringOrDefaultValue(strings.Join(volumes, ","), "<all>")
 }
 
 func hostPortRangeToString(ranges []extensions.HostPortRange) string {
@@ -3801,6 +3842,20 @@ func (list SortableVolumeMounts) Swap(i, j int) {
 
 func (list SortableVolumeMounts) Less(i, j int) bool {
 	return list[i].MountPath < list[j].MountPath
+}
+
+type SortableVolumeDevices []api.VolumeDevice
+
+func (list SortableVolumeDevices) Len() int {
+	return len(list)
+}
+
+func (list SortableVolumeDevices) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
+
+func (list SortableVolumeDevices) Less(i, j int) bool {
+	return list[i].DevicePath < list[j].DevicePath
 }
 
 // TODO: get rid of this and plumb the caller correctly

@@ -1226,6 +1226,10 @@ func printPersistentVolumeClaim(obj *api.PersistentVolumeClaim, options printers
 	}
 
 	phase := obj.Status.Phase
+	if obj.ObjectMeta.DeletionTimestamp != nil {
+		phase = "Terminating"
+	}
+
 	storage := obj.Spec.Resources.Requests[api.ResourceStorage]
 	capacity := ""
 	accessModes := ""
@@ -1483,20 +1487,20 @@ func formatHPAMetrics(specs []autoscaling.MetricSpec, statuses []autoscaling.Met
 			if len(statuses) > i && statuses[i].Pods != nil {
 				current = statuses[i].Pods.CurrentAverageValue.String()
 			}
-			list = append(list, fmt.Sprintf("%s / %s", current, spec.Pods.TargetAverageValue.String()))
+			list = append(list, fmt.Sprintf("%s/%s", current, spec.Pods.TargetAverageValue.String()))
 		case autoscaling.ObjectMetricSourceType:
 			current := "<unknown>"
 			if len(statuses) > i && statuses[i].Object != nil {
 				current = statuses[i].Object.CurrentValue.String()
 			}
-			list = append(list, fmt.Sprintf("%s / %s", current, spec.Object.TargetValue.String()))
+			list = append(list, fmt.Sprintf("%s/%s", current, spec.Object.TargetValue.String()))
 		case autoscaling.ResourceMetricSourceType:
 			if spec.Resource.TargetAverageValue != nil {
 				current := "<unknown>"
 				if len(statuses) > i && statuses[i].Resource != nil {
 					current = statuses[i].Resource.CurrentAverageValue.String()
 				}
-				list = append(list, fmt.Sprintf("%s / %s", current, spec.Resource.TargetAverageValue.String()))
+				list = append(list, fmt.Sprintf("%s/%s", current, spec.Resource.TargetAverageValue.String()))
 			} else {
 				current := "<unknown>"
 				if len(statuses) > i && statuses[i].Resource != nil && statuses[i].Resource.CurrentAverageUtilization != nil {
@@ -1507,7 +1511,7 @@ func formatHPAMetrics(specs []autoscaling.MetricSpec, statuses []autoscaling.Met
 				if spec.Resource.TargetAverageUtilization != nil {
 					target = fmt.Sprintf("%d%%", *spec.Resource.TargetAverageUtilization)
 				}
-				list = append(list, fmt.Sprintf("%s / %s", current, target))
+				list = append(list, fmt.Sprintf("%s/%s", current, target))
 			}
 		default:
 			list = append(list, "<unknown type>")

@@ -25,6 +25,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 
+	"net/url"
+
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +67,8 @@ type GetOptions struct {
 	ShowKind       bool
 	LabelColumns   []string
 	Export         bool
+
+	IncludeUninitialized bool
 }
 
 var (
@@ -139,7 +143,8 @@ func NewCmdGet(f cmdutil.Factory, out io.Writer, errOut io.Writer) *cobra.Comman
 	}
 
 	cmd := &cobra.Command{
-		Use:     "get [(-o|--output=)json|yaml|wide|custom-columns=...|custom-columns-file=...|go-template=...|go-template-file=...|jsonpath=...|jsonpath-file=...] (TYPE [NAME | -l label] | TYPE/NAME ...) [flags]",
+		Use: "get [(-o|--output=)json|yaml|wide|custom-columns=...|custom-columns-file=...|go-template=...|go-template-file=...|jsonpath=...|jsonpath-file=...] (TYPE [NAME | -l label] | TYPE/NAME ...) [flags]",
+		DisableFlagsInUseLine: true,
 		Short:   i18n.T("Display one or many resources"),
 		Long:    getLong + "\n\n" + cmdutil.ValidResourceTypeList(f),
 		Example: getExample,
@@ -190,9 +195,13 @@ func (options *GetOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args 
 		options.ExplicitNamespace = false
 	}
 
+	options.IncludeUninitialized = cmdutil.ShouldIncludeUninitialized(cmd, false)
+
 	switch {
 	case options.Watch || options.WatchOnly:
-
+		// include uninitialized objects when watching on a single object
+		// unless explicitly set --include-uninitialized=false
+		options.IncludeUninitialized = cmdutil.ShouldIncludeUninitialized(cmd, len(args) == 2)
 	default:
 		if len(args) == 0 && cmdutil.IsFilenameSliceEmpty(options.Filenames) {
 			fmt.Fprint(options.ErrOut, "You must specify the type of resource to get. ", cmdutil.ValidResourceTypeList(f))
@@ -210,8 +219,16 @@ func (options *GetOptions) Complete(f cmdutil.Factory, cmd *cobra.Command, args 
 
 // Validate checks the set of flags provided by the user.
 func (options *GetOptions) Validate(cmd *cobra.Command) error {
-	if len(options.Raw) > 0 && (options.Watch || options.WatchOnly || len(options.LabelSelector) > 0 || options.Export) {
-		return fmt.Errorf("--raw may not be specified with other flags that filter the server request or alter the output")
+	if len(options.Raw) > 0 {
+		if options.Watch || options.WatchOnly || len(options.LabelSelector) > 0 || options.Export {
+			return fmt.Errorf("--raw may not be specified with other flags that filter the server request or alter the output")
+		}
+		if len(cmdutil.GetFlagString(cmd, "output")) > 0 {
+			return cmdutil.UsageErrorf(cmd, "--raw and --output are mutually exclusive")
+		}
+		if _, err := url.ParseRequestURI(options.Raw); err != nil {
+			return cmdutil.UsageErrorf(cmd, "--raw must be a valid URL path: %v", err)
+		}
 	}
 	if cmdutil.GetFlagBool(cmd, "show-labels") {
 		outputOption := cmd.Flags().Lookup("output").Value.String()
@@ -240,7 +257,7 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 		FieldSelectorParam(options.FieldSelector).
 		ExportParam(options.Export).
 		RequestChunksOf(options.ChunkSize).
-		IncludeUninitialized(cmdutil.ShouldIncludeUninitialized(cmd, false)). // TODO: this needs to be better factored
+		IncludeUninitialized(options.IncludeUninitialized).
 		ResourceTypeOrNameArgs(true, args...).
 		ContinueOnError().
 		Latest().
@@ -254,12 +271,13 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 		return err
 	}
 
-	printer, err := f.PrinterForCommand(cmd, false, nil, printers.PrintOptions{})
+	printOpts := cmdutil.ExtractCmdPrintOptions(cmd, options.AllNamespaces)
+	printer, err := f.PrinterForOptions(printOpts)
 	if err != nil {
 		return err
 	}
 
-	filterOpts := f.DefaultResourceFilterOptions(cmd, options.AllNamespaces)
+	filterOpts := cmdutil.ExtractCmdPrintOptions(cmd, options.AllNamespaces)
 	filterFuncs := f.DefaultResourceFilterFunc()
 	if r.TargetsSingleItems() {
 		filterFuncs = nil
@@ -300,13 +318,10 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 
 	useOpenAPIPrintColumns := cmdutil.GetFlagBool(cmd, useOpenAPIPrintColumnFlagLabel)
 
-	showKind := options.ShowKind
-	// TODO: abstract more cleanly
-	if resource.MultipleTypesRequested(args) || cmdutil.MustPrintWithKinds(objs, infos, sorter) {
-		showKind = true
-	}
+	showKind := options.ShowKind || resource.MultipleTypesRequested(args) || cmdutil.MustPrintWithKinds(objs, infos, sorter)
 
 	filteredResourceCount := 0
+	noHeaders := cmdutil.GetFlagBool(cmd, "no-headers")
 	for ix := range objs {
 		var mapping *meta.RESTMapping
 		var original runtime.Object
@@ -330,14 +345,14 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 				printWithNamespace = false
 			}
 
-			var outputOpts *printers.OutputOptions
+			printOpts := cmdutil.ExtractCmdPrintOptions(cmd, printWithNamespace)
 			// if cmd does not specify output format and useOpenAPIPrintColumnFlagLabel flag is true,
 			// then get the default output options for this mapping from OpenAPI schema.
 			if !cmdSpecifiesOutputFmt(cmd) && useOpenAPIPrintColumns {
-				outputOpts, _ = outputOptsForMappingFromOpenAPI(f, mapping)
+				updatePrintOptionsForOpenAPI(f, mapping, printOpts)
 			}
 
-			printer, err = f.PrinterForMapping(cmd, false, outputOpts, mapping, printWithNamespace)
+			printer, err = f.PrinterForMapping(printOpts, mapping)
 			if err != nil {
 				if !errs.Has(err.Error()) {
 					errs.Insert(err.Error())
@@ -349,7 +364,6 @@ func (options *GetOptions) Run(f cmdutil.Factory, cmd *cobra.Command, args []str
 			// TODO: this doesn't belong here
 			// add linebreak between resource groups (if there is more than one)
 			// skip linebreak above first resource group
-			noHeaders := cmdutil.GetFlagBool(cmd, "no-headers")
 			if lastMapping != nil && !noHeaders {
 				fmt.Fprintf(options.ErrOut, "%s\n", "")
 			}
@@ -441,11 +455,6 @@ func (options *GetOptions) raw(f cmdutil.Factory) error {
 // watch starts a client-side watch of one or more resources.
 // TODO: remove the need for arguments here.
 func (options *GetOptions) watch(f cmdutil.Factory, cmd *cobra.Command, args []string) error {
-	// TODO: this could be better factored
-	// include uninitialized objects when watching on a single object
-	// unless explicitly set --include-uninitialized=false
-	includeUninitialized := cmdutil.ShouldIncludeUninitialized(cmd, len(args) == 2)
-
 	r := f.NewBuilder().
 		Unstructured().
 		NamespaceParam(options.Namespace).DefaultNamespace().AllNamespaces(options.AllNamespaces).
@@ -454,7 +463,7 @@ func (options *GetOptions) watch(f cmdutil.Factory, cmd *cobra.Command, args []s
 		FieldSelectorParam(options.FieldSelector).
 		ExportParam(options.Export).
 		RequestChunksOf(options.ChunkSize).
-		IncludeUninitialized(includeUninitialized).
+		IncludeUninitialized(options.IncludeUninitialized).
 		ResourceTypeOrNameArgs(true, args...).
 		SingleResourceType().
 		Latest().
@@ -470,7 +479,7 @@ func (options *GetOptions) watch(f cmdutil.Factory, cmd *cobra.Command, args []s
 		return i18n.Errorf("watch is only supported on individual resources and resource collections - %d resources were found", len(infos))
 	}
 
-	filterOpts := f.DefaultResourceFilterOptions(cmd, options.AllNamespaces)
+	filterOpts := cmdutil.ExtractCmdPrintOptions(cmd, options.AllNamespaces)
 	filterFuncs := f.DefaultResourceFilterFunc()
 	if r.TargetsSingleItems() {
 		filterFuncs = nil
@@ -478,7 +487,8 @@ func (options *GetOptions) watch(f cmdutil.Factory, cmd *cobra.Command, args []s
 
 	info := infos[0]
 	mapping := info.ResourceMapping()
-	printer, err := f.PrinterForMapping(cmd, false, nil, mapping, options.AllNamespaces)
+	printOpts := cmdutil.ExtractCmdPrintOptions(cmd, options.AllNamespaces)
+	printer, err := f.PrinterForMapping(printOpts, mapping)
 	if err != nil {
 		return err
 	}
@@ -661,44 +671,45 @@ func cmdSpecifiesOutputFmt(cmd *cobra.Command) bool {
 }
 
 // outputOptsForMappingFromOpenAPI looks for the output format metatadata in the
-// openapi schema and returns the output options for the mapping if found.
-func outputOptsForMappingFromOpenAPI(f cmdutil.Factory, mapping *meta.RESTMapping) (*printers.OutputOptions, bool) {
+// openapi schema and modifies the passed print options for the mapping if found.
+func updatePrintOptionsForOpenAPI(f cmdutil.Factory, mapping *meta.RESTMapping, printOpts *printers.PrintOptions) bool {
 
 	// user has not specified any output format, check if OpenAPI has
 	// default specification to print this resource type
 	api, err := f.OpenAPISchema()
 	if err != nil {
 		// Error getting schema
-		return nil, false
+		return false
 	}
 	// Found openapi metadata for this resource
 	schema := api.LookupResource(mapping.GroupVersionKind)
 	if schema == nil {
 		// Schema not found, return empty columns
-		return nil, false
+		return false
 	}
 
 	columns, found := openapi.GetPrintColumns(schema.GetExtensions())
 	if !found {
 		// Extension not found, return empty columns
-		return nil, false
+		return false
 	}
 
-	return outputOptsFromStr(columns)
+	return outputOptsFromStr(columns, printOpts)
 }
 
 // outputOptsFromStr parses the print-column metadata and generates printer.OutputOptions object.
-func outputOptsFromStr(columnStr string) (*printers.OutputOptions, bool) {
+func outputOptsFromStr(columnStr string, printOpts *printers.PrintOptions) bool {
 	if columnStr == "" {
-		return nil, false
+		return false
 	}
 	parts := strings.SplitN(columnStr, "=", 2)
 	if len(parts) < 2 {
-		return nil, false
+		return false
 	}
-	return &printers.OutputOptions{
-		FmtType:          parts[0],
-		FmtArg:           parts[1],
-		AllowMissingKeys: true,
-	}, true
+
+	printOpts.OutputFormatType = parts[0]
+	printOpts.OutputFormatArgument = parts[1]
+	printOpts.AllowMissingKeys = true
+
+	return true
 }

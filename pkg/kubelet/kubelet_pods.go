@@ -40,15 +40,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/remotecommand"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/api/v1/resource"
+	podshelper "k8s.io/kubernetes/pkg/apis/core/pods"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	v1qos "k8s.io/kubernetes/pkg/apis/core/v1/helper/qos"
-	"k8s.io/kubernetes/pkg/apis/core/v1/validation"
 	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/fieldpath"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
@@ -64,6 +62,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	utilfile "k8s.io/kubernetes/pkg/util/file"
 	"k8s.io/kubernetes/pkg/volume"
+	volumeutil "k8s.io/kubernetes/pkg/volume/util"
 	"k8s.io/kubernetes/pkg/volume/util/volumehelper"
 	volumevalidation "k8s.io/kubernetes/pkg/volume/validation"
 	"k8s.io/kubernetes/third_party/forked/golang/expansion"
@@ -91,9 +90,9 @@ func (kl *Kubelet) GetActivePods() []*v1.Pod {
 	return activePods
 }
 
-// makeDevices determines the devices for the given container.
+// makeGPUDevices determines the devices for the given container.
 // Experimental.
-func (kl *Kubelet) makeDevices(pod *v1.Pod, container *v1.Container) ([]kubecontainer.DeviceInfo, error) {
+func (kl *Kubelet) makeGPUDevices(pod *v1.Pod, container *v1.Container) ([]kubecontainer.DeviceInfo, error) {
 	if container.Resources.Limits.NvidiaGPU().IsZero() {
 		return nil, nil
 	}
@@ -126,6 +125,39 @@ func makeAbsolutePath(goos, path string) string {
 	}
 	// Otherwise, add 'c:\'
 	return "c:\\" + path
+}
+
+// makeBlockVolumes maps the raw block devices specified in the path of the container
+// Experimental
+func (kl *Kubelet) makeBlockVolumes(pod *v1.Pod, container *v1.Container, podVolumes kubecontainer.VolumeMap, blkutil volumeutil.BlockVolumePathHandler) ([]kubecontainer.DeviceInfo, error) {
+	var devices []kubecontainer.DeviceInfo
+	for _, device := range container.VolumeDevices {
+		// check path is absolute
+		if !filepath.IsAbs(device.DevicePath) {
+			return nil, fmt.Errorf("error DevicePath `%s` must be an absolute path", device.DevicePath)
+		}
+		vol, ok := podVolumes[device.Name]
+		if !ok || vol.BlockVolumeMapper == nil {
+			glog.Errorf("Block volume cannot be satisfied for container %q, because the volume is missing or the volume mapper is nil: %+v", container.Name, device)
+			return nil, fmt.Errorf("cannot find volume %q to pass into container %q", device.Name, container.Name)
+		}
+		// Get a symbolic link associated to a block device under pod device path
+		dirPath, volName := vol.BlockVolumeMapper.GetPodDeviceMapPath()
+		symlinkPath := path.Join(dirPath, volName)
+		if islinkExist, checkErr := blkutil.IsSymlinkExist(symlinkPath); checkErr != nil {
+			return nil, checkErr
+		} else if islinkExist {
+			// Check readOnly in PVCVolumeSource and set read only permission if it's true.
+			permission := "mrw"
+			if vol.ReadOnly {
+				permission = "r"
+			}
+			glog.V(4).Infof("Device will be attached to container %q. Path on host: %v", container.Name, symlinkPath)
+			devices = append(devices, kubecontainer.DeviceInfo{PathOnHost: symlinkPath, PathInContainer: device.DevicePath, Permissions: permission})
+		}
+	}
+
+	return devices, nil
 }
 
 // makeMounts determines the mount points for the given container.
@@ -416,11 +448,21 @@ func (kl *Kubelet) GenerateRunContainerOptions(pod *v1.Pod, container *v1.Contai
 
 	opts.PortMappings = kubecontainer.MakePortMappings(container)
 	// TODO(random-liu): Move following convert functions into pkg/kubelet/container
-	devices, err := kl.makeDevices(pod, container)
+	devices, err := kl.makeGPUDevices(pod, container)
 	if err != nil {
 		return nil, err
 	}
 	opts.Devices = append(opts.Devices, devices...)
+
+	// TODO: remove feature gate check after no longer needed
+	if utilfeature.DefaultFeatureGate.Enabled(features.BlockVolume) {
+		blkutil := volumeutil.NewBlockVolumePathHandler()
+		blkVolumes, err := kl.makeBlockVolumes(pod, container, volumes, blkutil)
+		if err != nil {
+			return nil, err
+		}
+		opts.Devices = append(opts.Devices, blkVolumes...)
+	}
 
 	mounts, err := makeMounts(pod, kl.getPodDir(pod.UID), container, hostname, hostDomainName, podIP, volumes)
 	if err != nil {
@@ -733,7 +775,7 @@ func (kl *Kubelet) makeEnvironmentVariables(pod *v1.Pod, container *v1.Container
 // podFieldSelectorRuntimeValue returns the runtime value of the given
 // selector for a pod.
 func (kl *Kubelet) podFieldSelectorRuntimeValue(fs *v1.ObjectFieldSelector, pod *v1.Pod, podIP string) (string, error) {
-	internalFieldPath, _, err := legacyscheme.Scheme.ConvertFieldLabel(fs.APIVersion, "Pod", fs.FieldPath, "")
+	internalFieldPath, _, err := podshelper.ConvertDownwardAPIFieldLabel(fs.APIVersion, fs.FieldPath, "")
 	if err != nil {
 		return "", err
 	}
@@ -770,7 +812,7 @@ func (kl *Kubelet) killPod(pod *v1.Pod, runningPod *kubecontainer.Pod, status *k
 	if runningPod != nil {
 		p = *runningPod
 	} else if status != nil {
-		p = kubecontainer.ConvertPodStatusToRunningPod(kl.GetRuntime().Type(), status)
+		p = kubecontainer.ConvertPodStatusToRunningPod(kl.getRuntime().Type(), status)
 	} else {
 		return fmt.Errorf("one of the two arguments must be non-nil: runningPod, status")
 	}
@@ -1065,22 +1107,6 @@ func (kl *Kubelet) podKiller() {
 	}
 }
 
-// hasHostPortConflicts detects pods with conflicted host ports.
-func hasHostPortConflicts(pods []*v1.Pod) bool {
-	ports := sets.String{}
-	for _, pod := range pods {
-		if errs := validation.AccumulateUniqueHostPorts(pod.Spec.Containers, &ports, field.NewPath("spec", "containers")); len(errs) > 0 {
-			glog.Errorf("Pod %q: HostPort is already allocated, ignoring: %v", format.Pod(pod), errs)
-			return true
-		}
-		if errs := validation.AccumulateUniqueHostPorts(pod.Spec.InitContainers, &ports, field.NewPath("spec", "initContainers")); len(errs) > 0 {
-			glog.Errorf("Pod %q: HostPort is already allocated, ignoring: %v", format.Pod(pod), errs)
-			return true
-		}
-	}
-	return false
-}
-
 // validateContainerLogStatus returns the container ID for the desired container to retrieve logs for, based on the state
 // of the container. The previous flag will only return the logs for the last terminated container, otherwise, the current
 // running container is preferred over a previous termination. If info about the container is not available then a specific
@@ -1187,10 +1213,8 @@ func (kl *Kubelet) GetKubeletContainerLogs(podFullName, containerName string, lo
 	return kl.containerRuntime.GetContainerLogs(pod, containerID, logOptions, stdout, stderr)
 }
 
-// GetPhase returns the phase of a pod given its container info.
-// This func is exported to simplify integration with 3rd party kubelet
-// integrations like kubernetes-mesos.
-func GetPhase(spec *v1.PodSpec, info []v1.ContainerStatus) v1.PodPhase {
+// getPhase returns the phase of a pod given its container info.
+func getPhase(spec *v1.PodSpec, info []v1.ContainerStatus) v1.PodPhase {
 	initialized := 0
 	pendingInitialization := 0
 	failedInitialization := 0
@@ -1320,7 +1344,7 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 	// Assume info is ready to process
 	spec := &pod.Spec
 	allStatus := append(append([]v1.ContainerStatus{}, s.ContainerStatuses...), s.InitContainerStatuses...)
-	s.Phase = GetPhase(spec, allStatus)
+	s.Phase = getPhase(spec, allStatus)
 	kl.probeManager.UpdatePodStatus(pod.UID, s)
 	s.Conditions = append(s.Conditions, status.GeneratePodInitializedCondition(spec, s.InitContainerStatuses, s.Phase))
 	s.Conditions = append(s.Conditions, status.GeneratePodReadyCondition(spec, s.ContainerStatuses, s.Phase))

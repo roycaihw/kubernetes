@@ -22,17 +22,18 @@ import (
 
 	internalapi "k8s.io/kubernetes/pkg/kubelet/apis/cri"
 	"k8s.io/kubernetes/pkg/kubelet/cm/cpumanager"
+	"k8s.io/kubernetes/pkg/kubelet/config"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/status"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
+	"k8s.io/kubernetes/pkg/scheduler/schedulercache"
 )
 
 type containerManagerStub struct{}
 
 var _ ContainerManager = &containerManagerStub{}
 
-func (cm *containerManagerStub) Start(_ *v1.Node, _ ActivePodsFunc, _ status.PodStatusProvider, _ internalapi.RuntimeService) error {
+func (cm *containerManagerStub) Start(_ *v1.Node, _ ActivePodsFunc, _ config.SourcesReady, _ status.PodStatusProvider, _ internalapi.RuntimeService) error {
 	glog.V(2).Infof("Starting stub container manager")
 	return nil
 }
@@ -67,6 +68,10 @@ func (cm *containerManagerStub) GetNodeAllocatableReservation() v1.ResourceList 
 
 func (cm *containerManagerStub) GetCapacity() v1.ResourceList {
 	return nil
+}
+
+func (cm *containerManagerStub) GetDevicePluginResourceCapacity() (v1.ResourceList, v1.ResourceList, []string) {
+	return nil, nil, []string{}
 }
 
 func (cm *containerManagerStub) NewPodContainerManager() PodContainerManager {

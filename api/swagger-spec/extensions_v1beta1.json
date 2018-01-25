@@ -7294,7 +7294,7 @@
      },
      "dnsPolicy": {
       "type": "string",
-      "description": "Set DNS policy for containers within the pod. One of 'ClusterFirstWithHostNet', 'ClusterFirst' or 'Default'. Defaults to \"ClusterFirst\". To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'."
+      "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'. Note that 'None' policy is an alpha feature introduced in v1.9 and CustomPodDNS feature gate must be enabled to use it."
      },
      "nodeSelector": {
       "type": "object",
@@ -7377,6 +7377,10 @@
       "type": "integer",
       "format": "int32",
       "description": "The priority value. Various system components use this field to find the priority of the pod. When Priority Admission Controller is enabled, it prevents users from setting this field. The admission controller populates this field from PriorityClassName. The higher the value, the higher the priority."
+     },
+     "dnsConfig": {
+      "$ref": "v1.PodDNSConfig",
+      "description": "Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy. This is an alpha feature introduced in v1.9 and CustomPodDNS feature gate must be enabled to use it."
      }
     }
    },
@@ -7437,7 +7441,7 @@
      },
      "flexVolume": {
       "$ref": "v1.FlexVolumeSource",
-      "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. This is an alpha feature and may change in future."
+      "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin."
      },
      "cinder": {
       "$ref": "v1.CinderVolumeSource",
@@ -7835,7 +7839,7 @@
    },
    "v1.FlexVolumeSource": {
     "id": "v1.FlexVolumeSource",
-    "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. This is an alpha feature and may change in future.",
+    "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.",
     "required": [
      "driver"
     ],
@@ -9249,6 +9253,46 @@
      }
     }
    },
+   "v1.PodDNSConfig": {
+    "id": "v1.PodDNSConfig",
+    "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
+    "properties": {
+     "nameservers": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "A list of DNS name server IP addresses. This will be appended to the base nameservers generated from DNSPolicy. Duplicated nameservers will be removed."
+     },
+     "searches": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "A list of DNS search domains for host-name lookup. This will be appended to the base search paths generated from DNSPolicy. Duplicated search paths will be removed."
+     },
+     "options": {
+      "type": "array",
+      "items": {
+       "$ref": "v1.PodDNSConfigOption"
+      },
+      "description": "A list of DNS resolver options. This will be merged with the base options generated from DNSPolicy. Duplicated entries will be removed. Resolution options given in Options will override those that appear in the base DNSPolicy."
+     }
+    }
+   },
+   "v1.PodDNSConfigOption": {
+    "id": "v1.PodDNSConfigOption",
+    "description": "PodDNSConfigOption defines DNS resolver options of a pod.",
+    "properties": {
+     "name": {
+      "type": "string",
+      "description": "Required."
+     },
+     "value": {
+      "type": "string"
+     }
+    }
+   },
    "v1beta1.DaemonSetUpdateStrategy": {
     "id": "v1beta1.DaemonSetUpdateStrategy",
     "properties": {
@@ -9946,7 +9990,7 @@
    },
    "v1beta1.NetworkPolicyList": {
     "id": "v1beta1.NetworkPolicyList",
-    "description": "Network Policy List is a list of NetworkPolicy objects.",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicyList is deprecated by networking/v1/NetworkPolicyList. Network Policy List is a list of NetworkPolicy objects.",
     "required": [
      "items"
     ],
@@ -9974,7 +10018,7 @@
    },
    "v1beta1.NetworkPolicy": {
     "id": "v1beta1.NetworkPolicy",
-    "description": "NetworkPolicy describes what network traffic is allowed for a set of Pods",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicy is deprecated by networking/v1/NetworkPolicy. NetworkPolicy describes what network traffic is allowed for a set of Pods",
     "properties": {
      "kind": {
       "type": "string",
@@ -9996,6 +10040,7 @@
    },
    "v1beta1.NetworkPolicySpec": {
     "id": "v1beta1.NetworkPolicySpec",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicySpec is deprecated by networking/v1/NetworkPolicySpec.",
     "required": [
      "podSelector"
     ],
@@ -10029,7 +10074,7 @@
    },
    "v1beta1.NetworkPolicyIngressRule": {
     "id": "v1beta1.NetworkPolicyIngressRule",
-    "description": "This NetworkPolicyIngressRule matches traffic if and only if the traffic matches both ports AND from.",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicyIngressRule is deprecated by networking/v1/NetworkPolicyIngressRule. This NetworkPolicyIngressRule matches traffic if and only if the traffic matches both ports AND from.",
     "properties": {
      "ports": {
       "type": "array",
@@ -10049,6 +10094,7 @@
    },
    "v1beta1.NetworkPolicyPort": {
     "id": "v1beta1.NetworkPolicyPort",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicyPort is deprecated by networking/v1/NetworkPolicyPort.",
     "properties": {
      "protocol": {
       "$ref": "v1.Protocol",
@@ -10066,6 +10112,7 @@
    },
    "v1beta1.NetworkPolicyPeer": {
     "id": "v1beta1.NetworkPolicyPeer",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicyPeer is deprecated by networking/v1/NetworkPolicyPeer.",
     "properties": {
      "podSelector": {
       "$ref": "v1.LabelSelector",
@@ -10083,7 +10130,7 @@
    },
    "v1beta1.IPBlock": {
     "id": "v1beta1.IPBlock",
-    "description": "IPBlock describes a particular CIDR (Ex. \"192.168.1.1/24\") that is allowed to the pods matched by a NetworkPolicySpec's podSelector. The except entry describes CIDRs that should not be included within this rule.",
+    "description": "DEPRECATED 1.9 - This group version of IPBlock is deprecated by networking/v1/IPBlock. IPBlock describes a particular CIDR (Ex. \"192.168.1.1/24\") that is allowed to the pods matched by a NetworkPolicySpec's podSelector. The except entry describes CIDRs that should not be included within this rule.",
     "required": [
      "cidr"
     ],
@@ -10103,7 +10150,7 @@
    },
    "v1beta1.NetworkPolicyEgressRule": {
     "id": "v1beta1.NetworkPolicyEgressRule",
-    "description": "NetworkPolicyEgressRule describes a particular set of traffic that is allowed out of pods matched by a NetworkPolicySpec's podSelector. The traffic must match both ports and to. This type is beta-level in 1.8",
+    "description": "DEPRECATED 1.9 - This group version of NetworkPolicyEgressRule is deprecated by networking/v1/NetworkPolicyEgressRule. NetworkPolicyEgressRule describes a particular set of traffic that is allowed out of pods matched by a NetworkPolicySpec's podSelector. The traffic must match both ports and to. This type is beta-level in 1.8",
     "properties": {
      "ports": {
       "type": "array",
@@ -10270,6 +10317,13 @@
        "$ref": "v1beta1.AllowedHostPath"
       },
       "description": "is a white list of allowed host paths. Empty indicates that all host paths may be used."
+     },
+     "allowedFlexVolumes": {
+      "type": "array",
+      "items": {
+       "$ref": "v1beta1.AllowedFlexVolume"
+      },
+      "description": "AllowedFlexVolumes is a whitelist of allowed Flexvolumes.  Empty or nil indicates that all Flexvolumes may be used.  This parameter is effective only when the usage of the Flexvolumes is allowed in the \"Volumes\" field."
      }
     }
    },
@@ -10395,6 +10449,19 @@
      "pathPrefix": {
       "type": "string",
       "description": "is the path prefix that the host volume must match. It does not support `*`. Trailing slashes are trimmed when validating the path prefix with a host path.\n\nExamples: `/foo` would allow `/foo`, `/foo/` and `/foo/bar` `/foo` would not allow `/food` or `/etc/foo`"
+     }
+    }
+   },
+   "v1beta1.AllowedFlexVolume": {
+    "id": "v1beta1.AllowedFlexVolume",
+    "description": "AllowedFlexVolume represents a single Flexvolume that is allowed to be used.",
+    "required": [
+     "driver"
+    ],
+    "properties": {
+     "driver": {
+      "type": "string",
+      "description": "Driver is the name of the Flexvolume driver."
      }
     }
    },

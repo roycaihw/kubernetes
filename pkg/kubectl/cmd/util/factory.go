@@ -48,6 +48,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/resource"
 	"k8s.io/kubernetes/pkg/kubectl/validation"
 	"k8s.io/kubernetes/pkg/printers"
+	metricsclientset "k8s.io/metrics/pkg/client/clientset_generated/clientset"
 )
 
 const (
@@ -60,10 +61,10 @@ var (
 
 // Factory provides abstractions that allow the Kubectl command to be extended across multiple types
 // of resources and different API sets.
-// The rings are here for a reason.  In order for composers to be able to provide alternative factory implementations
+// The rings are here for a reason. In order for composers to be able to provide alternative factory implementations
 // they need to provide low level pieces of *certain* functions so that when the factory calls back into itself
-// it uses the custom version of the function.  Rather than try to enumerate everything that someone would want to override
-// we split the factory into rings, where each ring can depend on methods  an earlier ring, but cannot depend
+// it uses the custom version of the function. Rather than try to enumerate everything that someone would want to override
+// we split the factory into rings, where each ring can depend on methods in an earlier ring, but cannot depend
 // upon peer methods in its own ring.
 // TODO: make the functions interfaces
 // TODO: pass the various interfaces on the factory directly into the command constructors (so the
@@ -94,6 +95,9 @@ type ClientAccessFactory interface {
 
 	// KubernetesClientSet gives you back an external clientset
 	KubernetesClientSet() (*kubernetes.Clientset, error)
+
+	// MetricsClientSet gives you back an external clientset for the metrics API
+	MetricsClientSet() (metricsclientset.Interface, error)
 
 	// Returns a RESTClient for accessing Kubernetes resources or an error.
 	RESTClient() (*restclient.RESTClient, error)
@@ -140,8 +144,6 @@ type ClientAccessFactory interface {
 	// BindExternalFlags adds any flags defined by external projects (not part of pflags)
 	BindExternalFlags(flags *pflag.FlagSet)
 
-	// TODO: Break the dependency on cmd here.
-	DefaultResourceFilterOptions(cmd *cobra.Command, withNamespace bool) *printers.PrintOptions
 	// DefaultResourceFilterFunc returns a collection of FilterFuncs suitable for filtering specific resource types.
 	DefaultResourceFilterFunc() kubectl.Filters
 
@@ -184,7 +186,7 @@ type ClientAccessFactory interface {
 	PrintObjectSpecificMessage(obj runtime.Object, out io.Writer)
 }
 
-// ObjectMappingFactory holds the second level of factory methods.  These functions depend upon ClientAccessFactory methods.
+// ObjectMappingFactory holds the second level of factory methods. These functions depend upon ClientAccessFactory methods.
 // Generally they provide object typing and functions that build requests based on the negotiated clients.
 type ObjectMappingFactory interface {
 	// Returns interfaces for dealing with arbitrary runtime.Objects.
@@ -226,19 +228,18 @@ type ObjectMappingFactory interface {
 	OpenAPISchema() (openapi.Resources, error)
 }
 
-// BuilderFactory holds the second level of factory methods.  These functions depend upon ObjectMappingFactory and ClientAccessFactory methods.
+// BuilderFactory holds the third level of factory methods. These functions depend upon ObjectMappingFactory and ClientAccessFactory methods.
 // Generally they depend upon client mapper functions
 type BuilderFactory interface {
 	// PrinterForCommand returns the default printer for the command. It requires that certain options
 	// are declared on the command (see AddPrinterFlags). Returns a printer, or an error if a printer
 	// could not be found.
-	// TODO: Break the dependency on cmd here.
-	PrinterForCommand(cmd *cobra.Command, isLocal bool, outputOpts *printers.OutputOptions, options printers.PrintOptions) (printers.ResourcePrinter, error)
+	PrinterForOptions(options *printers.PrintOptions) (printers.ResourcePrinter, error)
 	// PrinterForMapping returns a printer suitable for displaying the provided resource type.
 	// Requires that printer flags have been added to cmd (see AddPrinterFlags).
 	// Returns a printer, true if the printer is generic (is not internal), or
 	// an error if a printer could not be found.
-	PrinterForMapping(cmd *cobra.Command, isLocal bool, outputOpts *printers.OutputOptions, mapping *meta.RESTMapping, withNamespace bool) (printers.ResourcePrinter, error)
+	PrinterForMapping(options *printers.PrintOptions, mapping *meta.RESTMapping) (printers.ResourcePrinter, error)
 	// PrintObject prints an api object given command line flags to modify the output format
 	PrintObject(cmd *cobra.Command, isLocal bool, mapper meta.RESTMapper, obj runtime.Object, out io.Writer) error
 	// PrintResourceInfoForCommand receives a *cobra.Command and a *resource.Info and

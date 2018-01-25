@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/api/admission/v1alpha1"
+	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,6 +40,9 @@ const (
 	patch2 string = `[
          { "op": "add", "path": "/data/mutation-stage-2", "value": "yes" }
      ]`
+	addInitContainerPatch string = `[
+		 {"op":"add","path":"/spec/initContainers","value":[{"image":"webhook-added-image","name":"webhook-added-init-container","resources":{}}]}
+	]`
 )
 
 // Config contains the server (the webhook) cert and key.
@@ -56,8 +59,8 @@ func (c *Config) addFlags() {
 		"File containing the default x509 private key matching --tls-cert-file.")
 }
 
-func toAdmissionResponse(err error) *v1alpha1.AdmissionResponse {
-	return &v1alpha1.AdmissionResponse{
+func toAdmissionResponse(err error) *v1beta1.AdmissionResponse {
+	return &v1beta1.AdmissionResponse{
 		Result: &metav1.Status{
 			Message: err.Error(),
 		},
@@ -65,7 +68,7 @@ func toAdmissionResponse(err error) *v1alpha1.AdmissionResponse {
 }
 
 // only allow pods to pull images from specific registry.
-func admitPods(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
+func admitPods(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	glog.V(2).Info("admitting pods")
 	podResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 	if ar.Request.Resource != podResource {
@@ -81,14 +84,19 @@ func admitPods(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 		glog.Error(err)
 		return toAdmissionResponse(err)
 	}
-	reviewResponse := v1alpha1.AdmissionResponse{}
+	reviewResponse := v1beta1.AdmissionResponse{}
 	reviewResponse.Allowed = true
 
 	var msg string
-	for k, v := range pod.Labels {
-		if k == "webhook-e2e-test" && v == "webhook-disallow" {
+	if v, ok := pod.Labels["webhook-e2e-test"]; ok {
+		if v == "webhook-disallow" {
 			reviewResponse.Allowed = false
 			msg = msg + "the pod contains unwanted label; "
+		}
+		if v == "wait-forever" {
+			reviewResponse.Allowed = false
+			msg = msg + "the pod response should not be sent; "
+			<-make(chan int) // Sleep forever - no one sends to this channel
 		}
 	}
 	for _, container := range pod.Spec.Containers {
@@ -103,8 +111,33 @@ func admitPods(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 	return &reviewResponse
 }
 
+func mutatePods(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+	glog.V(2).Info("mutating pods")
+	podResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	if ar.Request.Resource != podResource {
+		glog.Errorf("expect resource to be %s", podResource)
+		return nil
+	}
+
+	raw := ar.Request.Object.Raw
+	pod := corev1.Pod{}
+	deserializer := codecs.UniversalDeserializer()
+	if _, _, err := deserializer.Decode(raw, nil, &pod); err != nil {
+		glog.Error(err)
+		return toAdmissionResponse(err)
+	}
+	reviewResponse := v1beta1.AdmissionResponse{}
+	reviewResponse.Allowed = true
+	if pod.Name == "webhook-to-be-mutated" {
+		reviewResponse.Patch = []byte(addInitContainerPatch)
+		pt := v1beta1.PatchTypeJSONPatch
+		reviewResponse.PatchType = &pt
+	}
+	return &reviewResponse
+}
+
 // deny configmaps with specific key-value pair.
-func admitConfigMaps(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
+func admitConfigMaps(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	glog.V(2).Info("admitting configmaps")
 	configMapResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
 	if ar.Request.Resource != configMapResource {
@@ -119,7 +152,7 @@ func admitConfigMaps(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 		glog.Error(err)
 		return toAdmissionResponse(err)
 	}
-	reviewResponse := v1alpha1.AdmissionResponse{}
+	reviewResponse := v1beta1.AdmissionResponse{}
 	reviewResponse.Allowed = true
 	for k, v := range configmap.Data {
 		if k == "webhook-e2e-test" && v == "webhook-disallow" {
@@ -132,7 +165,7 @@ func admitConfigMaps(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 	return &reviewResponse
 }
 
-func mutateConfigmaps(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
+func mutateConfigmaps(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	glog.V(2).Info("mutating configmaps")
 	configMapResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
 	if ar.Request.Resource != configMapResource {
@@ -147,7 +180,7 @@ func mutateConfigmaps(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 		glog.Error(err)
 		return toAdmissionResponse(err)
 	}
-	reviewResponse := v1alpha1.AdmissionResponse{}
+	reviewResponse := v1beta1.AdmissionResponse{}
 	reviewResponse.Allowed = true
 	if configmap.Data["mutation-start"] == "yes" {
 		reviewResponse.Patch = []byte(patch1)
@@ -156,13 +189,13 @@ func mutateConfigmaps(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 		reviewResponse.Patch = []byte(patch2)
 	}
 
-	pt := v1alpha1.PatchTypeJSONPatch
+	pt := v1beta1.PatchTypeJSONPatch
 	reviewResponse.PatchType = &pt
 
 	return &reviewResponse
 }
 
-func mutateCRD(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
+func mutateCRD(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	glog.V(2).Info("mutating crd")
 	cr := struct {
 		metav1.ObjectMeta
@@ -176,7 +209,7 @@ func mutateCRD(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 		return toAdmissionResponse(err)
 	}
 
-	reviewResponse := v1alpha1.AdmissionResponse{}
+	reviewResponse := v1beta1.AdmissionResponse{}
 	reviewResponse.Allowed = true
 
 	if cr.Data["mutation-start"] == "yes" {
@@ -185,12 +218,12 @@ func mutateCRD(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 	if cr.Data["mutation-stage-1"] == "yes" {
 		reviewResponse.Patch = []byte(patch2)
 	}
-	pt := v1alpha1.PatchTypeJSONPatch
+	pt := v1beta1.PatchTypeJSONPatch
 	reviewResponse.PatchType = &pt
 	return &reviewResponse
 }
 
-func admitCRD(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
+func admitCRD(ar v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
 	glog.V(2).Info("admitting crd")
 	cr := struct {
 		metav1.ObjectMeta
@@ -204,7 +237,7 @@ func admitCRD(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 		return toAdmissionResponse(err)
 	}
 
-	reviewResponse := v1alpha1.AdmissionResponse{}
+	reviewResponse := v1beta1.AdmissionResponse{}
 	reviewResponse.Allowed = true
 	for k, v := range cr.Data {
 		if k == "webhook-e2e-test" && v == "webhook-disallow" {
@@ -217,7 +250,7 @@ func admitCRD(ar v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse {
 	return &reviewResponse
 }
 
-type admitFunc func(v1alpha1.AdmissionReview) *v1alpha1.AdmissionResponse
+type admitFunc func(v1beta1.AdmissionReview) *v1beta1.AdmissionResponse
 
 func serve(w http.ResponseWriter, r *http.Request, admit admitFunc) {
 	var body []byte
@@ -234,8 +267,8 @@ func serve(w http.ResponseWriter, r *http.Request, admit admitFunc) {
 		return
 	}
 
-	var reviewResponse *v1alpha1.AdmissionResponse
-	ar := v1alpha1.AdmissionReview{}
+	var reviewResponse *v1beta1.AdmissionResponse
+	ar := v1beta1.AdmissionReview{}
 	deserializer := codecs.UniversalDeserializer()
 	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
 		glog.Error(err)
@@ -244,7 +277,7 @@ func serve(w http.ResponseWriter, r *http.Request, admit admitFunc) {
 		reviewResponse = admit(ar)
 	}
 
-	response := v1alpha1.AdmissionReview{}
+	response := v1beta1.AdmissionReview{}
 	if reviewResponse != nil {
 		response.Response = reviewResponse
 		response.Response.UID = ar.Request.UID
@@ -264,6 +297,10 @@ func serve(w http.ResponseWriter, r *http.Request, admit admitFunc) {
 
 func servePods(w http.ResponseWriter, r *http.Request) {
 	serve(w, r, admitPods)
+}
+
+func serveMutatePods(w http.ResponseWriter, r *http.Request) {
+	serve(w, r, mutatePods)
 }
 
 func serveConfigmaps(w http.ResponseWriter, r *http.Request) {
@@ -288,6 +325,7 @@ func main() {
 	flag.Parse()
 
 	http.HandleFunc("/pods", servePods)
+	http.HandleFunc("/mutating-pods", serveMutatePods)
 	http.HandleFunc("/configmaps", serveConfigmaps)
 	http.HandleFunc("/mutating-configmaps", serveMutateConfigmaps)
 	http.HandleFunc("/crd", serveCRD)

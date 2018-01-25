@@ -45,19 +45,20 @@ import (
 	internalapi "k8s.io/kubernetes/pkg/kubelet/apis/cri"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/kubernetes/pkg/kubelet/cm/cpumanager"
-	"k8s.io/kubernetes/pkg/kubelet/cm/deviceplugin"
+	"k8s.io/kubernetes/pkg/kubelet/cm/devicemanager"
 	cmutil "k8s.io/kubernetes/pkg/kubelet/cm/util"
+	"k8s.io/kubernetes/pkg/kubelet/config"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/kubelet/status"
+	"k8s.io/kubernetes/pkg/scheduler/schedulercache"
 	utilfile "k8s.io/kubernetes/pkg/util/file"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/oom"
 	"k8s.io/kubernetes/pkg/util/procfs"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 	utilversion "k8s.io/kubernetes/pkg/util/version"
-	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 )
 
 const (
@@ -128,7 +129,7 @@ type containerManagerImpl struct {
 	// Interface for QoS cgroup management
 	qosContainerManager QOSContainerManager
 	// Interface for exporting and allocating devices reported by device plugins.
-	devicePluginHandler deviceplugin.Handler
+	deviceManager devicemanager.Manager
 	// Interface for CPU affinity management.
 	cpuManager cpumanager.Manager
 }
@@ -262,23 +263,11 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 		qosContainerManager: qosContainerManager,
 	}
 
-	updateDeviceCapacityFunc := func(updates v1.ResourceList) {
-		cm.Lock()
-		defer cm.Unlock()
-		for k, v := range updates {
-			if v.Value() <= 0 {
-				delete(cm.capacity, k)
-			} else {
-				cm.capacity[k] = v
-			}
-		}
-	}
-
-	glog.Infof("Creating device plugin handler: %t", devicePluginEnabled)
+	glog.Infof("Creating device plugin manager: %t", devicePluginEnabled)
 	if devicePluginEnabled {
-		cm.devicePluginHandler, err = deviceplugin.NewHandlerImpl(updateDeviceCapacityFunc)
+		cm.deviceManager, err = devicemanager.NewManagerImpl()
 	} else {
-		cm.devicePluginHandler, err = deviceplugin.NewHandlerStub()
+		cm.deviceManager, err = devicemanager.NewManagerStub()
 	}
 	if err != nil {
 		return nil, err
@@ -530,6 +519,7 @@ func (cm *containerManagerImpl) Status() Status {
 
 func (cm *containerManagerImpl) Start(node *v1.Node,
 	activePods ActivePodsFunc,
+	sourcesReady config.SourcesReady,
 	podStatusProvider status.PodStatusProvider,
 	runtimeService internalapi.RuntimeService) error {
 
@@ -596,8 +586,8 @@ func (cm *containerManagerImpl) Start(node *v1.Node,
 		close(stopChan)
 	}, time.Second, stopChan)
 
-	// Starts device plugin manager.
-	if err := cm.devicePluginHandler.Start(deviceplugin.ActivePodsFunc(activePods)); err != nil {
+	// Starts device manager.
+	if err := cm.deviceManager.Start(devicemanager.ActivePodsFunc(activePods), sourcesReady); err != nil {
 		return err
 	}
 	return nil
@@ -622,7 +612,7 @@ func (cm *containerManagerImpl) GetResources(pod *v1.Pod, container *v1.Containe
 	opts := &kubecontainer.RunContainerOptions{}
 	// Allocate should already be called during predicateAdmitHandler.Admit(),
 	// just try to fetch device runtime information from cached state here
-	devOpts := cm.devicePluginHandler.GetDeviceRunContainerOptions(pod, container)
+	devOpts := cm.deviceManager.GetDeviceRunContainerOptions(pod, container)
 	if devOpts == nil {
 		return opts, nil
 	}
@@ -633,7 +623,7 @@ func (cm *containerManagerImpl) GetResources(pod *v1.Pod, container *v1.Containe
 }
 
 func (cm *containerManagerImpl) UpdatePluginResources(node *schedulercache.NodeInfo, attrs *lifecycle.PodAdmitAttributes) error {
-	return cm.devicePluginHandler.Allocate(node, attrs)
+	return cm.deviceManager.Allocate(node, attrs)
 }
 
 func (cm *containerManagerImpl) SystemCgroupsLimit() v1.ResourceList {
@@ -895,4 +885,8 @@ func (cm *containerManagerImpl) GetCapacity() v1.ResourceList {
 	cm.RLock()
 	defer cm.RUnlock()
 	return cm.capacity
+}
+
+func (cm *containerManagerImpl) GetDevicePluginResourceCapacity() (v1.ResourceList, v1.ResourceList, []string) {
+	return cm.deviceManager.GetCapacity()
 }

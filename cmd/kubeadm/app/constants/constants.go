@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
+	bootstrapapi "k8s.io/client-go/tools/bootstrap/token/api"
 	"k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 	"k8s.io/kubernetes/pkg/util/version"
 )
@@ -155,6 +156,14 @@ const (
 	// after https://github.com/kubernetes/kubernetes/pull/53833 being merged.
 	KubeletBaseConfigurationConfigMapKey = "kubelet"
 
+	// KubeletBaseConfigurationDir specifies the directory on the node where stores the initial remote configuration of kubelet
+	KubeletBaseConfigurationDir = "/var/lib/kubelet/config/init"
+
+	// KubeletBaseConfigurationFile specifies the file name on the node which stores initial remote configuration of kubelet
+	// TODO: Use the constant ("kubelet.config.k8s.io") defined in pkg/kubelet/kubeletconfig/util/keys/keys.go
+	// after https://github.com/kubernetes/kubernetes/pull/53833 being merged.
+	KubeletBaseConfigurationFile = "kubelet"
+
 	// MinExternalEtcdVersion indicates minimum external etcd version which kubeadm supports
 	MinExternalEtcdVersion = "3.0.14"
 
@@ -188,13 +197,12 @@ const (
 	DefaultCIImageRepository = "gcr.io/kubernetes-ci-images"
 
 	// CoreDNS defines a variable used internally when referring to the CoreDNS addon for a cluster
-	CoreDNS = "CoreDNS"
+	CoreDNS = "coredns"
 	// KubeDNS defines a variable used internally when referring to the kube-dns addon for a cluster
 	KubeDNS = "kube-dns"
 )
 
 var (
-
 	// MasterTaint is the taint to apply on the PodSpec for being able to run that Pod on the master
 	MasterTaint = v1.Taint{
 		Key:    LabelNodeRoleMaster,
@@ -213,21 +221,23 @@ var (
 	AuthorizationWebhookConfigPath = filepath.Join(KubernetesDir, "webhook_authz.conf")
 
 	// DefaultTokenUsages specifies the default functions a token will get
-	DefaultTokenUsages = []string{"signing", "authentication"}
+	DefaultTokenUsages = bootstrapapi.KnownTokenUsages
 
 	// MasterComponents defines the master component names
 	MasterComponents = []string{KubeAPIServer, KubeControllerManager, KubeScheduler}
 
 	// MinimumControlPlaneVersion specifies the minimum control plane version kubeadm can deploy
-	MinimumControlPlaneVersion = version.MustParseSemantic("v1.8.0")
+	MinimumControlPlaneVersion = version.MustParseSemantic("v1.9.0")
 
 	// MinimumKubeletVersion specifies the minimum version of kubelet which kubeadm supports
-	MinimumKubeletVersion = version.MustParseSemantic("v1.8.0")
+	MinimumKubeletVersion = version.MustParseSemantic("v1.9.0")
 
 	// SupportedEtcdVersion lists officially supported etcd versions with corresponding kubernetes releases
 	SupportedEtcdVersion = map[uint8]string{
-		8: "3.0.17",
-		9: "3.1.10",
+		8:  "3.0.17",
+		9:  "3.1.10",
+		10: "3.1.10",
+		11: "3.1.10",
 	}
 )
 

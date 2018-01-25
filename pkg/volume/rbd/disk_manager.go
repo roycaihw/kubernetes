@@ -28,6 +28,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
 )
@@ -36,16 +37,22 @@ import (
 type diskManager interface {
 	// MakeGlobalPDName creates global persistent disk path.
 	MakeGlobalPDName(disk rbd) string
+	// MakeGlobalVDPDName creates global block disk path.
+	MakeGlobalVDPDName(disk rbd) string
 	// Attaches the disk to the kubelet's host machine.
 	// If it successfully attaches, the path to the device
 	// is returned. Otherwise, an error will be returned.
 	AttachDisk(disk rbdMounter) (string, error)
 	// Detaches the disk from the kubelet's host machine.
 	DetachDisk(plugin *rbdPlugin, deviceMountPath string, device string) error
+	// Detaches the block disk from the kubelet's host machine.
+	DetachBlockDisk(disk rbdDiskUnmapper, mntPath string) error
 	// Creates a rbd image.
 	CreateImage(provisioner *rbdVolumeProvisioner) (r *v1.RBDPersistentVolumeSource, volumeSizeGB int, err error)
 	// Deletes a rbd image.
 	DeleteImage(deleter *rbdVolumeDeleter) error
+	// Expands a rbd image
+	ExpandImage(expander *rbdVolumeExpander, oldSize resource.Quantity, newSize resource.Quantity) (resource.Quantity, error)
 }
 
 // utility to mount a disk based filesystem
@@ -112,9 +119,9 @@ func diskTearDown(manager diskManager, c rbdUnmounter, volPath string, mounter m
 	}
 
 	notMnt, mntErr := mounter.IsLikelyNotMountPoint(volPath)
-	if err != nil && !os.IsNotExist(err) {
+	if mntErr != nil && !os.IsNotExist(mntErr) {
 		glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
-		return err
+		return mntErr
 	}
 	if notMnt {
 		if err := os.Remove(volPath); err != nil {

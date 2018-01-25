@@ -11,8 +11,8 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
-        "//vendor/k8s.io/api/admission/v1alpha1:go_default_library",
-        "//vendor/k8s.io/api/admissionregistration/v1alpha1:go_default_library",
+        "//vendor/k8s.io/api/admission/v1beta1:go_default_library",
+        "//vendor/k8s.io/api/admissionregistration/v1beta1:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
@@ -24,8 +24,8 @@ go_library(
 
 go_binary(
     name = "webhook",
+    embed = [":go_default_library"],
     importpath = "k8s.io/kubernetes/test/images/webhook",
-    library = ":go_default_library",
     visibility = ["//visibility:public"],
 )
 
@@ -46,8 +46,8 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["patch_test.go"],
+    embed = [":go_default_library"],
     importpath = "k8s.io/kubernetes/test/images/webhook",
-    library = ":go_default_library",
     deps = [
         "//vendor/github.com/evanphx/json-patch:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",

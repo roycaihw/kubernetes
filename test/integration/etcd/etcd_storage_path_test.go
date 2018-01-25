@@ -44,14 +44,11 @@ import (
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/flowcontrol"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/util"
 	"k8s.io/kubernetes/test/integration/framework"
 
 	// install all APIs
@@ -247,6 +244,14 @@ var etcdStorageData = map[schema.GroupVersionResource]struct {
 	},
 	// --
 
+	// k8s.io/kubernetes/pkg/apis/events/v1beta1
+	gvr("events.k8s.io", "v1beta1", "events"): {
+		stub:             `{"metadata": {"name": "event2"}, "regarding": {"namespace": "etcdstoragepathtestnamespace"}, "note": "some data here", "eventTime": "2017-08-09T15:04:05.000000Z", "reportingInstance": "node-xyz", "reportingController": "k8s.io/my-controller", "action": "DidNothing", "reason": "Lazyness"}`,
+		expectedEtcdPath: "/registry/events/etcdstoragepathtestnamespace/event2",
+		expectedGVK:      gvkP("", "v1", "Event"),
+	},
+	// --
+
 	// k8s.io/kubernetes/pkg/apis/extensions/v1beta1
 	gvr("extensions", "v1beta1", "daemonsets"): {
 		stub:             `{"metadata": {"name": "ds1"}, "spec": {"selector": {"matchLabels": {"u": "t"}}, "template": {"metadata": {"labels": {"u": "t"}}, "spec": {"containers": [{"image": "fedora:latest", "name": "container5"}]}}}}`,
@@ -388,11 +393,12 @@ var etcdStorageData = map[schema.GroupVersionResource]struct {
 		stub:             `{"metadata":{"name":"ic1"},"initializers":[{"name":"initializer.k8s.io","rules":[{"apiGroups":["group"],"apiVersions":["version"],"resources":["resource"]}],"failurePolicy":"Ignore"}]}`,
 		expectedEtcdPath: "/registry/initializerconfigurations/ic1",
 	},
-	gvr("admissionregistration.k8s.io", "v1alpha1", "validatingwebhookconfigurations"): {
+	// k8s.io/kubernetes/pkg/apis/admissionregistration/v1beta1
+	gvr("admissionregistration.k8s.io", "v1beta1", "validatingwebhookconfigurations"): {
 		stub:             `{"metadata":{"name":"hook1","creationTimestamp":null},"webhooks":[{"name":"externaladmissionhook.k8s.io","clientConfig":{"service":{"namespace":"ns","name":"n"},"caBundle":null},"rules":[{"operations":["CREATE"],"apiGroups":["group"],"apiVersions":["version"],"resources":["resource"]}],"failurePolicy":"Ignore"}]}`,
 		expectedEtcdPath: "/registry/validatingwebhookconfigurations/hook1",
 	},
-	gvr("admissionregistration.k8s.io", "v1alpha1", "mutatingwebhookconfigurations"): {
+	gvr("admissionregistration.k8s.io", "v1beta1", "mutatingwebhookconfigurations"): {
 		stub:             `{"metadata":{"name":"hook1","creationTimestamp":null},"webhooks":[{"name":"externaladmissionhook.k8s.io","clientConfig":{"service":{"namespace":"ns","name":"n"},"caBundle":null},"rules":[{"operations":["CREATE"],"apiGroups":["group"],"apiVersions":["version"],"resources":["resource"]}],"failurePolicy":"Ignore"}]}`,
 		expectedEtcdPath: "/registry/mutatingwebhookconfigurations/hook1",
 	},
@@ -486,8 +492,8 @@ var ephemeralWhiteList = createEphemeralWhiteList(
 	gvr("policy", "v1beta1", "evictions"), // not stored in etcd, deals with evicting kapiv1.Pod
 	// --
 
-	// k8s.io/kubernetes/pkg/apis/admission/v1alpha1
-	gvr("admission.k8s.io", "v1alpha1", "admissionreviews"), // not stored in etcd, call out to webhooks.
+	// k8s.io/kubernetes/pkg/apis/admission/v1beta1
+	gvr("admission.k8s.io", "v1beta1", "admissionreviews"), // not stored in etcd, call out to webhooks.
 	// --
 )
 
@@ -789,9 +795,7 @@ func startRealMasterOrDie(t *testing.T, certDir string) (*allClient, clientv3.KV
 		t.Fatal(err)
 	}
 
-	mapper, _ := util.NewFactory(clientcmd.NewDefaultClientConfig(*clientcmdapi.NewConfig(), &clientcmd.ConfigOverrides{})).Object()
-
-	return client, kvClient, mapper
+	return client, kvClient, legacyscheme.Registry.RESTMapper()
 }
 
 func dumpEtcdKVOnFailure(t *testing.T, kvClient clientv3.KV) {

@@ -76,6 +76,12 @@ function replicate-master-instance() {
 function create-master-instance-internal() {
   local gcloud="gcloud"
   local retries=5
+  local sleep_sec=10
+  if [[ "${MASTER_SIZE##*-}" -ge 64 ]]; then  # remove everything up to last dash (inclusive)
+    # Workaround for #55777
+    retries=30
+    sleep_sec=60
+  fi
   if [[ "${ENABLE_IP_ALIASES:-}" == 'true' ]]; then
     gcloud="gcloud beta"
   fi
@@ -88,9 +94,16 @@ function create-master-instance-internal() {
     preemptible_master="--preemptible --maintenance-policy TERMINATE"
   fi
 
+  local enable_ip_aliases
+  if [[ "${NODE_IPAM_MODE:-}" == "CloudAllocator" ]]; then
+    enable_ip_aliases=true
+  else
+    enable_ip_aliases=false
+  fi
+
   local network=$(make-gcloud-network-argument \
     "${NETWORK_PROJECT}" "${REGION}" "${NETWORK}" "${SUBNETWORK:-}" \
-    "${address:-}" "${ENABLE_IP_ALIASES:-}" "${IP_ALIAS_SIZE:-}")
+    "${address:-}" "${enable_ip_aliases:-}" "${IP_ALIAS_SIZE:-}")
 
   local metadata="kube-env=${KUBE_TEMP}/master-kube-env.yaml"
   metadata="${metadata},user-data=${KUBE_ROOT}/cluster/gce/gci/master.yaml"
@@ -120,6 +133,7 @@ function create-master-instance-internal() {
       --metadata-from-file "${metadata}" \
       --disk "${disk}" \
       --boot-disk-size "${MASTER_ROOT_DISK_SIZE}" \
+      ${MASTER_MIN_CPU_ARCHITECTURE:+"--min-cpu-platform=${MASTER_MIN_CPU_ARCHITECTURE}"} \
       ${preemptible_master} \
       ${network} 2>&1); then
       echo "${result}" >&2
@@ -130,7 +144,7 @@ function create-master-instance-internal() {
         echo "Failed to create master instance due to non-retryable error" >&2
         return 1
       fi
-      sleep 10
+      sleep $sleep_sec
     fi
   done
 

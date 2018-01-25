@@ -36,32 +36,6 @@ func TestPodConstraintsFunc(t *testing.T) {
 		required []api.ResourceName
 		err      string
 	}{
-		"init container resource invalid": {
-			pod: &api.Pod{
-				Spec: api.PodSpec{
-					InitContainers: []api.Container{{
-						Resources: api.ResourceRequirements{
-							Requests: api.ResourceList{api.ResourceCPU: resource.MustParse("2m")},
-							Limits:   api.ResourceList{api.ResourceCPU: resource.MustParse("1m")},
-						},
-					}},
-				},
-			},
-			err: `spec.initContainers[0].resources.requests: Invalid value: "2m": must be less than or equal to cpu limit`,
-		},
-		"container resource invalid": {
-			pod: &api.Pod{
-				Spec: api.PodSpec{
-					Containers: []api.Container{{
-						Resources: api.ResourceRequirements{
-							Requests: api.ResourceList{api.ResourceCPU: resource.MustParse("2m")},
-							Limits:   api.ResourceList{api.ResourceCPU: resource.MustParse("1m")},
-						},
-					}},
-				},
-			},
-			err: `spec.containers[0].resources.requests: Invalid value: "2m": must be less than or equal to cpu limit`,
-		},
 		"init container resource missing": {
 			pod: &api.Pod{
 				Spec: api.PodSpec{
@@ -175,6 +149,23 @@ func TestPodEvaluatorUsage(t *testing.T) {
 				generic.ObjectCountQuotaResourceNameFor(schema.GroupResource{Resource: "pods"}): resource.MustParse("1"),
 			},
 		},
+		"init container hugepages": {
+			pod: &api.Pod{
+				Spec: api.PodSpec{
+					InitContainers: []api.Container{{
+						Resources: api.ResourceRequirements{
+							Requests: api.ResourceList{api.ResourceName(api.ResourceHugePagesPrefix + "2Mi"): resource.MustParse("100Mi")},
+						},
+					}},
+				},
+			},
+			usage: api.ResourceList{
+				api.ResourceName(api.ResourceHugePagesPrefix + "2Mi"):         resource.MustParse("100Mi"),
+				api.ResourceName(api.ResourceRequestsHugePagesPrefix + "2Mi"): resource.MustParse("100Mi"),
+				api.ResourcePods:                                              resource.MustParse("1"),
+				generic.ObjectCountQuotaResourceNameFor(schema.GroupResource{Resource: "pods"}): resource.MustParse("1"),
+			},
+		},
 		"container CPU": {
 			pod: &api.Pod{
 				Spec: api.PodSpec{
@@ -229,6 +220,23 @@ func TestPodEvaluatorUsage(t *testing.T) {
 				api.ResourceRequestsEphemeralStorage: resource.MustParse("32Mi"),
 				api.ResourceLimitsEphemeralStorage:   resource.MustParse("64Mi"),
 				api.ResourcePods:                     resource.MustParse("1"),
+				generic.ObjectCountQuotaResourceNameFor(schema.GroupResource{Resource: "pods"}): resource.MustParse("1"),
+			},
+		},
+		"container hugepages": {
+			pod: &api.Pod{
+				Spec: api.PodSpec{
+					Containers: []api.Container{{
+						Resources: api.ResourceRequirements{
+							Requests: api.ResourceList{api.ResourceName(api.ResourceHugePagesPrefix + "2Mi"): resource.MustParse("100Mi")},
+						},
+					}},
+				},
+			},
+			usage: api.ResourceList{
+				api.ResourceName(api.ResourceHugePagesPrefix + "2Mi"):         resource.MustParse("100Mi"),
+				api.ResourceName(api.ResourceRequestsHugePagesPrefix + "2Mi"): resource.MustParse("100Mi"),
+				api.ResourcePods:                                              resource.MustParse("1"),
 				generic.ObjectCountQuotaResourceNameFor(schema.GroupResource{Resource: "pods"}): resource.MustParse("1"),
 			},
 		},

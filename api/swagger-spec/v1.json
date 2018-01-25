@@ -19634,7 +19634,9 @@
     "description": "Event is a report of an event somewhere in the cluster.",
     "required": [
      "metadata",
-     "involvedObject"
+     "involvedObject",
+     "reportingComponent",
+     "reportingInstance"
     ],
     "properties": {
      "kind": {
@@ -19681,6 +19683,30 @@
      "type": {
       "type": "string",
       "description": "Type of this event (Normal, Warning), new types could be added in the future"
+     },
+     "eventTime": {
+      "type": "string",
+      "description": "Time when this Event was first observed."
+     },
+     "series": {
+      "$ref": "v1.EventSeries",
+      "description": "Data about the Event series this event represents or nil if it's a singleton Event."
+     },
+     "action": {
+      "type": "string",
+      "description": "What action was taken/failed regarding to the Regarding object."
+     },
+     "related": {
+      "$ref": "v1.ObjectReference",
+      "description": "Optional secondary object for more complex actions."
+     },
+     "reportingComponent": {
+      "type": "string",
+      "description": "Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`."
+     },
+     "reportingInstance": {
+      "type": "string",
+      "description": "ID of the controller instance, e.g. `kubelet-xyzf`."
      }
     }
    },
@@ -19695,6 +19721,25 @@
      "host": {
       "type": "string",
       "description": "Node name on which the event is generated."
+     }
+    }
+   },
+   "v1.EventSeries": {
+    "id": "v1.EventSeries",
+    "description": "EventSeries contain information on series of events, i.e. thing that was/is happening continously for some time.",
+    "properties": {
+     "count": {
+      "type": "integer",
+      "format": "int32",
+      "description": "Number of occurrences in this series up to the last heartbeat time"
+     },
+     "lastObservedTime": {
+      "type": "string",
+      "description": "Time of the last occurence observed"
+     },
+     "state": {
+      "type": "string",
+      "description": "State of this Series: Ongoing or Finished"
      }
     }
    },
@@ -20561,8 +20606,8 @@
       "description": "Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage. This depends on the Flocker control service being running"
      },
      "flexVolume": {
-      "$ref": "v1.FlexVolumeSource",
-      "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. This is an alpha feature and may change in future."
+      "$ref": "v1.FlexPersistentVolumeSource",
+      "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin."
      },
      "azureFile": {
       "$ref": "v1.AzureFilePersistentVolumeSource",
@@ -20975,9 +21020,9 @@
      }
     }
    },
-   "v1.FlexVolumeSource": {
-    "id": "v1.FlexVolumeSource",
-    "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. This is an alpha feature and may change in future.",
+   "v1.FlexPersistentVolumeSource": {
+    "id": "v1.FlexPersistentVolumeSource",
+    "description": "FlexPersistentVolumeSource represents a generic persistent volume resource that is provisioned/attached using an exec based plugin.",
     "required": [
      "driver"
     ],
@@ -20991,7 +21036,7 @@
       "description": "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". The default filesystem depends on FlexVolume script."
      },
      "secretRef": {
-      "$ref": "v1.LocalObjectReference",
+      "$ref": "v1.SecretReference",
       "description": "Optional: SecretRef is reference to the secret object containing sensitive information to pass to the plugin scripts. This may be empty if no secret object is specified. If the secret object contains more than one secret, all secrets are passed to the plugin scripts."
      },
      "readOnly": {
@@ -21001,16 +21046,6 @@
      "options": {
       "type": "object",
       "description": "Optional: Extra command options if any."
-     }
-    }
-   },
-   "v1.LocalObjectReference": {
-    "id": "v1.LocalObjectReference",
-    "description": "LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.",
-    "properties": {
-     "name": {
-      "type": "string",
-      "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
      }
     }
    },
@@ -21285,6 +21320,10 @@
      "readOnly": {
       "type": "boolean",
       "description": "Optional: The value to pass to ControllerPublishVolumeRequest. Defaults to false (read/write)."
+     },
+     "fsType": {
+      "type": "string",
+      "description": "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified."
      }
     }
    },
@@ -21404,7 +21443,7 @@
      },
      "dnsPolicy": {
       "type": "string",
-      "description": "Set DNS policy for containers within the pod. One of 'ClusterFirstWithHostNet', 'ClusterFirst' or 'Default'. Defaults to \"ClusterFirst\". To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'."
+      "description": "Set DNS policy for the pod. Defaults to \"ClusterFirst\". Valid values are 'ClusterFirstWithHostNet', 'ClusterFirst', 'Default' or 'None'. DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy. To have DNS options set along with hostNetwork, you have to specify DNS policy explicitly to 'ClusterFirstWithHostNet'. Note that 'None' policy is an alpha feature introduced in v1.9 and CustomPodDNS feature gate must be enabled to use it."
      },
      "nodeSelector": {
       "type": "object",
@@ -21487,6 +21526,10 @@
       "type": "integer",
       "format": "int32",
       "description": "The priority value. Various system components use this field to find the priority of the pod. When Priority Admission Controller is enabled, it prevents users from setting this field. The admission controller populates this field from PriorityClassName. The higher the value, the higher the priority."
+     },
+     "dnsConfig": {
+      "$ref": "v1.PodDNSConfig",
+      "description": "Specifies the DNS parameters of a pod. Parameters specified here will be merged to the generated DNS configuration based on DNSPolicy. This is an alpha feature introduced in v1.9 and CustomPodDNS feature gate must be enabled to use it."
      }
     }
    },
@@ -21547,7 +21590,7 @@
      },
      "flexVolume": {
       "$ref": "v1.FlexVolumeSource",
-      "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin. This is an alpha feature and may change in future."
+      "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin."
      },
      "cinder": {
       "$ref": "v1.CinderVolumeSource",
@@ -21754,6 +21797,16 @@
      }
     }
    },
+   "v1.LocalObjectReference": {
+    "id": "v1.LocalObjectReference",
+    "description": "LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.",
+    "properties": {
+     "name": {
+      "type": "string",
+      "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names"
+     }
+    }
+   },
    "v1.PersistentVolumeClaimVolumeSource": {
     "id": "v1.PersistentVolumeClaimVolumeSource",
     "description": "PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace. This volume finds the bound PV and mounts that volume for the pod. A PersistentVolumeClaimVolumeSource is, essentially, a wrapper around another type of volume that is owned by someone else (the system).",
@@ -21813,6 +21866,35 @@
      "readOnly": {
       "type": "boolean",
       "description": "ReadOnly here will force the ReadOnly setting in VolumeMounts. Defaults to false. More info: https://releases.k8s.io/HEAD/examples/volumes/rbd/README.md#how-to-use-it"
+     }
+    }
+   },
+   "v1.FlexVolumeSource": {
+    "id": "v1.FlexVolumeSource",
+    "description": "FlexVolume represents a generic volume resource that is provisioned/attached using an exec based plugin.",
+    "required": [
+     "driver"
+    ],
+    "properties": {
+     "driver": {
+      "type": "string",
+      "description": "Driver is the name of the driver to use for this volume."
+     },
+     "fsType": {
+      "type": "string",
+      "description": "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". The default filesystem depends on FlexVolume script."
+     },
+     "secretRef": {
+      "$ref": "v1.LocalObjectReference",
+      "description": "Optional: SecretRef is reference to the secret object containing sensitive information to pass to the plugin scripts. This may be empty if no secret object is specified. If the secret object contains more than one secret, all secrets are passed to the plugin scripts."
+     },
+     "readOnly": {
+      "type": "boolean",
+      "description": "Optional: Defaults to false (read/write). ReadOnly here will force the ReadOnly setting in VolumeMounts."
+     },
+     "options": {
+      "type": "object",
+      "description": "Optional: Extra command options if any."
      }
     }
    },
@@ -22986,6 +23068,46 @@
      }
     }
    },
+   "v1.PodDNSConfig": {
+    "id": "v1.PodDNSConfig",
+    "description": "PodDNSConfig defines the DNS parameters of a pod in addition to those generated from DNSPolicy.",
+    "properties": {
+     "nameservers": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "A list of DNS name server IP addresses. This will be appended to the base nameservers generated from DNSPolicy. Duplicated nameservers will be removed."
+     },
+     "searches": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "A list of DNS search domains for host-name lookup. This will be appended to the base search paths generated from DNSPolicy. Duplicated search paths will be removed."
+     },
+     "options": {
+      "type": "array",
+      "items": {
+       "$ref": "v1.PodDNSConfigOption"
+      },
+      "description": "A list of DNS resolver options. This will be merged with the base options generated from DNSPolicy. Duplicated entries will be removed. Resolution options given in Options will override those that appear in the base DNSPolicy."
+     }
+    }
+   },
+   "v1.PodDNSConfigOption": {
+    "id": "v1.PodDNSConfigOption",
+    "description": "PodDNSConfigOption defines DNS resolver options of a pod.",
+    "properties": {
+     "name": {
+      "type": "string",
+      "description": "Required."
+     },
+     "value": {
+      "type": "string"
+     }
+    }
+   },
    "v1.PodStatus": {
     "id": "v1.PodStatus",
     "description": "PodStatus represents information about the status of a pod. Status may trail the actual state of a system.",
@@ -23037,7 +23159,7 @@
      },
      "qosClass": {
       "type": "string",
-      "description": "The Quality of Service (QOS) classification assigned to the pod based on resource requirements See PodQOSClass type for available QOS classes More info: https://github.com/kubernetes/kubernetes/blob/master/docs/design/resource-qos.md"
+      "description": "The Quality of Service (QOS) classification assigned to the pod based on resource requirements See PodQOSClass type for available QOS classes More info: https://git.k8s.io/community/contributors/design-proposals/node/resource-qos.md"
      }
     }
    },

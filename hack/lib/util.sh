@@ -148,10 +148,11 @@ kube::util::find-binary-for-platform() {
     "${KUBE_ROOT}/platforms/${platform}/${lookfor}"
   )
   # Also search for binary in bazel build tree.
-  # In some cases we have to name the binary $BINARY_bin, since there was a
-  # directory named $BINARY next to it.
+  # The bazel go rules place binaries in subtrees like
+  # "bazel-bin/source/path/linux_amd64_pure_stripped/binaryname", so make sure
+  # the platform name is matched in the path.
   locations+=($(find "${KUBE_ROOT}/bazel-bin/" -type f -executable \
-    \( -name "${lookfor}" -o -name "${lookfor}_bin" \) 2>/dev/null || true) )
+    -path "*/${platform/\//_}*/${lookfor}" 2>/dev/null || true) )
 
   # List most recently-updated location.
   local -r bin=$( (ls -t "${locations[@]}" 2>/dev/null || true) | head -1 )
@@ -737,12 +738,12 @@ function kube::util::ensure-cfssl {
     kernel=$(uname -s)
     case "${kernel}" in
       Linux)
-        curl --retry 10 -s -L -o cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
-        curl --retry 10 -s -L -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+        curl --retry 10 -L -o cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+        curl --retry 10 -L -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
         ;;
       Darwin)
-        curl --retry 10 -s -L -o cfssl https://pkg.cfssl.org/R1.2/cfssl_darwin-amd64
-        curl --retry 10 -s -L -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_darwin-amd64
+        curl --retry 10 -L -o cfssl https://pkg.cfssl.org/R1.2/cfssl_darwin-amd64
+        curl --retry 10 -L -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_darwin-amd64
         ;;
       *)
         echo "Unknown, unsupported platform: ${kernel}." >&2

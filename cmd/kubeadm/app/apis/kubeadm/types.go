@@ -19,6 +19,7 @@ package kubeadm
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeletconfigv1alpha1 "k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig/v1alpha1"
+	kubeproxyconfigv1alpha1 "k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig/v1alpha1"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -29,6 +30,7 @@ type MasterConfiguration struct {
 	metav1.TypeMeta
 
 	API                  API
+	KubeProxy            KubeProxy
 	Etcd                 Etcd
 	KubeletConfiguration KubeletConfiguration
 	Networking           Networking
@@ -36,6 +38,11 @@ type MasterConfiguration struct {
 	CloudProvider        string
 	NodeName             string
 	AuthorizationModes   []string
+
+	// Mark the controller and api server pods as privileged as some cloud
+	// controllers like openstack need escalated privileges under some conditions
+	// example - loading a config drive to fetch node information
+	PrivilegedPods bool
 
 	Token    string
 	TokenTTL *metav1.Duration
@@ -172,4 +179,9 @@ type HostPathMount struct {
 	Name      string
 	HostPath  string
 	MountPath string
+}
+
+// KubeProxy contains elements describing the proxy configuration
+type KubeProxy struct {
+	Config *kubeproxyconfigv1alpha1.KubeProxyConfiguration
 }
