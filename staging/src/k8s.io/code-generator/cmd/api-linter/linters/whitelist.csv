@@ -32,3 +32,4 @@ go_json_name_match,io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1
 go_json_name_match,io.k8s.metrics.pkg.apis.custom_metrics.v1beta1.MetricValue,WindowSeconds:window
 go_json_name_match,io.k8s.api.policy.v1beta1.PodDisruptionBudgetStatus,PodDisruptionsAllowed:disruptionsAllowed
 go_json_name_match,io.k8s.api.authorization.v1beta1.SubjectAccessReviewSpec,Groups:group
+go_json_name_match,io.k8s.api.core.v1.Event,ReportingController:reportingComponent
