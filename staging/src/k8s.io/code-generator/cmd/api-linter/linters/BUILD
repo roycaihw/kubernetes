@@ -35,6 +35,6 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["goJSONNameMatch_test.go"],
+    embed = [":go_default_library"],
     importpath = "k8s.io/code-generator/cmd/api-linter/linters",
-    library = ":go_default_library",
 )
