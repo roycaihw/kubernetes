@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metainternalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
@@ -34,6 +35,8 @@ import (
 // transformResponseObject takes an object loaded from storage and performs any necessary transformations.
 // Will write the complete response object.
 func transformResponseObject(ctx request.Context, scope RequestScope, req *http.Request, w http.ResponseWriter, statusCode int, result runtime.Object) {
+	glog.Errorf(">>>>>>>>>>>>>> request scope: %v", scope)
+	glog.Errorf(">>>>>>>>>>>>>> runtime Object before transforming: %v", result)
 	// TODO: fetch the media type much earlier in request processing and pass it into this method.
 	mediaType, _, err := negotiation.NegotiateOutputMediaType(req, scope.Serializer, &scope)
 	if err != nil {
@@ -60,6 +63,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 			}
 			partial := meta.AsPartialObjectMetadata(m)
 			partial.GetObjectKind().SetGroupVersionKind(metav1beta1.SchemeGroupVersion.WithKind("PartialObjectMetadata"))
+			glog.Errorf("-----------------------gvk now: %v", partial.GetObjectKind().GroupVersionKind())
 
 			// renegotiate under the internal version
 			_, info, err := negotiation.NegotiateOutputMediaType(req, metainternalversion.Codecs, &scope)
@@ -86,6 +90,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 				}
 				partial := meta.AsPartialObjectMetadata(m)
 				partial.GetObjectKind().SetGroupVersionKind(metav1beta1.SchemeGroupVersion.WithKind("PartialObjectMetadata"))
+				glog.Errorf("-----------------------gvk now: %v", partial.GetObjectKind().GroupVersionKind())
 				list.Items = append(list.Items, partial)
 				return nil
 			})
@@ -139,6 +144,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 					// TODO: turn this into an internal type and do conversion in order to get object kind automatically set?
 					partial := meta.AsPartialObjectMetadata(m)
 					partial.GetObjectKind().SetGroupVersionKind(metav1beta1.SchemeGroupVersion.WithKind("PartialObjectMetadata"))
+					glog.Errorf("-----------------------gvk now: %v", partial.GetObjectKind().GroupVersionKind())
 					item.Object.Object = partial
 				case metav1beta1.IncludeNone:
 					item.Object.Object = nil
@@ -169,6 +175,7 @@ func transformResponseObject(ctx request.Context, scope RequestScope, req *http.
 		}
 	}
 
+	glog.Errorf("-----------------no convert")
 	responsewriters.WriteObject(ctx, statusCode, scope.Kind.GroupVersion(), scope.Serializer, result, w, req)
 }
 
