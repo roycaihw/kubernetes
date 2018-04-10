@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -128,6 +129,8 @@ func NewEncoder(w io.Writer, e runtime.Encoder) Encoder {
 
 // Encode writes the provided object to the nested writer.
 func (e *encoder) Encode(obj runtime.Object) error {
+	glog.Errorf(">>> streaming calling encode")
+	glog.Errorf(">>> streaming obj: %v", obj)
 	if err := e.encoder.Encode(obj, e.buf); err != nil {
 		return err
 	}

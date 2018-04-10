@@ -25,16 +25,17 @@ import (
 	"sync"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/value"
-	"k8s.io/apimachinery/pkg/api/meta"
+
+	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
-	"time"
 )
 
 const (
@@ -248,6 +249,7 @@ func (wc *watchChan) processEvent(wg *sync.WaitGroup) {
 			// If user couldn't receive results fast enough, we also block incoming events from watcher.
 			// Because storing events in local will cause more memory usage.
 			// The worst case would be closing the fast watcher.
+			res.TrackInfo = res.TrackInfo + "watcher/processEvent;"
 			select {
 			case wc.resultChan <- *res:
 			case <-wc.ctx.Done():
@@ -290,10 +292,9 @@ func (wc *watchChan) transform(e *event) (res *watch.Event) {
 		}
 	}
 
-
 	if oldObj != nil {
 		metaOld, err := meta.Accessor(oldObj)
-		if err == nil{
+		if err == nil {
 			fmt.Printf("eventTracker,etcd3/watcher/transform/oldObj,%s,,%s,%s,,%s\n",
 				time.Now().Format(time.RFC3339), metaOld.GetNamespace(), metaOld.GetName(), metaOld.GetResourceVersion())
 		}

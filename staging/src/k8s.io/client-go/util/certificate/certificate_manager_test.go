@@ -836,8 +836,9 @@ func (w *fakeWatch) ResultChan() <-chan watch.Event {
 
 	c := make(chan watch.Event, 1)
 	c <- watch.Event{
-		Type:   watch.Added,
-		Object: &csr,
+		Type:      watch.Added,
+		Object:    &csr,
+		TrackInfo: "certificate_manager_test/ResultChan;",
 	}
 	return c
 }

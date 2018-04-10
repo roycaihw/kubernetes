@@ -69,6 +69,7 @@ func (fw *filteredWatch) loop() {
 		}
 		filtered, keep := fw.f(event)
 		if keep {
+			filtered.TrackInfo = filtered.TrackInfo + "filter/loop;"
 			fw.result <- filtered
 		}
 	}

@@ -376,6 +376,7 @@ loop:
 		case err := <-errc:
 			return err
 		case event, ok := <-w.ResultChan():
+			fmt.Printf("<<< %v\n", event.TrackInfo)
 			if !ok {
 				break loop
 			}
@@ -393,8 +394,8 @@ loop:
 			}
 			newResourceVersion := meta.GetResourceVersion()
 			// eventTracker Event lost: print out resourceVersion, EventType and event object name
-			fmt.Printf("eventTracker,reflector/watchHandler/(caller:%s),%s,%s,%s,%s,%s,%s\n",
-				r.name, time.Now().Format(time.RFC3339), event.Type, meta.GetNamespace(), meta.GetName(), reflect.TypeOf(event.Object), newResourceVersion)
+			fmt.Printf("eventTracker,reflector/watchHandler/(caller:%s),%s,%s,%s,%s,%s,%s,%s\n",
+				r.name, time.Now().Format(time.RFC3339), event.Type, meta.GetNamespace(), meta.GetName(), reflect.TypeOf(event.Object), newResourceVersion, event.TrackInfo)
 			switch event.Type {
 			case watch.Added:
 				err := r.store.Add(event.Object)

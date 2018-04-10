@@ -19,6 +19,7 @@ package versioned
 import (
 	"encoding/json"
 
+	"github.com/golang/glog"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer/streaming"
@@ -44,13 +45,17 @@ func NewEncoder(encoder streaming.Encoder, embeddedEncoder runtime.Encoder) *Enc
 // Encode writes an event to the writer. Returns an error
 // if the writer is closed or an object can't be encoded.
 func (e *Encoder) Encode(event *watch.Event) error {
+	glog.Errorf(">>> encode encoding")
+	glog.Errorf(">>> encode encoding obj: %v", event)
 	data, err := runtime.Encode(e.embeddedEncoder, event.Object)
 	if err != nil {
 		return err
 	}
 	// FIXME: get rid of json.RawMessage.
+	glog.Errorf("-------encoder/Encode/Encoding: %v", event.TrackInfo)
 	return e.encoder.Encode(&metav1.WatchEvent{
-		Type:   string(event.Type),
-		Object: runtime.RawExtension{Raw: json.RawMessage(data)},
+		Type:      string(event.Type),
+		Object:    runtime.RawExtension{Raw: json.RawMessage(data)},
+		TrackInfo: string(event.TrackInfo),
 	})
 }

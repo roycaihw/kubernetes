@@ -617,7 +617,7 @@ func (c *Cacher) dispatchEvent(event *watchCacheEvent) {
 	meta, err := meta.Accessor(event.Object)
 	if err != nil {
 		glog.Errorf("unexpected eventTracker error: %v", err)
-	}else{
+	} else {
 		fmt.Printf("eventTracker,cacher/dispatchEvent,%s,%s,%s,%s,%s,%s\n",
 			time.Now().Format(time.RFC3339), event.Type, meta.GetNamespace(), meta.GetName(), reflect.TypeOf(event.Object), meta.GetResourceVersion())
 	}
@@ -915,6 +915,9 @@ func (c *cacheWatcher) sendWatchCacheEvent(event *watchCacheEvent) {
 	default:
 	}
 
+	// Append event code path into event track info
+	watchEvent.TrackInfo = event.TrackInfo + "cacher/sendWatchCacheEvent;"
+	fmt.Printf(">>> eventTracker,sendWatchCacheEvent=====%s\n", watchEvent.TrackInfo)
 	select {
 	case c.result <- watchEvent:
 	case <-c.done:
@@ -937,7 +940,7 @@ func (c *cacheWatcher) process(initEvents []*watchCacheEvent, resourceVersion ui
 	// We should understand what is blocking us in those cases (e.g.
 	// is it lack of CPU, network, or sth else) and potentially
 	// consider increase size of result buffer in those cases.
-	const initProcessThreshold= 500 * time.Millisecond
+	const initProcessThreshold = 500 * time.Millisecond
 	startTime := time.Now()
 	for _, event := range initEvents {
 		// eventTracker Event lost: print out resourceVersion, EventType and event object name
@@ -980,7 +983,6 @@ func (c *cacheWatcher) process(initEvents []*watchCacheEvent, resourceVersion ui
 		}
 	}
 }
-
 
 type ready struct {
 	ok bool

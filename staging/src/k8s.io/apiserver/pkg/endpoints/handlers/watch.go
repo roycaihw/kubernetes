@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -199,6 +200,7 @@ func (s *WatchServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 				// End of results.
 				return
 			}
+			fmt.Printf("eventTracker,watch/ServeHTTP/event:%v\n", event.TrackInfo)
 
 			obj := event.Object
 			s.Fixup(obj)
@@ -218,12 +220,17 @@ func (s *WatchServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			// and we get the benefit of using conversion functions which already have to stay in sync
 			outEvent := &metav1.WatchEvent{}
 			*internalEvent = metav1.InternalEvent(event)
+			fmt.Printf("eventTracker,watch/ServeHTTP/internalEvent:%v\n", internalEvent.TrackInfo)
 			err := metav1.Convert_versioned_InternalEvent_to_versioned_Event(internalEvent, outEvent, nil)
+			fmt.Printf("eventTracker,watch/ServeHTTP/outEvent:%v\n", outEvent.TrackInfo)
 			if err != nil {
 				utilruntime.HandleError(fmt.Errorf("unable to convert watch object: %v", err))
 				// client disconnect.
 				return
 			}
+			glog.Errorf(">>> before calling encode outEvent obj: %s", outEvent)
+			fmt.Printf(">>> again eventTracker,watch/ServeHTTP/outEvent:%v\n", outEvent.TrackInfo)
+			glog.Errorf(">>> calling encode")
 			if err := e.Encode(outEvent); err != nil {
 				utilruntime.HandleError(fmt.Errorf("unable to encode watch object: %v (%#v)", err, e))
 				// client disconnect.
@@ -267,6 +274,7 @@ func (s *WatchServer) HandleWS(ws *websocket.Conn) {
 				// End of results.
 				return
 			}
+			fmt.Printf("eventTracker,watch/HandleWS/event:%v\n", event.TrackInfo)
 			obj := event.Object
 			s.Fixup(obj)
 			if err := s.EmbeddedEncoder.Encode(obj, buf); err != nil {
@@ -286,7 +294,9 @@ func (s *WatchServer) HandleWS(ws *websocket.Conn) {
 			// and we get the benefit of using conversion functions which already have to stay in sync
 			outEvent := &metav1.WatchEvent{}
 			*internalEvent = metav1.InternalEvent(event)
+			fmt.Printf("eventTracker,watch/HandleWS/internalEvent:%v\n", internalEvent.TrackInfo)
 			err := metav1.Convert_versioned_InternalEvent_to_versioned_Event(internalEvent, outEvent, nil)
+			fmt.Printf("eventTracker,watch/HandleWS/outEvent:%v\n", outEvent.TrackInfo)
 			if err != nil {
 				utilruntime.HandleError(fmt.Errorf("unable to convert watch object: %v", err))
 				// client disconnect.

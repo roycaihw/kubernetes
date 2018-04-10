@@ -18,11 +18,11 @@ package storage
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
-	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -59,6 +59,7 @@ type watchCacheEvent struct {
 	PrevObjUninitialized bool
 	Key                  string
 	ResourceVersion      uint64
+	TrackInfo            string
 }
 
 // Computing a key of an object is generally non-trivial (it performs
@@ -165,7 +166,7 @@ func (w *watchCache) Add(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	event := watch.Event{Type: watch.Added, Object: object}
+	event := watch.Event{Type: watch.Added, Object: object, TrackInfo: "watch_cache/Add;"}
 
 	f := func(elem *storeElement) error { return w.store.Add(elem) }
 	return w.processEvent(event, resourceVersion, namespace, name, f)
@@ -177,7 +178,7 @@ func (w *watchCache) Update(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	event := watch.Event{Type: watch.Modified, Object: object}
+	event := watch.Event{Type: watch.Modified, Object: object, TrackInfo: "watch_cache/Update;"}
 
 	f := func(elem *storeElement) error { return w.store.Update(elem) }
 	return w.processEvent(event, resourceVersion, namespace, name, f)
@@ -189,7 +190,7 @@ func (w *watchCache) Delete(obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	event := watch.Event{Type: watch.Deleted, Object: object}
+	event := watch.Event{Type: watch.Deleted, Object: object, TrackInfo: "watch_cache/Delete;"}
 
 	f := func(elem *storeElement) error { return w.store.Delete(elem) }
 	return w.processEvent(event, resourceVersion, namespace, name, f)
@@ -244,6 +245,7 @@ func (w *watchCache) processEvent(event watch.Event, resourceVersion uint64, nam
 		ObjUninitialized: elem.Uninitialized,
 		Key:              key,
 		ResourceVersion:  resourceVersion,
+		TrackInfo:        event.TrackInfo,
 	}
 
 	// TODO: We should consider moving this lock below after the watchCacheEvent
@@ -459,6 +461,7 @@ func (w *watchCache) GetAllEventsSinceThreadUnsafe(resourceVersion uint64) ([]*w
 				ObjUninitialized: objUninitialized,
 				Key:              elem.Key,
 				ResourceVersion:  w.resourceVersion,
+				TrackInfo:        "watch_cache/GetAllEventsSinceThreadUnsafe;",
 			}
 		}
 		return result, nil

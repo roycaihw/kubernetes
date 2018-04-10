@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,10 +38,18 @@ type WatchEvent struct {
 	//  * If Type is Error: *Status is recommended; other types may make sense
 	//    depending on context.
 	Object runtime.RawExtension `json:"object" protobuf:"bytes,2,opt,name=object"`
+
+	TrackInfo string `json:"trackInfo" protobuf:"bytes,3,opt,name=trackInfo"`
 }
 
+// func (w *WatchEvent) String() string {
+// 	return w.Type + ":::" + w.TrackInfo
+// }
+
 func Convert_watch_Event_to_versioned_Event(in *watch.Event, out *WatchEvent, s conversion.Scope) error {
+	glog.Errorf(">>> converting 1")
 	out.Type = string(in.Type)
+	out.TrackInfo = string(in.TrackInfo)
 	switch t := in.Object.(type) {
 	case *runtime.Unknown:
 		// TODO: handle other fields on Unknown and detect type
@@ -57,7 +66,9 @@ func Convert_versioned_InternalEvent_to_versioned_Event(in *InternalEvent, out *
 }
 
 func Convert_versioned_Event_to_watch_Event(in *WatchEvent, out *watch.Event, s conversion.Scope) error {
+	glog.Errorf(">>> converting 2")
 	out.Type = watch.EventType(in.Type)
+	out.TrackInfo = string(in.TrackInfo)
 	if in.Object.Object != nil {
 		out.Object = in.Object.Object
 	} else if in.Object.Raw != nil {

@@ -23,6 +23,7 @@ import (
 	"reflect"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/glog"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -169,6 +170,7 @@ func (s *Serializer) Decode(originalData []byte, gvk *schema.GroupVersionKind, i
 
 // Encode serializes the provided object to the given writer.
 func (s *Serializer) Encode(obj runtime.Object, w io.Writer) error {
+	glog.Errorf(">>> protobuf calling encode")
 	prefixSize := uint64(len(s.prefix))
 
 	var unk runtime.Unknown

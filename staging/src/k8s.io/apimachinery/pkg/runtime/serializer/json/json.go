@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	"github.com/ghodss/yaml"
+	"github.com/golang/glog"
 	jsoniter "github.com/json-iterator/go"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -194,6 +195,7 @@ func (s *Serializer) Decode(originalData []byte, gvk *schema.GroupVersionKind, i
 
 // Encode serializes the provided object to the given writer.
 func (s *Serializer) Encode(obj runtime.Object, w io.Writer) error {
+	glog.Errorf(">>> json calling encode")
 	if s.yaml {
 		json, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(obj)
 		if err != nil {

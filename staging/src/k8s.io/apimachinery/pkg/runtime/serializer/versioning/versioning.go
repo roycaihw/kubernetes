@@ -18,7 +18,9 @@ package versioning
 
 import (
 	"io"
+	"reflect"
 
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -166,6 +168,8 @@ func (c *codec) Decode(data []byte, defaultGVK *schema.GroupVersionKind, into ru
 // Encode ensures the provided object is output in the appropriate group and version, invoking
 // conversion if necessary. Unversioned objects (according to the ObjectTyper) are output as is.
 func (c *codec) Encode(obj runtime.Object, w io.Writer) error {
+	glog.Errorf(">>> versioning calling encode")
+	glog.Errorf(">>> obj.(type)", reflect.TypeOf(obj).String())
 	switch obj.(type) {
 	case *runtime.Unknown, runtime.Unstructured:
 		return c.encoder.Encode(obj, w)
@@ -175,6 +179,7 @@ func (c *codec) Encode(obj runtime.Object, w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	glog.Errorf(">>> gvk: %v, isUnversioned: %v, c.encodeVersion: %v", gvks, isUnversioned, c.encodeVersion)
 
 	if c.encodeVersion == nil || isUnversioned {
 		if e, ok := obj.(runtime.NestedObjectEncoder); ok {
@@ -198,13 +203,17 @@ func (c *codec) Encode(obj runtime.Object, w io.Writer) error {
 		return err
 	}
 
+	glog.Errorf(">>> in: %v", obj)
+	glog.Errorf(">>> out: %v", out)
 	if e, ok := out.(runtime.NestedObjectEncoder); ok {
+		glog.Errorf(">>> encoding nested object")
 		if err := e.EncodeNestedObjects(DirectEncoder{Version: c.encodeVersion, Encoder: c.encoder, ObjectTyper: c.typer}); err != nil {
 			return err
 		}
 	}
 
 	// Conversion is responsible for setting the proper group, version, and kind onto the outgoing object
+	glog.Errorf(">>> out2: %v", out)
 	err = c.encoder.Encode(out, w)
 	// restore the old GVK, in case conversion returned the same object
 	objectKind.SetGroupVersionKind(old)

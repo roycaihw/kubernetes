@@ -3749,13 +3749,17 @@
     "id": "v1.WatchEvent",
     "required": [
      "type",
-     "object"
+     "object",
+     "trackInfo"
     ],
     "properties": {
      "type": {
       "type": "string"
      },
      "object": {
+      "type": "string"
+     },
+     "trackInfo": {
       "type": "string"
      }
     }

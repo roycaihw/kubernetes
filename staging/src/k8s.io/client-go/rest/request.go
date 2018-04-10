@@ -534,6 +534,7 @@ func (r *Request) Watch() (watch.Interface, error) {
 	}
 	framer := r.serializers.Framer.NewFrameReader(resp.Body)
 	decoder := streaming.NewDecoder(framer, r.serializers.StreamingSerializer)
+	fmt.Printf("EventTracker/request/Watch: %v\n", *r)
 	return watch.NewStreamWatcher(restclientwatch.NewDecoder(decoder, r.serializers.Decoder)), nil
 }
 
