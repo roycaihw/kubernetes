@@ -14,6 +14,7 @@ go_library(
     ],
     importpath = "k8s.io/client-go/rest/watch",
     deps = [
+        "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/serializer/streaming:go_default_library",

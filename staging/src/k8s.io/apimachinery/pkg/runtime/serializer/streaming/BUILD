@@ -22,6 +22,7 @@ go_library(
     srcs = ["streaming.go"],
     importpath = "k8s.io/apimachinery/pkg/runtime/serializer/streaming",
     deps = [
+        "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
     ],
