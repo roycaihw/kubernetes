@@ -352,6 +352,12 @@ func startGarbageCollectorController(ctx ControllerContext) (bool, error) {
 	discoveryClient := cacheddiscovery.NewMemCacheClient(gcClientset.Discovery())
 
 	config := ctx.ClientBuilder.ConfigOrDie("generic-garbage-collector")
+	// Bump QPS limits on our dynamic client that we use to GC every deleted object.
+	// This is to restore the old GC performance. The old dynamic client used one REST
+	// client per group version. core/v1, apps/v1, extensions/v1beta1, batch/v1 are
+	// the group versions that actively use the garbage collector.
+	config.QPS *= 4
+	config.Burst *= 4
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return true, err
