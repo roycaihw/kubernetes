@@ -429,6 +429,7 @@ filegroup(
         "//vendor/k8s.io/kube-openapi/pkg/common:all-srcs",
         "//vendor/k8s.io/kube-openapi/pkg/generators:all-srcs",
         "//vendor/k8s.io/kube-openapi/pkg/handler:all-srcs",
+        "//vendor/k8s.io/kube-openapi/pkg/idl:all-srcs",
         "//vendor/k8s.io/kube-openapi/pkg/util:all-srcs",
         "//vendor/k8s.io/utils/clock:all-srcs",
         "//vendor/k8s.io/utils/exec:all-srcs",

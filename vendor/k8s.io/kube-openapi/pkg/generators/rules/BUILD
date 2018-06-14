@@ -2,17 +2,15 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "trie.go",
-        "util.go",
-    ],
-    importpath = "k8s.io/kube-openapi/pkg/util",
+    srcs = ["namesMatch.go"],
+    importpath = "k8s.io/kube-openapi/pkg/generators/rules",
     visibility = ["//visibility:public"],
+    deps = ["//vendor/k8s.io/gengo/types:go_default_library"],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = ["util_test.go"],
+    srcs = ["namesMatch_test.go"],
     embed = [":go_default_library"],
 )
 
@@ -25,10 +23,7 @@ filegroup(
 
 filegroup(
     name = "all-srcs",
-    srcs = [
-        ":package-srcs",
-        "//vendor/k8s.io/kube-openapi/pkg/util/proto:all-srcs",
-    ],
+    srcs = [":package-srcs"],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
 )

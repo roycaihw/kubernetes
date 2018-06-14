@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
 	openapi "k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/generators/rules"
 
 	"github.com/golang/glog"
 )
@@ -126,7 +128,11 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 			PackagePath: arguments.OutputPackagePath,
 			HeaderText:  header,
 			GeneratorFunc: func(c *generator.Context) (generators []generator.Generator) {
-				return []generator.Generator{NewOpenAPIGen(arguments.OutputFileBaseName, arguments.OutputPackagePath, context)}
+				var reportFilename string
+				if customArgs, ok := arguments.CustomArgs.(*CustomArgs); ok {
+					reportFilename = customArgs.ReportFilename
+				}
+				return []generator.Generator{NewOpenAPIGen(arguments.OutputFileBaseName, arguments.OutputPackagePath, context, newAPILinter(reportFilename))}
 			},
 			FilterFunc: func(c *generator.Context, t *types.Type) bool {
 				// There is a conflict between this codegen and codecgen, we should avoid types generated for codecgen
@@ -159,9 +165,10 @@ type openAPIGen struct {
 	imports       namer.ImportTracker
 	types         []*types.Type
 	context       *generator.Context
+	linter        *apiLinter
 }
 
-func NewOpenAPIGen(sanitizedName string, targetPackage string, context *generator.Context) generator.Generator {
+func NewOpenAPIGen(sanitizedName string, targetPackage string, context *generator.Context, linter *apiLinter) generator.Generator {
 	return &openAPIGen{
 		DefaultGen: generator.DefaultGen{
 			OptionalName: sanitizedName,
@@ -169,6 +176,7 @@ func NewOpenAPIGen(sanitizedName string, targetPackage string, context *generato
 		imports:       generator.NewImportTracker(),
 		targetPackage: targetPackage,
 		context:       context,
+		linter:        linter,
 	}
 }
 
@@ -242,6 +250,10 @@ func (g *openAPIGen) Init(c *generator.Context, w io.Writer) error {
 }
 
 func (g *openAPIGen) GenerateType(c *generator.Context, t *types.Type, w io.Writer) error {
+	glog.V(5).Infof("validating API rules for type %v", t)
+	if err := g.linter.validate(t); err != nil {
+		return err
+	}
 	glog.V(5).Infof("generating for type %v", t)
 	sw := generator.NewSnippetWriter(w, c, "$", "$")
 	err := newOpenAPITypeWriter(sw).generate(t)
@@ -660,5 +672,97 @@ func (g openAPITypeWriter) generateSliceProperty(t *types.Type) error {
 		return fmt.Errorf("slice Element kind %v is not supported in %v", elemType.Kind, t)
 	}
 	g.Do("},\n},\n},\n", nil)
+	return nil
+}
+
+// CustomArgs is used by the gengo framework to pass args specific to the API linter
+type CustomArgs struct {
+	ReportFilename string
+}
+
+type apiLinter struct {
+	rules          []APIRule
+	violations     []apiViolation
+	reportFilename string
+}
+
+func newAPILinter(reportFilename string) *apiLinter {
+	return &apiLinter{
+		rules: []APIRule{
+			&rules.NamesMatch{},
+		},
+		reportFilename: reportFilename,
+	}
+}
+
+type apiViolation struct {
+	// Name of rule from APIRule.Name()
+	rule string
+
+	packageName string
+	typeName    string
+
+	// Optional: name of field that violates API rule. Empty fieldName implies that
+	// the entire type violates the rule.
+	field string
+}
+
+// APIRule is the interface for validating API rule on Go types
+type APIRule interface {
+	// Validate evaluates API rule on type t and returns a list of field names in
+	// the type that violate the rule. Empty field name [""] implies the entire
+	// type violates the rule.
+	Validate(t *types.Type) ([]string, error)
+
+	// Name returns the name of APIRule. The name should not contain ','.
+	Name() string
+}
+
+func (l *apiLinter) validate(t *types.Type) error {
+	for _, r := range l.rules {
+		glog.V(5).Infof("validating API rule %v for type %v", r.Name(), t)
+		fields, err := r.Validate(t)
+		if err != nil {
+			return err
+		}
+		for _, field := range fields {
+			l.violations = append(l.violations, apiViolation{
+				rule:        r.Name(),
+				packageName: t.Name.Package,
+				typeName:    t.Name.Name,
+				field:       field,
+			})
+		}
+	}
+	return nil
+}
+
+func (g *openAPIGen) Finalize(c *generator.Context, w io.Writer) error {
+	// If report file isn't specified, log and return error
+	if len(g.linter.reportFilename) == 0 {
+		for _, v := range g.linter.violations {
+			glog.Errorf("API rule violation: %s,%s,%s,%s", v.rule, v.packageName, v.typeName, v.field)
+		}
+		if len(g.linter.violations) > 0 {
+			return fmt.Errorf("API rule violations exist")
+		}
+		return nil
+	}
+	// Otherwise, print the error to report file and return nil
+	f, err := os.Create(g.linter.reportFilename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	for _, v := range g.linter.violations {
+		fmt.Fprintf(f, "API rule violation: %s,%s,%s,%s\n", v.rule, v.packageName, v.typeName, v.field)
+	}
+	if len(g.linter.violations) > 0 {
+		// NOTE: we don't return error here because we assume that the report file will
+		// get evaluated afterwards to determine if error should be raised. For example,
+		// you can have make rules that compare the report file with existing known
+		// violations (whitelist) and determine no error if no change is detected.
+		glog.Errorf("API rule violations exist; see %s for details.", g.linter.reportFilename)
+	}
 	return nil
 }
