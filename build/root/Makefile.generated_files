@@ -753,8 +753,10 @@ $(foreach dir, $(OPENAPI_DIRS), $(eval                                     \
 # How to regenerate open-api code.  This emits a single file for all results.
 $(OPENAPI_OUTFILE): $(OPENAPI_GEN) $(OPENAPI_GEN)
 	function run_gen_openapi() {                                                        \
+	    ./hack/run-in-gopath.sh mkdir -p $(OUT_DIR)/openapi-tmp;                        \
 	    ./hack/run-in-gopath.sh $(OPENAPI_GEN)                                          \
 	        --v $(KUBE_VERBOSE)                                                         \
+		--report-filename $(OUT_DIR)/openapi-tmp/report.csv                         \
 	        --logtostderr                                                               \
 	        -i $$(echo $(addprefix $(PRJ_SRC_PATH)/, $(OPENAPI_DIRS)) | sed 's/ /,/g')  \
 	        -p $(PRJ_SRC_PATH)/$(OPENAPI_OUTPUT_PKG)                                    \

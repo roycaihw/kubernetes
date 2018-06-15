@@ -34,13 +34,13 @@ import (
 
 func main() {
 	genericArgs, customArgs := generatorargs.NewDefaults()
+	pflag.CommandLine.StringVar(&customArgs.ReportFilename, "report-filename", customArgs.ReportFilename, "Specify a report file records any API rule violation.")
 
 	// Override defaults.
 	// TODO: move this out of openapi-gen
 	genericArgs.GoHeaderFilePath = filepath.Join(args.DefaultSourceTree(), util.BoilerplatePath())
 
 	genericArgs.AddFlags(pflag.CommandLine)
-	customArgs.AddFlags(pflag.CommandLine)
 	flag.Set("logtostderr", "true")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
