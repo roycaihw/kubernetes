@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
@@ -16,20 +16,19 @@ go_library(
     ],
 )
 
-filegroup(
-    name = "package-srcs",
-    srcs = glob(["**"]),
-    tags = ["automanaged"],
-    visibility = ["//visibility:private"],
-)
-
-filegroup(
-    name = "all-srcs",
+go_test(
+    name = "go_default_test",
     srcs = [
-        ":package-srcs",
-        "//vendor/k8s.io/kube-openapi/pkg/util/proto/testing:all-srcs",
-        "//vendor/k8s.io/kube-openapi/pkg/util/proto/validation:all-srcs",
+        "openapi_suite_test.go",
+        "openapi_test.go",
     ],
-    tags = ["automanaged"],
-    visibility = ["//visibility:public"],
+    data = glob(["testdata/**"]),
+    embed = [":go_default_library"],
+    deps = [
+        "//vendor/github.com/onsi/ginkgo:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/config:go_default_library",
+        "//vendor/github.com/onsi/ginkgo/types:go_default_library",
+        "//vendor/github.com/onsi/gomega:go_default_library",
+        "//vendor/k8s.io/kube-openapi/pkg/util/proto/testing:go_default_library",
+    ],
 )
