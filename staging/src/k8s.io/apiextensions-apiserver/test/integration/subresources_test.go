@@ -52,6 +52,18 @@ func NewNoxuSubresourcesCRD(scope apiextensionsv1beta1.ResourceScope) *apiextens
 				ListKind:   "NoxuItemList",
 			},
 			Scope: scope,
+			Versions: []apiextensionsv1beta1.CustomResourceDefinitionVersion{
+				{
+					Name:    "v1beta1",
+					Served:  true,
+					Storage: false,
+				},
+				{
+					Name:    "v1",
+					Served:  true,
+					Storage: true,
+				},
+			},
 			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
 				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
 				Scale: &apiextensionsv1beta1.CustomResourceSubresourceScale{
@@ -277,6 +289,8 @@ func TestScaleSubresource(t *testing.T) {
 	updatedScale, err := scaleClient.Scales("not-the-default").Update(groupResource, gottenScale)
 	if err != nil {
 		t.Fatal(err)
+		// The above line fails. This test tries update CR scale using v1beta1 endpoint,
+		// but the object in storage is of version v1.
 	}
 	if updatedScale.Spec.Replicas != 5 {
 		t.Fatalf("replicas: expected: %v, got: %v", 5, updatedScale.Spec.Replicas)
