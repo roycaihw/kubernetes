@@ -17,8 +17,19 @@ limitations under the License.
 package v1beta1
 
 import (
+	fmt "fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// CustomResourceColumns masks the slice so protobuf can preserve empty slice
+// +protobuf.nullable=true
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+type CustomResourceColumns []CustomResourceColumnDefinition
+
+func (t CustomResourceColumns) String() string {
+	return fmt.Sprintf("%v", []CustomResourceColumnDefinition(t))
+}
 
 // CustomResourceDefinitionSpec describes how a user wants their resource to appear
 type CustomResourceDefinitionSpec struct {
@@ -35,9 +46,13 @@ type CustomResourceDefinitionSpec struct {
 	// Scope indicates whether this resource is cluster or namespace scoped.  Default is namespaced
 	Scope ResourceScope `json:"scope" protobuf:"bytes,4,opt,name=scope,casttype=ResourceScope"`
 	// Validation describes the validation methods for CustomResources
+	// Optional, the global validation schema for all versions.
+	// Top-level and per-version schemas are mutually exclusive.
 	// +optional
 	Validation *CustomResourceValidation `json:"validation,omitempty" protobuf:"bytes,5,opt,name=validation"`
 	// Subresources describes the subresources for CustomResources
+	// Optional, the global subresources for all versions.
+	// Top-level and per-version subresources are mutually exclusive.
 	// +optional
 	Subresources *CustomResourceSubresources `json:"subresources,omitempty" protobuf:"bytes,6,opt,name=subresources"`
 	// Versions is the list of all supported versions for this resource.
@@ -54,6 +69,8 @@ type CustomResourceDefinitionSpec struct {
 	// +optional
 	Versions []CustomResourceDefinitionVersion `json:"versions,omitempty" protobuf:"bytes,7,rep,name=versions"`
 	// AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.
+	// Optional, the global columns for all versions.
+	// Top-level and per-version columns are mutually exclusive.
 	// +optional
 	AdditionalPrinterColumns []CustomResourceColumnDefinition `json:"additionalPrinterColumns,omitempty" protobuf:"bytes,8,rep,name=additionalPrinterColumns"`
 }
@@ -66,6 +83,21 @@ type CustomResourceDefinitionVersion struct {
 	// Storage flags the version as storage version. There must be exactly one
 	// flagged as storage version.
 	Storage bool `json:"storage" protobuf:"varint,3,opt,name=storage"`
+	// Schema describes the schema for CustomResource used in validation, pruning, and defaulting.
+	// Top-level and per-version schemas are mutually exclusive.
+	// Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)
+	// +optional
+	Schema *JSONSchemaProps `json:"schema,omitempty" protobuf:"bytes,4,opt,name=schema"`
+	// Subresources describes the subresources for CustomResources
+	// Top-level and per-version subresources are mutually exclusive.
+	// Per-version subresources may not all be set to identical values (top-level subresources should be used instead)
+	// +optional
+	Subresources *CustomResourceSubresources `json:"subresources,omitempty" protobuf:"bytes,5,opt,name=subresources"`
+	// AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.
+	// Top-level and per-version columns are mutually exclusive.
+	// Per-version columns may not all be set to identical values (top-level columns should be used instead)
+	// +optional
+	AdditionalPrinterColumns CustomResourceColumns `json:"additionalPrinterColumns,omitempty" protobuf:"bytes,6,rep,name=additionalPrinterColumns"`
 }
 
 // CustomResourceColumnDefinition specifies a column for server side printing.
