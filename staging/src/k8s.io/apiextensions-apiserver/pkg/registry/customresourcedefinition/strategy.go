@@ -58,9 +58,25 @@ func (strategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
 	// if the feature gate is disabled, drop the feature.
 	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceValidation) {
 		crd.Spec.Validation = nil
+		for i := range crd.Spec.Versions {
+			crd.Spec.Versions[i].Schema = nil
+		}
 	}
 	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) {
 		crd.Spec.Subresources = nil
+		for i := range crd.Spec.Versions {
+			crd.Spec.Versions[i].Subresources = nil
+		}
+	}
+	// On CREATE, if the CustomResourceWebhookConversion feature gate is off, we auto-clear
+	// the per-version fields. This is to be consistent with the other built-in types, as the
+	// apiserver drops unknown fields.
+	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) {
+		for i := range crd.Spec.Versions {
+			crd.Spec.Versions[i].Schema = nil
+			crd.Spec.Versions[i].Subresources = nil
+			crd.Spec.Versions[i].AdditionalPrinterColumns = nil
+		}
 	}
 
 	for _, v := range crd.Spec.Versions {
@@ -94,10 +110,36 @@ func (strategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceValidation) {
 		newCRD.Spec.Validation = nil
 		oldCRD.Spec.Validation = nil
+		for i := range newCRD.Spec.Versions {
+			newCRD.Spec.Versions[i].Schema = nil
+		}
+		for i := range oldCRD.Spec.Versions {
+			oldCRD.Spec.Versions[i].Schema = nil
+		}
 	}
 	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) {
 		newCRD.Spec.Subresources = nil
 		oldCRD.Spec.Subresources = nil
+		for i := range newCRD.Spec.Versions {
+			newCRD.Spec.Versions[i].Subresources = nil
+		}
+		for i := range oldCRD.Spec.Versions {
+			oldCRD.Spec.Versions[i].Subresources = nil
+		}
+	}
+
+	// On UPDATE, if the CustomResourceWebhookConversion feature gate is off, we auto-clear
+	// the per-version fields if the old CRD doesn't use per-version fields already.
+	// This is to be consistent with the other built-in types, as the apiserver drops unknown
+	// fields. If the old CRD already uses per-version fields, the CRD is allowed to continue
+	// use per-version fields.
+	if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) &&
+		!hasPerVersionField(oldCRD.Spec.Versions) {
+		for i := range newCRD.Spec.Versions {
+			newCRD.Spec.Versions[i].Schema = nil
+			newCRD.Spec.Versions[i].Subresources = nil
+			newCRD.Spec.Versions[i].AdditionalPrinterColumns = nil
+		}
 	}
 
 	for _, v := range newCRD.Spec.Versions {
@@ -108,6 +150,16 @@ func (strategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
 			break
 		}
 	}
+}
+
+// hasPerVersionField returns true if a CRD uses per-version schema/subresources/columns fields.
+func hasPerVersionField(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if v.Schema != nil || v.Subresources != nil || len(v.AdditionalPrinterColumns) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // Validate validates a new CustomResourceDefinition.

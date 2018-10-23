@@ -66,9 +66,29 @@ func SetDefaults_CustomResourceDefinitionSpec(obj *CustomResourceDefinitionSpec)
 	if len(obj.Version) == 0 && len(obj.Versions) != 0 {
 		obj.Version = obj.Versions[0].Name
 	}
-	if len(obj.AdditionalPrinterColumns) == 0 {
+	// If the CRD uses per-version columns, apply default on per-version columns. Let the
+	// validation logic to enforce mutual exclusivity later.
+	if hasPerVersionColumns(obj.Versions) {
+		for i := range obj.Versions {
+			if len(obj.Versions[i].AdditionalPrinterColumns) == 0 {
+				obj.Versions[i].AdditionalPrinterColumns = []CustomResourceColumnDefinition{
+					{Name: "Age", Type: "date", Description: swaggerMetadataDescriptions["creationTimestamp"], JSONPath: ".metadata.creationTimestamp"},
+				}
+			}
+		}
+	} else if len(obj.AdditionalPrinterColumns) == 0 {
 		obj.AdditionalPrinterColumns = []CustomResourceColumnDefinition{
 			{Name: "Age", Type: "date", Description: swaggerMetadataDescriptions["creationTimestamp"], JSONPath: ".metadata.creationTimestamp"},
 		}
 	}
+}
+
+// hasPerVersionColumns returns true if a CRD uses per-version columns.
+func hasPerVersionColumns(versions []CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if len(v.AdditionalPrinterColumns) > 0 {
+			return true
+		}
+	}
+	return false
 }

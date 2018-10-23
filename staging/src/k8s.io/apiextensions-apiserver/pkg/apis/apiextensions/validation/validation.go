@@ -49,7 +49,7 @@ func ValidateCustomResourceDefinition(obj *apiextensions.CustomResourceDefinitio
 	}
 
 	allErrs := genericvalidation.ValidateObjectMeta(&obj.ObjectMeta, false, nameValidationFn, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateCustomResourceDefinitionSpec(&obj.Spec, field.NewPath("spec"))...)
+	allErrs = append(allErrs, ValidateCustomResourceDefinitionSpec(&obj.Spec, field.NewPath("spec"), false)...)
 	allErrs = append(allErrs, ValidateCustomResourceDefinitionStatus(&obj.Status, field.NewPath("status"))...)
 	allErrs = append(allErrs, ValidateCustomResourceDefinitionStoredVersions(obj.Status.StoredVersions, obj.Spec.Versions, field.NewPath("status").Child("storedVersions"))...)
 	return allErrs
@@ -98,8 +98,62 @@ func ValidateUpdateCustomResourceDefinitionStatus(obj, oldObj *apiextensions.Cus
 	return allErrs
 }
 
+// ValidateCustomResourceDefinitionVersion statically validates. If allowingPerVersionField
+// is true, we are updating a CRD that already uses per-version fields, we allow the UPDATE
+// operation to continue using these fields even if the CustomResourceWebhookConversion
+// feature gate is set off.
+func ValidateCustomResourceDefinitionVersion(version *apiextensions.CustomResourceDefinitionVersion, fldPath *field.Path, index int, allowingPerVersionField bool) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	// Validate per-version schema
+	schemaInvalid := false
+	if version.Schema != nil {
+		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) && !allowingPerVersionField {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("schema"), "disabled by feature-gate CustomResourceWebhookConversion"))
+			schemaInvalid = true
+		}
+		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceValidation) {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("schema"), "disabled by feature-gate CustomResourceValidation"))
+			schemaInvalid = true
+		}
+	}
+	if !schemaInvalid {
+		statusEnabled := false
+		if version.Subresources != nil && version.Subresources.Status != nil {
+			statusEnabled = true
+		}
+		allErrs = append(allErrs, ValidateCustomResourceDefinitionValidation(&apiextensions.CustomResourceValidation{OpenAPIV3Schema: version.Schema}, statusEnabled, fldPath.Child("schema"))...)
+	}
+
+	// Validate per-version subresources
+	subresourcesInvalid := false
+	if version.Subresources != nil {
+		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) && !allowingPerVersionField {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("subresources"), "disabled by feature-gate CustomResourceWebhookConversion"))
+			subresourcesInvalid = true
+		}
+		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("subresources"), "disabled by feature-gate CustomResourceSubresources"))
+			subresourcesInvalid = true
+		}
+	}
+	if !subresourcesInvalid {
+		allErrs = append(allErrs, ValidateCustomResourceDefinitionSubresources(version.Subresources, fldPath.Child("subresources"))...)
+	}
+
+	// Validate per-version columns
+	if len(version.AdditionalPrinterColumns) > 0 && !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) && !allowingPerVersionField {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("additionalPrinterColumns"), "disabled by feature-gate CustomResourceWebhookConversion"))
+	} else {
+		for i := range version.AdditionalPrinterColumns {
+			allErrs = append(allErrs, ValidateCustomResourceColumnDefinition(&version.AdditionalPrinterColumns[i], fldPath.Child("additionalPrinterColumns").Index(i))...)
+		}
+	}
+	return allErrs
+}
+
 // ValidateCustomResourceDefinitionSpec statically validates
-func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefinitionSpec, fldPath *field.Path) field.ErrorList {
+func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefinitionSpec, fldPath *field.Path, allowingPerVersionField bool) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if len(spec.Group) == 0 {
@@ -133,7 +187,31 @@ func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefi
 		if errs := validationutil.IsDNS1035Label(version.Name); len(errs) > 0 {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("versions").Index(i).Child("name"), spec.Versions[i].Name, strings.Join(errs, ",")))
 		}
+		allErrs = append(allErrs, ValidateCustomResourceDefinitionVersion(&version, fldPath.Child("versions").Index(i), i, allowingPerVersionField)...)
 	}
+
+	// The top-level and per-version fields are mutual exclusive
+	if spec.Validation != nil && hasPerVersionSchema(spec.Versions) {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("validation"), "top-level and per-version schemas are mutually exclusive"))
+	}
+	if spec.Subresources != nil && hasPerVersionSubresources(spec.Versions) {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("subresources"), "top-level and per-version subresources are mutually exclusive"))
+	}
+	if len(spec.AdditionalPrinterColumns) > 0 && hasPerVersionColumns(spec.Versions) {
+		allErrs = append(allErrs, field.Forbidden(fldPath.Child("additionalPrinterColumns"), "top-level and per-version additionalPrinterColumns are mutually exclusive"))
+	}
+
+	// Per-version fields may not all be set to identical values (top-level field should be used instead)
+	if hasIdenticalPerVersionSchema(spec.Versions) {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("versions"), spec.Versions, "per-version schemas may not all be set to identical values (top-level validation should be used instead)"))
+	}
+	if hasIdenticalPerVersionSubresources(spec.Versions) {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("versions"), spec.Versions, "per-version subresources may not all be set to identical values (top-level subresources should be used instead)"))
+	}
+	if hasIdenticalPerVersionColumns(spec.Versions) {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("versions"), spec.Versions, "per-version additionalPrinterColumns may not all be set to identical values (top-level additionalPrinterColumns should be used instead)"))
+	}
+
 	if !uniqueNames {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("versions"), spec.Versions, "must contain unique version names"))
 	}
@@ -182,7 +260,7 @@ func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefi
 	}
 
 	for i := range spec.AdditionalPrinterColumns {
-		if errs := ValidateCustomResourceColumnDefinition(&spec.AdditionalPrinterColumns[i], fldPath.Child("columns").Index(i)); len(errs) > 0 {
+		if errs := ValidateCustomResourceColumnDefinition(&spec.AdditionalPrinterColumns[i], fldPath.Child("additionalPrinterColumns").Index(i)); len(errs) > 0 {
 			allErrs = append(allErrs, errs...)
 		}
 	}
@@ -192,7 +270,7 @@ func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefi
 
 // ValidateCustomResourceDefinitionSpecUpdate statically validates
 func ValidateCustomResourceDefinitionSpecUpdate(spec, oldSpec *apiextensions.CustomResourceDefinitionSpec, established bool, fldPath *field.Path) field.ErrorList {
-	allErrs := ValidateCustomResourceDefinitionSpec(spec, fldPath)
+	allErrs := ValidateCustomResourceDefinitionSpec(spec, fldPath, hasPerVersionField(oldSpec.Versions))
 
 	if established {
 		// these effect the storage and cannot be changed therefore
@@ -205,6 +283,91 @@ func ValidateCustomResourceDefinitionSpecUpdate(spec, oldSpec *apiextensions.Cus
 	allErrs = append(allErrs, genericvalidation.ValidateImmutableField(spec.Names.Plural, oldSpec.Names.Plural, fldPath.Child("names", "plural"))...)
 
 	return allErrs
+}
+
+// hasPerVersionField returns true if a CRD uses per-version schema/subresources/columns fields.
+func hasPerVersionField(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if v.Schema != nil || v.Subresources != nil || len(v.AdditionalPrinterColumns) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPerVersionSchema returns true if a CRD uses per-version schema.
+func hasPerVersionSchema(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if v.Schema != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPerVersionSubresources returns true if a CRD uses per-version subresources.
+func hasPerVersionSubresources(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if v.Subresources != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPerVersionColumns returns true if a CRD uses per-version columns.
+func hasPerVersionColumns(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if len(v.AdditionalPrinterColumns) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// hasIdenticalPerVersionSchema returns true if a CRD sets identical non-nil values
+// to all per-version schemas
+func hasIdenticalPerVersionSchema(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	if len(versions) == 0 {
+		return false
+	}
+	value := versions[0].Schema
+	for _, v := range versions {
+		if v.Schema == nil || !reflect.DeepEqual(v.Schema, value) {
+			return false
+		}
+	}
+	return true
+}
+
+// hasIdenticalPerVersionSubresources returns true if a CRD sets identical non-nil values
+// to all per-version subresources
+func hasIdenticalPerVersionSubresources(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	if len(versions) == 0 {
+		return false
+	}
+	value := versions[0].Subresources
+	for _, v := range versions {
+		if v.Subresources == nil || !reflect.DeepEqual(v.Subresources, value) {
+			return false
+		}
+	}
+	return true
+}
+
+// hasIdenticalPerVersionColumns returns true if a CRD sets identical non-nil values
+// to all per-version columns
+func hasIdenticalPerVersionColumns(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	if len(versions) == 0 {
+		return false
+	}
+	value := versions[0].AdditionalPrinterColumns
+	for _, v := range versions {
+		if v.AdditionalPrinterColumns == nil || !reflect.DeepEqual(v.AdditionalPrinterColumns, value) {
+			return false
+		}
+	}
+	return true
 }
 
 // ValidateCustomResourceDefinitionStatus statically validates
