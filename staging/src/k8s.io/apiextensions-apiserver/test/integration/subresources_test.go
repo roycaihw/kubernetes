@@ -41,48 +41,7 @@ import (
 )
 
 var labelSelectorPath = ".status.labelSelector"
-
-func NewNoxuSubresourcesCRD(scope apiextensionsv1beta1.ResourceScope) *apiextensionsv1beta1.CustomResourceDefinition {
-	return &apiextensionsv1beta1.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{Name: "noxus.mygroup.example.com"},
-		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   "mygroup.example.com",
-			Version: "v1beta1",
-			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     "noxus",
-				Singular:   "nonenglishnoxu",
-				Kind:       "WishIHadChosenNoxu",
-				ShortNames: []string{"foo", "bar", "abc", "def"},
-				ListKind:   "NoxuItemList",
-			},
-			Versions: []apiextensionsv1beta1.CustomResourceDefinitionVersion{
-				{Name: "v1beta1", Served: true, Storage: false},
-				{Name: "v1", Served: true, Storage: true},
-			},
-			Scope: scope,
-			Versions: []apiextensionsv1beta1.CustomResourceDefinitionVersion{
-				{
-					Name:    "v1beta1",
-					Served:  true,
-					Storage: true,
-				},
-				{
-					Name:    "v1",
-					Served:  true,
-					Storage: false,
-				},
-			},
-			Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
-				Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
-				Scale: &apiextensionsv1beta1.CustomResourceSubresourceScale{
-					SpecReplicasPath:   ".spec.replicas",
-					StatusReplicasPath: ".status.replicas",
-					LabelSelectorPath:  &labelSelectorPath,
-				},
-			},
-		},
-	}
-}
+var anotherLabelSelectorPath = ".status.anotherLabelSelector"
 
 func NewNoxuSubresourcesCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiextensionsv1beta1.CustomResourceDefinition {
 	return []*apiextensionsv1beta1.CustomResourceDefinition{
@@ -157,11 +116,9 @@ func NewNoxuSubresourcesCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiext
 						Subresources: &apiextensionsv1beta1.CustomResourceSubresources{
 							Status: &apiextensionsv1beta1.CustomResourceSubresourceStatus{},
 							Scale: &apiextensionsv1beta1.CustomResourceSubresourceScale{
-								// TODO(roycaihw): update the hardcoded paths when extending
-								// the scale and patch tests
-								SpecReplicasPath:   ".spec.serverCount",
-								StatusReplicasPath: ".status.serverCount",
-								LabelSelectorPath:  &labelSelectorPath,
+								SpecReplicasPath:   ".spec.replicas",
+								StatusReplicasPath: ".status.replicas",
+								LabelSelectorPath:  &anotherLabelSelectorPath,
 							},
 						},
 					},
@@ -326,114 +283,127 @@ func TestScaleSubresource(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	noxuDefinition := NewNoxuSubresourcesCRD(apiextensionsv1beta1.NamespaceScoped)
+	noxuDefinitions := NewNoxuSubresourcesCRDs(apiextensionsv1beta1.NamespaceScoped)
+	for _, noxuDefinition := range noxuDefinitions {
+		for _, v := range noxuDefinition.Spec.Versions {
+			// Start with a new CRD, so that the object doesn't have resourceVersion
+			noxuDefinition := noxuDefinition.DeepCopy()
 
-	// set invalid json path for specReplicasPath
-	noxuDefinition.Spec.Subresources.Scale.SpecReplicasPath = "foo,bar"
-	_, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
-	if err == nil {
-		t.Fatalf("unexpected non-error: specReplicasPath should be a valid json path under .spec")
-	}
+			subresources, err := getCRDSubresourcesForVersion(&noxuDefinition.Spec, v.Name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// set invalid json path for specReplicasPath
+			subresources.Scale.SpecReplicasPath = "foo,bar"
+			_, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+			if err == nil {
+				t.Fatalf("unexpected non-error: specReplicasPath should be a valid json path under .spec")
+			}
 
-	noxuDefinition.Spec.Subresources.Scale.SpecReplicasPath = ".spec.replicas"
-	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
-	if err != nil {
-		t.Fatal(err)
-	}
+			subresources.Scale.SpecReplicasPath = ".spec.replicas"
+			noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	ns := "not-the-default"
-	noxuResourceClient := newNamespacedCustomResourceClient(ns, dynamicClient, noxuDefinition)
-	_, err = instantiateCustomResource(t, NewNoxuSubresourceInstance(ns, "foo", "v1beta1"), noxuResourceClient, noxuDefinition)
-	if err != nil {
-		t.Fatalf("unable to create noxu instance: %v", err)
-	}
+			ns := "not-the-default"
+			noxuResourceClient := newNamespacedCustomResourceVersionedClient(ns, dynamicClient, noxuDefinition, v.Name)
+			_, err = instantiateVersionedCustomResource(t, NewNoxuSubresourceInstance(ns, "foo", v.Name), noxuResourceClient, noxuDefinition, v.Name)
+			if err != nil {
+				t.Fatalf("unable to create noxu instance: %v", err)
+			}
 
-	scaleClient, err := fixtures.CreateNewVersionedScaleClient(noxuDefinition, config, "v1beta1")
-	if err != nil {
-		t.Fatal(err)
-	}
+			scaleClient, err := fixtures.CreateNewVersionedScaleClient(noxuDefinition, config, v.Name)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	// set .status.labelSelector = bar
-	gottenNoxuInstance, err := noxuResourceClient.Get("foo", metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = unstructured.SetNestedField(gottenNoxuInstance.Object, "bar", "status", "labelSelector")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = noxuResourceClient.UpdateStatus(gottenNoxuInstance, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatalf("unable to update status: %v", err)
-	}
+			// set .status.labelSelector = bar
+			gottenNoxuInstance, err := noxuResourceClient.Get("foo", metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = unstructured.SetNestedField(gottenNoxuInstance.Object, "bar", strings.Split((*subresources.Scale.LabelSelectorPath)[1:], ".")...)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			_, err = noxuResourceClient.UpdateStatus(gottenNoxuInstance, metav1.UpdateOptions{})
+			if err != nil {
+				t.Fatalf("unable to update status: %v", err)
+			}
 
-	// get the scale object
-	gottenScale, err := scaleClient.Scales("not-the-default").Get(groupResource, "foo")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gottenScale.Spec.Replicas != 3 {
-		t.Fatalf("Scale.Spec.Replicas: expected: %v, got: %v", 3, gottenScale.Spec.Replicas)
-	}
-	if gottenScale.Status.Selector != "bar" {
-		t.Fatalf("Scale.Status.Selector: expected: %v, got: %v", "bar", gottenScale.Status.Selector)
-	}
+			// get the scale object
+			gottenScale, err := scaleClient.Scales("not-the-default").Get(groupResource, "foo")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if gottenScale.Spec.Replicas != 3 {
+				t.Fatalf("Scale.Spec.Replicas: expected: %v, got: %v", 3, gottenScale.Spec.Replicas)
+			}
+			if gottenScale.Status.Selector != "bar" {
+				t.Fatalf("Scale.Status.Selector: expected: %v, got: %v", "bar", gottenScale.Status.Selector)
+			}
 
-	// check self link
-	expectedSelfLink := "/apis/mygroup.example.com/v1beta1/namespaces/not-the-default/noxus/foo/scale"
-	if gottenScale.GetSelfLink() != expectedSelfLink {
-		t.Fatalf("Scale.Metadata.SelfLink: expected: %v, got: %v", expectedSelfLink, gottenScale.GetSelfLink())
-	}
+			// check self link
+			expectedSelfLink := fmt.Sprintf("/apis/mygroup.example.com/%s/namespaces/not-the-default/noxus/foo/scale", v.Name)
+			if gottenScale.GetSelfLink() != expectedSelfLink {
+				t.Fatalf("Scale.Metadata.SelfLink: expected: %v, got: %v", expectedSelfLink, gottenScale.GetSelfLink())
+			}
 
-	// update the scale object
-	// check that spec is updated, but status is not
-	gottenScale.Spec.Replicas = 5
-	gottenScale.Status.Selector = "baz"
-	updatedScale, err := scaleClient.Scales("not-the-default").Update(groupResource, gottenScale)
-	// TODO(roycaihw): update this test to support multi-version.
-	if err != nil {
-		t.Fatal(err)
-	}
-	if updatedScale.Spec.Replicas != 5 {
-		t.Fatalf("replicas: expected: %v, got: %v", 5, updatedScale.Spec.Replicas)
-	}
-	if updatedScale.Status.Selector != "bar" {
-		t.Fatalf("scale should not update status: expected %v, got: %v", "bar", updatedScale.Status.Selector)
-	}
+			// update the scale object
+			// check that spec is updated, but status is not
+			gottenScale.Spec.Replicas = 5
+			gottenScale.Status.Selector = "baz"
+			updatedScale, err := scaleClient.Scales("not-the-default").Update(groupResource, gottenScale)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if updatedScale.Spec.Replicas != 5 {
+				t.Fatalf("replicas: expected: %v, got: %v", 5, updatedScale.Spec.Replicas)
+			}
+			if updatedScale.Status.Selector != "bar" {
+				t.Fatalf("scale should not update status: expected %v, got: %v", "bar", updatedScale.Status.Selector)
+			}
 
-	// check that .spec.replicas = 5, but status is not updated
-	updatedNoxuInstance, err := noxuResourceClient.Get("foo", metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	specReplicas, found, err := unstructured.NestedInt64(updatedNoxuInstance.Object, "spec", "replicas")
-	if !found || err != nil {
-		t.Fatalf("unable to get .spec.replicas")
-	}
-	if specReplicas != 5 {
-		t.Fatalf("replicas: expected: %v, got: %v", 5, specReplicas)
-	}
-	statusLabelSelector, found, err := unstructured.NestedString(updatedNoxuInstance.Object, "status", "labelSelector")
-	if !found || err != nil {
-		t.Fatalf("unable to get .status.labelSelector")
-	}
-	if statusLabelSelector != "bar" {
-		t.Fatalf("scale should not update status: expected %v, got: %v", "bar", statusLabelSelector)
-	}
+			// check that .spec.replicas = 5, but status is not updated
+			updatedNoxuInstance, err := noxuResourceClient.Get("foo", metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			specReplicas, found, err := unstructured.NestedInt64(updatedNoxuInstance.Object, "spec", "replicas")
+			if !found || err != nil {
+				t.Fatalf("unable to get .spec.replicas")
+			}
+			if specReplicas != 5 {
+				t.Fatalf("replicas: expected: %v, got: %v", 5, specReplicas)
+			}
+			statusLabelSelector, found, err := unstructured.NestedString(updatedNoxuInstance.Object, strings.Split((*subresources.Scale.LabelSelectorPath)[1:], ".")...)
+			if !found || err != nil {
+				t.Fatalf("unable to get %s", *subresources.Scale.LabelSelectorPath)
+			}
+			if statusLabelSelector != "bar" {
+				t.Fatalf("scale should not update status: expected %v, got: %v", "bar", statusLabelSelector)
+			}
 
-	// validate maximum value
-	// set .spec.replicas = math.MaxInt64
-	gottenNoxuInstance, err = noxuResourceClient.Get("foo", metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = unstructured.SetNestedField(gottenNoxuInstance.Object, int64(math.MaxInt64), "spec", "replicas")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	_, err = noxuResourceClient.Update(gottenNoxuInstance, metav1.UpdateOptions{})
-	if err == nil {
-		t.Fatalf("unexpected non-error: .spec.replicas should be less than 2147483647")
+			// validate maximum value
+			// set .spec.replicas = math.MaxInt64
+			gottenNoxuInstance, err = noxuResourceClient.Get("foo", metav1.GetOptions{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = unstructured.SetNestedField(gottenNoxuInstance.Object, int64(math.MaxInt64), "spec", "replicas")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			_, err = noxuResourceClient.Update(gottenNoxuInstance, metav1.UpdateOptions{})
+			if err == nil {
+				t.Fatalf("unexpected non-error: .spec.replicas should be less than 2147483647")
+			}
+			noxuResourceClient.Delete("foo", &metav1.DeleteOptions{})
+			if err := fixtures.DeleteCustomResourceDefinition(noxuDefinition, apiExtensionClient); err != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 }
 
@@ -754,7 +724,6 @@ func TestGeneration(t *testing.T) {
 	}
 }
 
-// TODO(roycaihw): update this test to support multi-version.
 func TestSubresourcePatch(t *testing.T) {
 	defer utilfeaturetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, apiextensionsfeatures.CustomResourceWebhookConversion, true)()
 	groupResource := schema.GroupResource{
@@ -777,147 +746,155 @@ func TestSubresourcePatch(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	noxuDefinition := NewNoxuSubresourcesCRD(apiextensionsv1beta1.NamespaceScoped)
-	noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
-	if err != nil {
-		t.Fatal(err)
-	}
+	noxuDefinitions := NewNoxuSubresourcesCRDs(apiextensionsv1beta1.NamespaceScoped)
+	for _, noxuDefinition := range noxuDefinitions {
+		noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	ns := "not-the-default"
-	noxuResourceClient := newNamespacedCustomResourceClient(ns, dynamicClient, noxuDefinition)
+		ns := "not-the-default"
+		for _, v := range noxuDefinition.Spec.Versions {
+			noxuResourceClient := newNamespacedCustomResourceVersionedClient(ns, dynamicClient, noxuDefinition, v.Name)
 
-	t.Logf("Creating foo")
-	_, err = instantiateCustomResource(t, NewNoxuSubresourceInstance(ns, "foo", "v1beta1"), noxuResourceClient, noxuDefinition)
-	if err != nil {
-		t.Fatalf("unable to create noxu instance: %v", err)
-	}
+			t.Logf("Creating foo")
+			_, err = instantiateVersionedCustomResource(t, NewNoxuSubresourceInstance(ns, "foo", v.Name), noxuResourceClient, noxuDefinition, v.Name)
+			if err != nil {
+				t.Fatalf("unable to create noxu instance: %v", err)
+			}
 
-	scaleClient, err := fixtures.CreateNewVersionedScaleClient(noxuDefinition, config, "v1beta1")
-	if err != nil {
-		t.Fatal(err)
-	}
+			scaleClient, err := fixtures.CreateNewVersionedScaleClient(noxuDefinition, config, v.Name)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	t.Logf("Patching .status.num to 999")
-	patch := []byte(`{"spec": {"num":999}, "status": {"num":999}}`)
-	patchedNoxuInstance, err := noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "status")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			t.Logf("Patching .status.num to 999")
+			patch := []byte(`{"spec": {"num":999}, "status": {"num":999}}`)
+			patchedNoxuInstance, err := noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "status")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 999, "status", "num") // .status.num should be 999
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 10, "spec", "num")    // .spec.num should remain 10
-	rv, found, err := unstructured.NestedString(patchedNoxuInstance.UnstructuredContent(), "metadata", "resourceVersion")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !found {
-		t.Fatalf("metadata.resourceVersion not found")
-	}
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 999, "status", "num") // .status.num should be 999
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 10, "spec", "num")    // .spec.num should remain 10
+			rv, found, err := unstructured.NestedString(patchedNoxuInstance.UnstructuredContent(), "metadata", "resourceVersion")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !found {
+				t.Fatalf("metadata.resourceVersion not found")
+			}
 
-	// this call waits for the resourceVersion to be reached in the cache before returning.
-	// We need to do this because the patch gets its initial object from the storage, and the cache serves that.
-	// If it is out of date, then our initial patch is applied to an old resource version, which conflicts
-	// and then the updated object shows a conflicting diff, which permanently fails the patch.
-	// This gives expected stability in the patch without retrying on an known number of conflicts below in the test.
-	// See https://issue.k8s.io/42644
-	_, err = noxuResourceClient.Get("foo", metav1.GetOptions{ResourceVersion: patchedNoxuInstance.GetResourceVersion()})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			// this call waits for the resourceVersion to be reached in the cache before returning.
+			// We need to do this because the patch gets its initial object from the storage, and the cache serves that.
+			// If it is out of date, then our initial patch is applied to an old resource version, which conflicts
+			// and then the updated object shows a conflicting diff, which permanently fails the patch.
+			// This gives expected stability in the patch without retrying on an known number of conflicts below in the test.
+			// See https://issue.k8s.io/42644
+			_, err = noxuResourceClient.Get("foo", metav1.GetOptions{ResourceVersion: patchedNoxuInstance.GetResourceVersion()})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	// no-op patch
-	t.Logf("Patching .status.num again to 999")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "status")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// make sure no-op patch does not increment resourceVersion
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 999, "status", "num")
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 10, "spec", "num")
-	expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
+			// no-op patch
+			t.Logf("Patching .status.num again to 999")
+			patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "status")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			// make sure no-op patch does not increment resourceVersion
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 999, "status", "num")
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 10, "spec", "num")
+			expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
 
-	// empty patch
-	t.Logf("Applying empty patch")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), metav1.UpdateOptions{}, "status")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// an empty patch is a no-op patch. make sure it does not increment resourceVersion
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 999, "status", "num")
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 10, "spec", "num")
-	expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
+			// empty patch
+			t.Logf("Applying empty patch")
+			patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), metav1.UpdateOptions{}, "status")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	t.Logf("Patching .spec.replicas to 7")
-	patch = []byte(`{"spec": {"replicas":7}, "status": {"replicas":7}}`)
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "scale")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			// an empty patch is a no-op patch. make sure it does not increment resourceVersion
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 999, "status", "num")
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 10, "spec", "num")
+			expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
 
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 7, "spec", "replicas")
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 0, "status", "replicas") // .status.replicas should remain 0
-	rv, found, err = unstructured.NestedString(patchedNoxuInstance.UnstructuredContent(), "metadata", "resourceVersion")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !found {
-		t.Fatalf("metadata.resourceVersion not found")
-	}
+			t.Logf("Patching .spec.replicas to 7")
+			patch = []byte(`{"spec": {"replicas":7}, "status": {"replicas":7}}`)
+			patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "scale")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	// this call waits for the resourceVersion to be reached in the cache before returning.
-	// We need to do this because the patch gets its initial object from the storage, and the cache serves that.
-	// If it is out of date, then our initial patch is applied to an old resource version, which conflicts
-	// and then the updated object shows a conflicting diff, which permanently fails the patch.
-	// This gives expected stability in the patch without retrying on an known number of conflicts below in the test.
-	// See https://issue.k8s.io/42644
-	_, err = noxuResourceClient.Get("foo", metav1.GetOptions{ResourceVersion: patchedNoxuInstance.GetResourceVersion()})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 7, "spec", "replicas")
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 0, "status", "replicas") // .status.replicas should remain 0
+			rv, found, err = unstructured.NestedString(patchedNoxuInstance.UnstructuredContent(), "metadata", "resourceVersion")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !found {
+				t.Fatalf("metadata.resourceVersion not found")
+			}
 
-	// Scale.Spec.Replicas = 7 but Scale.Status.Replicas should remain 0
-	gottenScale, err := scaleClient.Scales("not-the-default").Get(groupResource, "foo")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if gottenScale.Spec.Replicas != 7 {
-		t.Fatalf("Scale.Spec.Replicas: expected: %v, got: %v", 7, gottenScale.Spec.Replicas)
-	}
-	if gottenScale.Status.Replicas != 0 {
-		t.Fatalf("Scale.Status.Replicas: expected: %v, got: %v", 0, gottenScale.Spec.Replicas)
-	}
+			// this call waits for the resourceVersion to be reached in the cache before returning.
+			// We need to do this because the patch gets its initial object from the storage, and the cache serves that.
+			// If it is out of date, then our initial patch is applied to an old resource version, which conflicts
+			// and then the updated object shows a conflicting diff, which permanently fails the patch.
+			// This gives expected stability in the patch without retrying on an known number of conflicts below in the test.
+			// See https://issue.k8s.io/42644
+			_, err = noxuResourceClient.Get("foo", metav1.GetOptions{ResourceVersion: patchedNoxuInstance.GetResourceVersion()})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	// no-op patch
-	t.Logf("Patching .spec.replicas again to 7")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "scale")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// make sure no-op patch does not increment resourceVersion
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 7, "spec", "replicas")
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 0, "status", "replicas")
-	expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
+			// Scale.Spec.Replicas = 7 but Scale.Status.Replicas should remain 0
+			gottenScale, err := scaleClient.Scales("not-the-default").Get(groupResource, "foo")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if gottenScale.Spec.Replicas != 7 {
+				t.Fatalf("Scale.Spec.Replicas: expected: %v, got: %v", 7, gottenScale.Spec.Replicas)
+			}
+			if gottenScale.Status.Replicas != 0 {
+				t.Fatalf("Scale.Status.Replicas: expected: %v, got: %v", 0, gottenScale.Spec.Replicas)
+			}
 
-	// empty patch
-	t.Logf("Applying empty patch")
-	patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), metav1.UpdateOptions{}, "scale")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	// an empty patch is a no-op patch. make sure it does not increment resourceVersion
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 7, "spec", "replicas")
-	expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 0, "status", "replicas")
-	expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
+			// no-op patch
+			t.Logf("Patching .spec.replicas again to 7")
+			patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, patch, metav1.UpdateOptions{}, "scale")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			// make sure no-op patch does not increment resourceVersion
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 7, "spec", "replicas")
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 0, "status", "replicas")
+			expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
 
-	// make sure strategic merge patch is not supported for both status and scale
-	_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, metav1.UpdateOptions{}, "status")
-	if err == nil {
-		t.Fatalf("unexpected non-error: strategic merge patch is not supported for custom resources")
-	}
+			// empty patch
+			t.Logf("Applying empty patch")
+			patchedNoxuInstance, err = noxuResourceClient.Patch("foo", types.MergePatchType, []byte(`{}`), metav1.UpdateOptions{}, "scale")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			// an empty patch is a no-op patch. make sure it does not increment resourceVersion
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 7, "spec", "replicas")
+			expectInt64(t, patchedNoxuInstance.UnstructuredContent(), 0, "status", "replicas")
+			expectString(t, patchedNoxuInstance.UnstructuredContent(), rv, "metadata", "resourceVersion")
 
-	_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, metav1.UpdateOptions{}, "scale")
-	if err == nil {
-		t.Fatalf("unexpected non-error: strategic merge patch is not supported for custom resources")
-	}
+			// make sure strategic merge patch is not supported for both status and scale
+			_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, metav1.UpdateOptions{}, "status")
+			if err == nil {
+				t.Fatalf("unexpected non-error: strategic merge patch is not supported for custom resources")
+			}
 
+			_, err = noxuResourceClient.Patch("foo", types.StrategicMergePatchType, patch, metav1.UpdateOptions{}, "scale")
+			if err == nil {
+				t.Fatalf("unexpected non-error: strategic merge patch is not supported for custom resources")
+			}
+			noxuResourceClient.Delete("foo", &metav1.DeleteOptions{})
+		}
+		if err := fixtures.DeleteCustomResourceDefinition(noxuDefinition, apiExtensionClient); err != nil {
+			t.Fatal(err)
+		}
+	}
 }

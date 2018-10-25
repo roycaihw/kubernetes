@@ -115,6 +115,23 @@ func getCRDSchemaForVersion(crdSpec *apiextensionsv1beta1.CustomResourceDefiniti
 	return nil, fmt.Errorf("version %s not found in CustomResourceDefinitionSpec: %v", version, *crdSpec)
 }
 
+// getCRDSubresourcesForVersion returns the subresources for given version in given CRD Spec.
+func getCRDSubresourcesForVersion(crdSpec *apiextensionsv1beta1.CustomResourceDefinitionSpec, version string) (*apiextensionsv1beta1.CustomResourceSubresources, error) {
+	for _, v := range crdSpec.Versions {
+		if version != v.Name {
+			continue
+		}
+		if crdSpec.Subresources != nil && v.Subresources != nil {
+			return nil, fmt.Errorf("malformed CustomResourceDefinitionSpec: top-level and per-version subresources must be mutual exclusive; spec: %v, version: %s", *crdSpec, version)
+		}
+		if v.Subresources != nil {
+			return v.Subresources, nil
+		}
+		return crdSpec.Subresources, nil
+	}
+	return nil, fmt.Errorf("version %s not found in CustomResourceDefinitionSpec: %v", version, *crdSpec)
+}
+
 // getCRDColumnsForVersion returns the columns for given version in given CRD Spec.
 func getCRDColumnsForVersion(crdSpec *apiextensionsv1beta1.CustomResourceDefinitionSpec, version string) ([]apiextensionsv1beta1.CustomResourceColumnDefinition, error) {
 	for _, v := range crdSpec.Versions {
