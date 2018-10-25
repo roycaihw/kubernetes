@@ -92111,7 +92111,7 @@
     ],
     "properties": {
      "additionalPrinterColumns": {
-      "description": "AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column. Top-level and per-version columns are mutually exclusive. Per-version columns may not all be set to identical values (top-level columns should be used instead)",
+      "description": "AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column. Top-level and per-version columns are mutually exclusive. Per-version columns may not all be set to identical values (top-level columns should be used instead) This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.",
       "type": "array",
       "items": {
        "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceColumnDefinition"
@@ -92122,7 +92122,7 @@
       "type": "string"
      },
      "schema": {
-      "description": "Schema describes the schema for CustomResource used in validation, pruning, and defaulting. Top-level and per-version schemas are mutually exclusive. Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)",
+      "description": "Schema describes the schema for CustomResource used in validation, pruning, and defaulting. Top-level and per-version schemas are mutually exclusive. Per-version schemas may not all be set to identical values (top-level validation schema should be used instead) This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.",
       "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.JSONSchemaProps"
      },
      "served": {
@@ -92134,7 +92134,7 @@
       "type": "boolean"
      },
      "subresources": {
-      "description": "Subresources describes the subresources for CustomResources Top-level and per-version subresources are mutually exclusive. Per-version subresources may not all be set to identical values (top-level subresources should be used instead)",
+      "description": "Subresources describes the subresources for CustomResources Top-level and per-version subresources are mutually exclusive. Per-version subresources may not all be set to identical values (top-level subresources should be used instead) This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.",
       "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceSubresources"
      }
     }
