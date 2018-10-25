@@ -92036,7 +92036,7 @@
     ],
     "properties": {
      "additionalPrinterColumns": {
-      "description": "AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.",
+      "description": "AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column. Optional, the global columns for all versions. Top-level and per-version columns are mutually exclusive.",
       "type": "array",
       "items": {
        "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceColumnDefinition"
@@ -92055,11 +92055,11 @@
       "type": "string"
      },
      "subresources": {
-      "description": "Subresources describes the subresources for CustomResources",
+      "description": "Subresources describes the subresources for CustomResources Optional, the global subresources for all versions. Top-level and per-version subresources are mutually exclusive.",
       "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceSubresources"
      },
      "validation": {
-      "description": "Validation describes the validation methods for CustomResources",
+      "description": "Validation describes the validation methods for CustomResources Optional, the global validation schema for all versions. Top-level and per-version schemas are mutually exclusive.",
       "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceValidation"
      },
      "version": {
@@ -92110,9 +92110,20 @@
      "storage"
     ],
     "properties": {
+     "additionalPrinterColumns": {
+      "description": "AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column. Top-level and per-version columns are mutually exclusive. Per-version columns may not all be set to identical values (top-level columns should be used instead)",
+      "type": "array",
+      "items": {
+       "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceColumnDefinition"
+      }
+     },
      "name": {
       "description": "Name is the version name, e.g. “v1”, “v2beta1”, etc.",
       "type": "string"
+     },
+     "schema": {
+      "description": "Schema describes the schema for CustomResource used in validation, pruning, and defaulting. Top-level and per-version schemas are mutually exclusive. Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)",
+      "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.JSONSchemaProps"
      },
      "served": {
       "description": "Served is a flag enabling/disabling this version from being served via REST APIs",
@@ -92121,6 +92132,10 @@
      "storage": {
       "description": "Storage flags the version as storage version. There must be exactly one flagged as storage version.",
       "type": "boolean"
+     },
+     "subresources": {
+      "description": "Subresources describes the subresources for CustomResources Top-level and per-version subresources are mutually exclusive. Per-version subresources may not all be set to identical values (top-level subresources should be used instead)",
+      "$ref": "#/definitions/io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1beta1.CustomResourceSubresources"
      }
     }
    },

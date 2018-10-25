@@ -57,6 +57,15 @@ message CustomResourceColumnDefinition {
   optional string JSONPath = 6;
 }
 
+// CustomResourceColumns masks the slice so protobuf can preserve empty slice
+// +protobuf.nullable=true
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+message CustomResourceColumns {
+  // items, if empty, will result in an empty slice
+
+  repeated CustomResourceColumnDefinition items = 1;
+}
+
 // CustomResourceDefinition represents a resource that should be exposed on the API server.  Its name MUST be in the format
 // <.spec.name>.<.spec.group>.
 message CustomResourceDefinition {
@@ -145,10 +154,14 @@ message CustomResourceDefinitionSpec {
   optional string scope = 4;
 
   // Validation describes the validation methods for CustomResources
+  // Optional, the global validation schema for all versions.
+  // Top-level and per-version schemas are mutually exclusive.
   // +optional
   optional CustomResourceValidation validation = 5;
 
   // Subresources describes the subresources for CustomResources
+  // Optional, the global subresources for all versions.
+  // Top-level and per-version subresources are mutually exclusive.
   // +optional
   optional CustomResourceSubresources subresources = 6;
 
@@ -167,6 +180,8 @@ message CustomResourceDefinitionSpec {
   repeated CustomResourceDefinitionVersion versions = 7;
 
   // AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.
+  // Optional, the global columns for all versions.
+  // Top-level and per-version columns are mutually exclusive.
   // +optional
   repeated CustomResourceColumnDefinition additionalPrinterColumns = 8;
 }
@@ -199,6 +214,24 @@ message CustomResourceDefinitionVersion {
   // Storage flags the version as storage version. There must be exactly one
   // flagged as storage version.
   optional bool storage = 3;
+
+  // Schema describes the schema for CustomResource used in validation, pruning, and defaulting.
+  // Top-level and per-version schemas are mutually exclusive.
+  // Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)
+  // +optional
+  optional JSONSchemaProps schema = 4;
+
+  // Subresources describes the subresources for CustomResources
+  // Top-level and per-version subresources are mutually exclusive.
+  // Per-version subresources may not all be set to identical values (top-level subresources should be used instead)
+  // +optional
+  optional CustomResourceSubresources subresources = 5;
+
+  // AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.
+  // Top-level and per-version columns are mutually exclusive.
+  // Per-version columns may not all be set to identical values (top-level columns should be used instead)
+  // +optional
+  optional CustomResourceColumns additionalPrinterColumns = 6;
 }
 
 // CustomResourceSubresourceScale defines how to serve the scale subresource for CustomResources.
