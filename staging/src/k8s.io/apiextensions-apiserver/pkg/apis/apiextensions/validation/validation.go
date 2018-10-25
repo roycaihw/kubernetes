@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 
+	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	genericvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/sets"
 	validationutil "k8s.io/apimachinery/pkg/util/validation"
@@ -333,7 +334,7 @@ func hasIdenticalPerVersionSchema(versions []apiextensions.CustomResourceDefinit
 	}
 	value := versions[0].Schema
 	for _, v := range versions {
-		if v.Schema == nil || !reflect.DeepEqual(v.Schema, value) {
+		if v.Schema == nil || !apiequality.Semantic.DeepEqual(v.Schema, value) {
 			return false
 		}
 	}
@@ -348,7 +349,7 @@ func hasIdenticalPerVersionSubresources(versions []apiextensions.CustomResourceD
 	}
 	value := versions[0].Subresources
 	for _, v := range versions {
-		if v.Subresources == nil || !reflect.DeepEqual(v.Subresources, value) {
+		if v.Subresources == nil || !apiequality.Semantic.DeepEqual(v.Subresources, value) {
 			return false
 		}
 	}
@@ -363,7 +364,7 @@ func hasIdenticalPerVersionColumns(versions []apiextensions.CustomResourceDefini
 	}
 	value := versions[0].AdditionalPrinterColumns
 	for _, v := range versions {
-		if v.AdditionalPrinterColumns == nil || !reflect.DeepEqual(v.AdditionalPrinterColumns, value) {
+		if len(v.AdditionalPrinterColumns) == 0 || !apiequality.Semantic.DeepEqual(v.AdditionalPrinterColumns, value) {
 			return false
 		}
 	}

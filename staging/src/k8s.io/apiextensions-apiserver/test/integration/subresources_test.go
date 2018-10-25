@@ -87,7 +87,7 @@ func NewNoxuSubresourcesCRD(scope apiextensionsv1beta1.ResourceScope) *apiextens
 func NewNoxuSubresourcesCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiextensionsv1beta1.CustomResourceDefinition {
 	return []*apiextensionsv1beta1.CustomResourceDefinition{
 		// CRD that uses top-level subresources
-		&apiextensionsv1beta1.CustomResourceDefinition{
+		{
 			ObjectMeta: metav1.ObjectMeta{Name: "noxus.mygroup.example.com"},
 			Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 				Group:   "mygroup.example.com",
@@ -123,7 +123,7 @@ func NewNoxuSubresourcesCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiext
 			},
 		},
 		// CRD that uses per-version subresources
-		&apiextensionsv1beta1.CustomResourceDefinition{
+		{
 			ObjectMeta: metav1.ObjectMeta{Name: "noxus.mygroup.example.com"},
 			Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 				Group:   "mygroup.example.com",

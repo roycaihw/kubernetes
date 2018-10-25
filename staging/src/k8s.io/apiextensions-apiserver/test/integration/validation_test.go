@@ -138,7 +138,7 @@ func newNoxuValidationCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiexten
 	validationSchemaWithDescription := validationSchema.DeepCopy()
 	validationSchemaWithDescription.Description = "test"
 	return []*apiextensionsv1beta1.CustomResourceDefinition{
-		&apiextensionsv1beta1.CustomResourceDefinition{
+		{
 			ObjectMeta: metav1.ObjectMeta{Name: "noxus.mygroup.example.com"},
 			Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 				Group:   "mygroup.example.com",
@@ -168,7 +168,7 @@ func newNoxuValidationCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiexten
 				},
 			},
 		},
-		&apiextensionsv1beta1.CustomResourceDefinition{
+		{
 			ObjectMeta: metav1.ObjectMeta{Name: "noxus.mygroup.example.com"},
 			Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 				Group:   "mygroup.example.com",

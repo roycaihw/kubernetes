@@ -17,19 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	fmt "fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// CustomResourceColumns masks the slice so protobuf can preserve empty slice
-// +protobuf.nullable=true
-// +protobuf.options.(gogoproto.goproto_stringer)=false
-type CustomResourceColumns []CustomResourceColumnDefinition
-
-func (t CustomResourceColumns) String() string {
-	return fmt.Sprintf("%v", []CustomResourceColumnDefinition(t))
-}
 
 // CustomResourceDefinitionSpec describes how a user wants their resource to appear
 type CustomResourceDefinitionSpec struct {
@@ -86,18 +75,21 @@ type CustomResourceDefinitionVersion struct {
 	// Schema describes the schema for CustomResource used in validation, pruning, and defaulting.
 	// Top-level and per-version schemas are mutually exclusive.
 	// Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)
+	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
 	Schema *JSONSchemaProps `json:"schema,omitempty" protobuf:"bytes,4,opt,name=schema"`
 	// Subresources describes the subresources for CustomResources
 	// Top-level and per-version subresources are mutually exclusive.
 	// Per-version subresources may not all be set to identical values (top-level subresources should be used instead)
+	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
 	Subresources *CustomResourceSubresources `json:"subresources,omitempty" protobuf:"bytes,5,opt,name=subresources"`
 	// AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.
 	// Top-level and per-version columns are mutually exclusive.
 	// Per-version columns may not all be set to identical values (top-level columns should be used instead)
+	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
-	AdditionalPrinterColumns CustomResourceColumns `json:"additionalPrinterColumns,omitempty" protobuf:"bytes,6,rep,name=additionalPrinterColumns"`
+	AdditionalPrinterColumns []CustomResourceColumnDefinition `json:"additionalPrinterColumns,omitempty" protobuf:"bytes,6,rep,name=additionalPrinterColumns"`
 }
 
 // CustomResourceColumnDefinition specifies a column for server side printing.

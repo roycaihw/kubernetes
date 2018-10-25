@@ -66,10 +66,10 @@ func getCRDColumnsForVersion(crdSpec *apiextensions.CustomResourceDefinitionSpec
 		if version != v.Name {
 			continue
 		}
-		if crdSpec.AdditionalPrinterColumns != nil && v.AdditionalPrinterColumns != nil {
+		if len(crdSpec.AdditionalPrinterColumns) > 0 && len(v.AdditionalPrinterColumns) > 0 {
 			return nil, fmt.Errorf("malformed CustomResourceDefinitionSpec: top-level and per-version additionalPrinterColumns must be mutual exclusive; spec: %v, version: %s", *crdSpec, version)
 		}
-		if v.AdditionalPrinterColumns != nil {
+		if len(v.AdditionalPrinterColumns) > 0 {
 			return v.AdditionalPrinterColumns, nil
 		}
 		return crdSpec.AdditionalPrinterColumns, nil

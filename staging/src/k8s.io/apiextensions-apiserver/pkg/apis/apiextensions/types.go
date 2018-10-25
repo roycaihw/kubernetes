@@ -20,9 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CustomResourceColumns masks the slice so protobuf can preserve empty slice
-type CustomResourceColumns []CustomResourceColumnDefinition
-
 // CustomResourceDefinitionSpec describes how a user wants their resource to appear
 type CustomResourceDefinitionSpec struct {
 	// Group is the group this resource belongs in
@@ -76,18 +73,21 @@ type CustomResourceDefinitionVersion struct {
 	// Schema describes the schema for CustomResource used in validation, pruning, and defaulting.
 	// Top-level and per-version schemas are mutually exclusive.
 	// Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)
+	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
 	Schema *JSONSchemaProps
 	// Subresources describes the subresources for CustomResources
 	// Top-level and per-version subresources are mutually exclusive.
 	// Per-version subresources may not all be set to identical values (top-level subresources should be used instead)
+	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
 	Subresources *CustomResourceSubresources
 	// AdditionalPrinterColumns are additional columns shown e.g. in kubectl next to the name. Defaults to a created-at column.
 	// Top-level and per-version columns are mutually exclusive.
 	// Per-version columns may not all be set to identical values (top-level columns should be used instead)
+	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
-	AdditionalPrinterColumns CustomResourceColumns
+	AdditionalPrinterColumns []CustomResourceColumnDefinition
 }
 
 // CustomResourceColumnDefinition specifies a column for server side printing.
