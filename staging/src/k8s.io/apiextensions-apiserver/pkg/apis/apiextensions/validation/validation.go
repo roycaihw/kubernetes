@@ -50,7 +50,7 @@ func ValidateCustomResourceDefinition(obj *apiextensions.CustomResourceDefinitio
 	}
 
 	allErrs := genericvalidation.ValidateObjectMeta(&obj.ObjectMeta, false, nameValidationFn, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateCustomResourceDefinitionSpec(&obj.Spec, field.NewPath("spec"), false)...)
+	allErrs = append(allErrs, ValidateCustomResourceDefinitionSpec(&obj.Spec, field.NewPath("spec"))...)
 	allErrs = append(allErrs, ValidateCustomResourceDefinitionStatus(&obj.Status, field.NewPath("status"))...)
 	allErrs = append(allErrs, ValidateCustomResourceDefinitionStoredVersions(obj.Status.StoredVersions, obj.Spec.Versions, field.NewPath("status").Child("storedVersions"))...)
 	return allErrs
@@ -99,62 +99,30 @@ func ValidateUpdateCustomResourceDefinitionStatus(obj, oldObj *apiextensions.Cus
 	return allErrs
 }
 
-// ValidateCustomResourceDefinitionVersion statically validates. If allowingPerVersionField
-// is true, we are updating a CRD that already uses per-version fields, we allow the UPDATE
-// operation to continue using these fields even if the CustomResourceWebhookConversion
-// feature gate is set off.
-func ValidateCustomResourceDefinitionVersion(version *apiextensions.CustomResourceDefinitionVersion, fldPath *field.Path, index int, allowingPerVersionField bool) field.ErrorList {
+// ValidateCustomResourceDefinitionVersion statically validates.
+func ValidateCustomResourceDefinitionVersion(version *apiextensions.CustomResourceDefinitionVersion, fldPath *field.Path, index int) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	// Validate per-version schema
-	schemaInvalid := false
-	if version.Schema != nil {
-		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) && !allowingPerVersionField {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("schema"), "disabled by feature-gate CustomResourceWebhookConversion"))
-			schemaInvalid = true
-		}
-		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceValidation) {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("schema"), "disabled by feature-gate CustomResourceValidation"))
-			schemaInvalid = true
-		}
+	statusEnabled := false
+	if version.Subresources != nil && version.Subresources.Status != nil {
+		statusEnabled = true
 	}
-	if !schemaInvalid {
-		statusEnabled := false
-		if version.Subresources != nil && version.Subresources.Status != nil {
-			statusEnabled = true
-		}
-		allErrs = append(allErrs, ValidateCustomResourceDefinitionValidation(&apiextensions.CustomResourceValidation{OpenAPIV3Schema: version.Schema}, statusEnabled, fldPath.Child("schema"))...)
-	}
+	allErrs = append(allErrs, ValidateCustomResourceDefinitionValidation(&apiextensions.CustomResourceValidation{OpenAPIV3Schema: version.Schema}, statusEnabled, fldPath.Child("schema"))...)
 
 	// Validate per-version subresources
-	subresourcesInvalid := false
-	if version.Subresources != nil {
-		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) && !allowingPerVersionField {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("subresources"), "disabled by feature-gate CustomResourceWebhookConversion"))
-			subresourcesInvalid = true
-		}
-		if !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) {
-			allErrs = append(allErrs, field.Forbidden(fldPath.Child("subresources"), "disabled by feature-gate CustomResourceSubresources"))
-			subresourcesInvalid = true
-		}
-	}
-	if !subresourcesInvalid {
-		allErrs = append(allErrs, ValidateCustomResourceDefinitionSubresources(version.Subresources, fldPath.Child("subresources"))...)
-	}
+	allErrs = append(allErrs, ValidateCustomResourceDefinitionSubresources(version.Subresources, fldPath.Child("subresources"))...)
 
 	// Validate per-version columns
-	if len(version.AdditionalPrinterColumns) > 0 && !utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceWebhookConversion) && !allowingPerVersionField {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("additionalPrinterColumns"), "disabled by feature-gate CustomResourceWebhookConversion"))
-	} else {
-		for i := range version.AdditionalPrinterColumns {
-			allErrs = append(allErrs, ValidateCustomResourceColumnDefinition(&version.AdditionalPrinterColumns[i], fldPath.Child("additionalPrinterColumns").Index(i))...)
-		}
+	for i := range version.AdditionalPrinterColumns {
+		allErrs = append(allErrs, ValidateCustomResourceColumnDefinition(&version.AdditionalPrinterColumns[i], fldPath.Child("additionalPrinterColumns").Index(i))...)
 	}
+
 	return allErrs
 }
 
 // ValidateCustomResourceDefinitionSpec statically validates
-func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefinitionSpec, fldPath *field.Path, allowingPerVersionField bool) field.ErrorList {
+func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefinitionSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if len(spec.Group) == 0 {
@@ -188,7 +156,7 @@ func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefi
 		if errs := validationutil.IsDNS1035Label(version.Name); len(errs) > 0 {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("versions").Index(i).Child("name"), spec.Versions[i].Name, strings.Join(errs, ",")))
 		}
-		allErrs = append(allErrs, ValidateCustomResourceDefinitionVersion(&version, fldPath.Child("versions").Index(i), i, allowingPerVersionField)...)
+		allErrs = append(allErrs, ValidateCustomResourceDefinitionVersion(&version, fldPath.Child("versions").Index(i), i)...)
 	}
 
 	// The top-level and per-version fields are mutual exclusive
@@ -271,7 +239,7 @@ func ValidateCustomResourceDefinitionSpec(spec *apiextensions.CustomResourceDefi
 
 // ValidateCustomResourceDefinitionSpecUpdate statically validates
 func ValidateCustomResourceDefinitionSpecUpdate(spec, oldSpec *apiextensions.CustomResourceDefinitionSpec, established bool, fldPath *field.Path) field.ErrorList {
-	allErrs := ValidateCustomResourceDefinitionSpec(spec, fldPath, hasPerVersionField(oldSpec.Versions))
+	allErrs := ValidateCustomResourceDefinitionSpec(spec, fldPath)
 
 	if established {
 		// these effect the storage and cannot be changed therefore
@@ -284,16 +252,6 @@ func ValidateCustomResourceDefinitionSpecUpdate(spec, oldSpec *apiextensions.Cus
 	allErrs = append(allErrs, genericvalidation.ValidateImmutableField(spec.Names.Plural, oldSpec.Names.Plural, fldPath.Child("names", "plural"))...)
 
 	return allErrs
-}
-
-// hasPerVersionField returns true if a CRD uses per-version schema/subresources/columns fields.
-func hasPerVersionField(versions []apiextensions.CustomResourceDefinitionVersion) bool {
-	for _, v := range versions {
-		if v.Schema != nil || v.Subresources != nil || len(v.AdditionalPrinterColumns) > 0 {
-			return true
-		}
-	}
-	return false
 }
 
 // hasPerVersionSchema returns true if a CRD uses per-version schema.

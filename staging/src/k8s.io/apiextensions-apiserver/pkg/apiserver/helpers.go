@@ -22,14 +22,14 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 )
 
-// getCRDSchemaForVersion returns the validation schema for given version in given CRD Spec.
-func getCRDSchemaForVersion(crdSpec *apiextensions.CustomResourceDefinitionSpec, version string) (*apiextensions.CustomResourceValidation, error) {
-	for _, v := range crdSpec.Versions {
+// getCRDSchemaForVersion returns the validation schema for given version in given CRD.
+func getCRDSchemaForVersion(crd *apiextensions.CustomResourceDefinition, version string) (*apiextensions.CustomResourceValidation, error) {
+	for _, v := range crd.Spec.Versions {
 		if version != v.Name {
 			continue
 		}
-		if crdSpec.Validation != nil && v.Schema != nil {
-			return nil, fmt.Errorf("malformed CustomResourceDefinitionSpec: top-level and per-version schemas must be mutual exclusive; spec: %v, version: %s", *crdSpec, version)
+		if crd.Spec.Validation != nil && v.Schema != nil {
+			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version schemas must be mutual exclusive", crd.Name, version)
 		}
 		if v.Schema != nil {
 			// For backwards compatibility with existing code path, we wrap the
@@ -38,41 +38,41 @@ func getCRDSchemaForVersion(crdSpec *apiextensions.CustomResourceDefinitionSpec,
 				OpenAPIV3Schema: v.Schema,
 			}, nil
 		}
-		return crdSpec.Validation, nil
+		return crd.Spec.Validation, nil
 	}
-	return nil, fmt.Errorf("version %s not found in CustomResourceDefinitionSpec: %v", version, *crdSpec)
+	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
 }
 
-// getCRDSubresourcesForVersion returns the subresources for given version in given CRD Spec.
-func getCRDSubresourcesForVersion(crdSpec *apiextensions.CustomResourceDefinitionSpec, version string) (*apiextensions.CustomResourceSubresources, error) {
-	for _, v := range crdSpec.Versions {
+// getCRDSubresourcesForVersion returns the subresources for given version in given CRD.
+func getCRDSubresourcesForVersion(crd *apiextensions.CustomResourceDefinition, version string) (*apiextensions.CustomResourceSubresources, error) {
+	for _, v := range crd.Spec.Versions {
 		if version != v.Name {
 			continue
 		}
-		if crdSpec.Subresources != nil && v.Subresources != nil {
-			return nil, fmt.Errorf("malformed CustomResourceDefinitionSpec: top-level and per-version subresources must be mutual exclusive; spec: %v, version: %s", *crdSpec, version)
+		if crd.Spec.Subresources != nil && v.Subresources != nil {
+			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version subresources must be mutual exclusive", crd.Name, version)
 		}
 		if v.Subresources != nil {
 			return v.Subresources, nil
 		}
-		return crdSpec.Subresources, nil
+		return crd.Spec.Subresources, nil
 	}
-	return nil, fmt.Errorf("version %s not found in CustomResourceDefinitionSpec: %v", version, *crdSpec)
+	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
 }
 
-// getCRDColumnsForVersion returns the columns for given version in given CRD Spec.
-func getCRDColumnsForVersion(crdSpec *apiextensions.CustomResourceDefinitionSpec, version string) ([]apiextensions.CustomResourceColumnDefinition, error) {
-	for _, v := range crdSpec.Versions {
+// getCRDColumnsForVersion returns the columns for given version in given CRD.
+func getCRDColumnsForVersion(crd *apiextensions.CustomResourceDefinition, version string) ([]apiextensions.CustomResourceColumnDefinition, error) {
+	for _, v := range crd.Spec.Versions {
 		if version != v.Name {
 			continue
 		}
-		if len(crdSpec.AdditionalPrinterColumns) > 0 && len(v.AdditionalPrinterColumns) > 0 {
-			return nil, fmt.Errorf("malformed CustomResourceDefinitionSpec: top-level and per-version additionalPrinterColumns must be mutual exclusive; spec: %v, version: %s", *crdSpec, version)
+		if len(crd.Spec.AdditionalPrinterColumns) > 0 && len(v.AdditionalPrinterColumns) > 0 {
+			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version additionalPrinterColumns must be mutual exclusive", crd.Name, version)
 		}
 		if len(v.AdditionalPrinterColumns) > 0 {
 			return v.AdditionalPrinterColumns, nil
 		}
-		return crdSpec.AdditionalPrinterColumns, nil
+		return crd.Spec.AdditionalPrinterColumns, nil
 	}
-	return nil, fmt.Errorf("version %s not found in CustomResourceDefinitionSpec: %v", version, *crdSpec)
+	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
 }

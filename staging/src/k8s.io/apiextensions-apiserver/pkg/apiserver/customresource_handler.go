@@ -220,9 +220,10 @@ func (r *crdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var handler http.HandlerFunc
-	subresources, err := getCRDSubresourcesForVersion(&crd.Spec, requestInfo.APIVersion)
+	subresources, err := getCRDSubresourcesForVersion(crd, requestInfo.APIVersion)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utilruntime.HandleError(err)
+		http.Error(w, "the server could not properly server the CRD subresources", http.StatusInternalServerError)
 		return
 	}
 	switch {
@@ -448,9 +449,10 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 		typer := newUnstructuredObjectTyper(parameterScheme)
 		creator := unstructuredCreator{}
 
-		validationSchema, err := getCRDSchemaForVersion(&crd.Spec, v.Name)
+		validationSchema, err := getCRDSchemaForVersion(crd, v.Name)
 		if err != nil {
-			return nil, err
+			utilruntime.HandleError(err)
+			return nil, fmt.Errorf("the server could not properly server the CRD schema")
 		}
 		validator, _, err := apiservervalidation.NewSchemaValidator(validationSchema)
 		if err != nil {
@@ -459,9 +461,10 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 
 		var statusSpec *apiextensions.CustomResourceSubresourceStatus
 		var statusValidator *validate.SchemaValidator
-		subresources, err := getCRDSubresourcesForVersion(&crd.Spec, v.Name)
+		subresources, err := getCRDSubresourcesForVersion(crd, v.Name)
 		if err != nil {
-			return nil, err
+			utilruntime.HandleError(err)
+			return nil, fmt.Errorf("the server could not properly server the CRD subresources")
 		}
 		if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && subresources != nil && subresources.Status != nil {
 			statusSpec = subresources.Status
@@ -482,9 +485,10 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 			scaleSpec = subresources.Scale
 		}
 
-		columns, err := getCRDColumnsForVersion(&crd.Spec, v.Name)
+		columns, err := getCRDColumnsForVersion(crd, v.Name)
 		if err != nil {
-			return nil, err
+			utilruntime.HandleError(err)
+			return nil, fmt.Errorf("the server could not properly server the CRD columns")
 		}
 		table, err := tableconvertor.New(columns)
 		if err != nil {

@@ -417,7 +417,7 @@ func TestCRValidationOnCRDUpdate(t *testing.T) {
 		for _, v := range noxuDefinition.Spec.Versions {
 			// Re-define the CRD to make sure we start with a clean CRD
 			noxuDefinition := newNoxuValidationCRDs(apiextensionsv1beta1.NamespaceScoped)[i]
-			validationSchema, err := getCRDSchemaForVersion(&noxuDefinition.Spec, v.Name)
+			validationSchema, err := getCRDSchemaForVersion(noxuDefinition, v.Name)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -442,7 +442,7 @@ func TestCRValidationOnCRDUpdate(t *testing.T) {
 
 			// update the CRD to a less stricter schema
 			_, err = updateCustomResourceDefinitionWithRetry(apiExtensionClient, "noxus.mygroup.example.com", func(crd *apiextensionsv1beta1.CustomResourceDefinition) {
-				validationSchema, err := getCRDSchemaForVersion(&crd.Spec, v.Name)
+				validationSchema, err := getCRDSchemaForVersion(crd, v.Name)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -489,7 +489,7 @@ func TestForbiddenFieldsInSchema(t *testing.T) {
 		for _, v := range noxuDefinition.Spec.Versions {
 			// Re-define the CRD to make sure we start with a clean CRD
 			noxuDefinition := newNoxuValidationCRDs(apiextensionsv1beta1.NamespaceScoped)[i]
-			validationSchema, err := getCRDSchemaForVersion(&noxuDefinition.Spec, v.Name)
+			validationSchema, err := getCRDSchemaForVersion(noxuDefinition, v.Name)
 			if err != nil {
 				t.Fatal(err)
 			}

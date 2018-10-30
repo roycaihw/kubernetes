@@ -175,7 +175,7 @@ func TestTableGet(t *testing.T) {
 		}
 		t.Logf("%v table list: %#v", gvk, tbl)
 
-		columns, err := getCRDColumnsForVersion(&crd.Spec, v.Name)
+		columns, err := getCRDColumnsForVersion(crd, v.Name)
 		if err != nil {
 			t.Fatal(err)
 		}

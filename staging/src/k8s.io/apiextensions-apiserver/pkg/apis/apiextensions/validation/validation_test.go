@@ -373,7 +373,7 @@ func TestValidateCustomResourceDefinition(t *testing.T) {
 			errors: []validationMatch{},
 		},
 		{
-			name: "disallow setting per-version field when CustomResourceWebhookConversion feature gate is off, and per-version fields may not all be set to identical values (top-level field should be used instead)",
+			name: "per-version fields may not all be set to identical values (top-level field should be used instead)",
 			resource: &apiextensions.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{Name: "plural.group.com"},
 				Spec: apiextensions.CustomResourceDefinitionSpec{
@@ -410,12 +410,6 @@ func TestValidateCustomResourceDefinition(t *testing.T) {
 				},
 			},
 			errors: []validationMatch{
-				forbidden("spec", "versions[0]", "schema"),
-				forbidden("spec", "versions[0]", "subresources"),
-				forbidden("spec", "versions[0]", "additionalPrinterColumns"),
-				forbidden("spec", "versions[1]", "schema"),
-				forbidden("spec", "versions[1]", "subresources"),
-				forbidden("spec", "versions[1]", "additionalPrinterColumns"),
 				// Per-version schema/subresources/columns may not all be set to identical values.
 				// Note that the test will fail if we de-duplicate the expected errors below.
 				invalid("spec", "versions"),
@@ -831,153 +825,6 @@ func TestValidateCustomResourceDefinitionUpdate(t *testing.T) {
 				immutable("spec", "names", "kind"),
 				immutable("spec", "names", "plural"),
 			},
-		},
-		{
-			name: "disallow changing per-version field when CustomResourceWebhookConversion feature gate is off",
-			old: &apiextensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "plural.group.com",
-					ResourceVersion: "42",
-				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
-					Group:   "group.com",
-					Version: "version",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
-						{
-							Name:    "version",
-							Served:  true,
-							Storage: true,
-						},
-						{
-							Name:    "version2",
-							Served:  true,
-							Storage: false,
-						},
-					},
-					Scope: apiextensions.NamespaceScoped,
-					Names: apiextensions.CustomResourceDefinitionNames{
-						Plural:   "plural",
-						Singular: "singular",
-						Kind:     "Plural",
-						ListKind: "PluralList",
-					},
-				},
-				Status: apiextensions.CustomResourceDefinitionStatus{
-					StoredVersions: []string{"version"},
-				},
-			},
-			resource: &apiextensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "plural.group.com",
-					ResourceVersion: "42",
-				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
-					Group:   "group.com",
-					Version: "version",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
-						{
-							Name:    "version",
-							Served:  true,
-							Storage: true,
-						},
-						{
-							Name:                     "version2",
-							Served:                   true,
-							Storage:                  false,
-							Schema:                   validValidationSchema,
-							Subresources:             &apiextensions.CustomResourceSubresources{},
-							AdditionalPrinterColumns: []apiextensions.CustomResourceColumnDefinition{{Name: "Alpha", Type: "string", JSONPath: ".spec.alpha"}},
-						},
-					},
-					Scope: apiextensions.NamespaceScoped,
-					Names: apiextensions.CustomResourceDefinitionNames{
-						Plural:   "plural",
-						Singular: "singular",
-						Kind:     "Plural",
-						ListKind: "PluralList",
-					},
-				},
-				Status: apiextensions.CustomResourceDefinitionStatus{
-					StoredVersions: []string{"version"},
-				},
-			},
-			errors: []validationMatch{
-				forbidden("spec", "versions[1]", "schema"),
-				forbidden("spec", "versions[1]", "subresources"),
-				forbidden("spec", "versions[1]", "additionalPrinterColumns"),
-			},
-		},
-		{
-			name: "allow changing per-version field when CustomResourceWebhookConversion feature gate is off, if the CRD already uses per-version field",
-			old: &apiextensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "plural.group.com",
-					ResourceVersion: "42",
-				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
-					Group:   "group.com",
-					Version: "version",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
-						{
-							Name:         "version",
-							Served:       true,
-							Storage:      true,
-							Subresources: &apiextensions.CustomResourceSubresources{},
-						},
-						{
-							Name:    "version2",
-							Served:  true,
-							Storage: false,
-						},
-					},
-					Scope: apiextensions.NamespaceScoped,
-					Names: apiextensions.CustomResourceDefinitionNames{
-						Plural:   "plural",
-						Singular: "singular",
-						Kind:     "Plural",
-						ListKind: "PluralList",
-					},
-				},
-				Status: apiextensions.CustomResourceDefinitionStatus{
-					StoredVersions: []string{"version"},
-				},
-			},
-			resource: &apiextensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "plural.group.com",
-					ResourceVersion: "42",
-				},
-				Spec: apiextensions.CustomResourceDefinitionSpec{
-					Group:   "group.com",
-					Version: "version",
-					Versions: []apiextensions.CustomResourceDefinitionVersion{
-						{
-							Name:    "version",
-							Served:  true,
-							Storage: true,
-						},
-						{
-							Name:                     "version2",
-							Served:                   true,
-							Storage:                  false,
-							Schema:                   validValidationSchema,
-							Subresources:             &apiextensions.CustomResourceSubresources{},
-							AdditionalPrinterColumns: []apiextensions.CustomResourceColumnDefinition{{Name: "Alpha", Type: "string", JSONPath: ".spec.alpha"}},
-						},
-					},
-					Scope: apiextensions.NamespaceScoped,
-					Names: apiextensions.CustomResourceDefinitionNames{
-						Plural:   "plural",
-						Singular: "singular",
-						Kind:     "Plural",
-						ListKind: "PluralList",
-					},
-				},
-				Status: apiextensions.CustomResourceDefinitionStatus{
-					StoredVersions: []string{"version"},
-				},
-			},
-			errors: []validationMatch{},
 		},
 		{
 			name: "top-level and per-version fields are mutually exclusive",
