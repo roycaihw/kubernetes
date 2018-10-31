@@ -217,7 +217,8 @@ func (in *CustomResourceDefinitionVersion) DeepCopyInto(out *CustomResourceDefin
 	*out = *in
 	if in.Schema != nil {
 		in, out := &in.Schema, &out.Schema
-		*out = (*in).DeepCopy()
+		*out = new(CustomResourceValidation)
+		(*in).DeepCopyInto(*out)
 	}
 	if in.Subresources != nil {
 		in, out := &in.Subresources, &out.Subresources

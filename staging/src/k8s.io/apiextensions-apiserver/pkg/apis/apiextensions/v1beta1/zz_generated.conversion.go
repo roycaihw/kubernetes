@@ -503,8 +503,8 @@ func autoConvert_v1beta1_CustomResourceDefinitionVersion_To_apiextensions_Custom
 	out.Storage = in.Storage
 	if in.Schema != nil {
 		in, out := &in.Schema, &out.Schema
-		*out = new(apiextensions.JSONSchemaProps)
-		if err := Convert_v1beta1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(*in, *out, s); err != nil {
+		*out = new(apiextensions.CustomResourceValidation)
+		if err := Convert_v1beta1_CustomResourceValidation_To_apiextensions_CustomResourceValidation(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
@@ -526,8 +526,8 @@ func autoConvert_apiextensions_CustomResourceDefinitionVersion_To_v1beta1_Custom
 	out.Storage = in.Storage
 	if in.Schema != nil {
 		in, out := &in.Schema, &out.Schema
-		*out = new(JSONSchemaProps)
-		if err := Convert_apiextensions_JSONSchemaProps_To_v1beta1_JSONSchemaProps(*in, *out, s); err != nil {
+		*out = new(CustomResourceValidation)
+		if err := Convert_apiextensions_CustomResourceValidation_To_v1beta1_CustomResourceValidation(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
