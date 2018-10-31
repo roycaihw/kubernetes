@@ -289,10 +289,7 @@ func TestScaleSubresource(t *testing.T) {
 			// Start with a new CRD, so that the object doesn't have resourceVersion
 			noxuDefinition := noxuDefinition.DeepCopy()
 
-			subresources, err := getCRDSubresourcesForVersion(noxuDefinition, v.Name)
-			if err != nil {
-				t.Fatal(err)
-			}
+			subresources := getCRDSubresourcesForVersionOrDie(noxuDefinition, v.Name)
 			// set invalid json path for specReplicasPath
 			subresources.Scale.SpecReplicasPath = "foo,bar"
 			_, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)

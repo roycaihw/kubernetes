@@ -136,10 +136,7 @@ func (c *DiscoveryController) sync(version schema.GroupVersion) error {
 			Categories:   crd.Status.AcceptedNames.Categories,
 		})
 
-		subresources, err := getCRDSubresourcesForVersion(crd, version.Version)
-		if err != nil {
-			return err
-		}
+		subresources := getCRDSubresourcesForVersionOrDie(crd, version.Version)
 		if subresources != nil && subresources.Status != nil {
 			apiResourcesForDiscovery = append(apiResourcesForDiscovery, metav1.APIResource{
 				Name:       crd.Status.AcceptedNames.Plural + "/status",

@@ -175,10 +175,7 @@ func TestTableGet(t *testing.T) {
 		}
 		t.Logf("%v table list: %#v", gvk, tbl)
 
-		columns, err := getCRDColumnsForVersion(crd, v.Name)
-		if err != nil {
-			t.Fatal(err)
-		}
+		columns := getCRDColumnsForVersionOrDie(crd, v.Name)
 		expectColumnNum := len(columns) + 1
 		if got, expected := len(tbl.ColumnDefinitions), expectColumnNum; got != expected {
 			t.Errorf("expected %d headers, got %d", expected, got)

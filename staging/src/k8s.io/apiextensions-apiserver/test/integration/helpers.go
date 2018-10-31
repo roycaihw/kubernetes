@@ -94,46 +94,52 @@ func updateCustomResourceDefinitionWithRetry(client clientset.Interface, name st
 	return nil, fmt.Errorf("too many retries after conflicts updating CustomResourceDefinition %q", name)
 }
 
-// getCRDSchemaForVersion returns the validation schema for given version in given CRD.
-func getCRDSchemaForVersion(crd *apiextensionsv1beta1.CustomResourceDefinition, version string) (*apiextensionsv1beta1.CustomResourceValidation, error) {
+// getCRDSchemaForVersionOrDie returns the validation schema for given version in given CRD.
+func getCRDSchemaForVersionOrDie(crd *apiextensionsv1beta1.CustomResourceDefinition, version string) *apiextensionsv1beta1.CustomResourceValidation {
+	if !hasPerVersionSchema(crd.Spec.Versions) {
+		return crd.Spec.Validation
+	}
 	for _, v := range crd.Spec.Versions {
 		if version != v.Name {
 			continue
 		}
-		if hasPerVersionSchema(crd.Spec.Versions) {
-			return v.Schema, nil
-		}
-		return crd.Spec.Validation, nil
+		return v.Schema
 	}
-	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
+	// Given that we call HasServedCRDVersion when serving CRD, this should not happen.
+	// We fail hard to catch any internal bug.
+	panic(fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name))
 }
 
-// getCRDSubresourcesForVersion returns the subresources for given version in given CRD.
-func getCRDSubresourcesForVersion(crd *apiextensionsv1beta1.CustomResourceDefinition, version string) (*apiextensionsv1beta1.CustomResourceSubresources, error) {
+// getCRDSubresourcesForVersionOrDie returns the subresources for given version in given CRD.
+func getCRDSubresourcesForVersionOrDie(crd *apiextensionsv1beta1.CustomResourceDefinition, version string) *apiextensionsv1beta1.CustomResourceSubresources {
+	if !hasPerVersionSubresources(crd.Spec.Versions) {
+		return crd.Spec.Subresources
+	}
 	for _, v := range crd.Spec.Versions {
 		if version != v.Name {
 			continue
 		}
-		if hasPerVersionSubresources(crd.Spec.Versions) {
-			return v.Subresources, nil
-		}
-		return crd.Spec.Subresources, nil
+		return v.Subresources
 	}
-	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
+	// Given that we call HasServedCRDVersion when serving CRD, this should not happen.
+	// We fail hard to catch any internal bug.
+	panic(fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name))
 }
 
-// getCRDColumnsForVersion returns the columns for given version in given CRD.
-func getCRDColumnsForVersion(crd *apiextensionsv1beta1.CustomResourceDefinition, version string) ([]apiextensionsv1beta1.CustomResourceColumnDefinition, error) {
+// getCRDColumnsForVersionOrDie returns the columns for given version in given CRD.
+func getCRDColumnsForVersionOrDie(crd *apiextensionsv1beta1.CustomResourceDefinition, version string) []apiextensionsv1beta1.CustomResourceColumnDefinition {
+	if !hasPerVersionColumns(crd.Spec.Versions) {
+		return crd.Spec.AdditionalPrinterColumns
+	}
 	for _, v := range crd.Spec.Versions {
 		if version != v.Name {
 			continue
 		}
-		if hasPerVersionColumns(crd.Spec.Versions) {
-			return v.AdditionalPrinterColumns, nil
-		}
-		return crd.Spec.AdditionalPrinterColumns, nil
+		return v.AdditionalPrinterColumns
 	}
-	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
+	// Given that we call HasServedCRDVersion when serving CRD, this should not happen.
+	// We fail hard to catch any internal bug.
+	panic(fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name))
 }
 
 // hasPerVersionSchema returns true if a CRD uses per-version schema.

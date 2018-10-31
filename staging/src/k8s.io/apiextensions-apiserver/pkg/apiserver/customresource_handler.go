@@ -220,12 +220,7 @@ func (r *crdHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	var handler http.HandlerFunc
-	subresources, err := getCRDSubresourcesForVersion(crd, requestInfo.APIVersion)
-	if err != nil {
-		utilruntime.HandleError(err)
-		http.Error(w, "the server could not properly server the CRD subresources", http.StatusInternalServerError)
-		return
-	}
+	subresources := getCRDSubresourcesForVersionOrDie(crd, requestInfo.APIVersion)
 	switch {
 	case subresource == "status" && subresources != nil && subresources.Status != nil:
 		handler = r.serveStatus(w, req, requestInfo, crdInfo, terminating, supportedTypes)
@@ -449,11 +444,7 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 		typer := newUnstructuredObjectTyper(parameterScheme)
 		creator := unstructuredCreator{}
 
-		validationSchema, err := getCRDSchemaForVersion(crd, v.Name)
-		if err != nil {
-			utilruntime.HandleError(err)
-			return nil, fmt.Errorf("the server could not properly server the CRD schema")
-		}
+		validationSchema := getCRDSchemaForVersionOrDie(crd, v.Name)
 		validator, _, err := apiservervalidation.NewSchemaValidator(validationSchema)
 		if err != nil {
 			return nil, err
@@ -461,11 +452,7 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 
 		var statusSpec *apiextensions.CustomResourceSubresourceStatus
 		var statusValidator *validate.SchemaValidator
-		subresources, err := getCRDSubresourcesForVersion(crd, v.Name)
-		if err != nil {
-			utilruntime.HandleError(err)
-			return nil, fmt.Errorf("the server could not properly server the CRD subresources")
-		}
+		subresources := getCRDSubresourcesForVersionOrDie(crd, v.Name)
 		if utilfeature.DefaultFeatureGate.Enabled(apiextensionsfeatures.CustomResourceSubresources) && subresources != nil && subresources.Status != nil {
 			statusSpec = subresources.Status
 			// for the status subresource, validate only against the status schema
@@ -485,11 +472,7 @@ func (r *crdHandler) getOrCreateServingInfoFor(crd *apiextensions.CustomResource
 			scaleSpec = subresources.Scale
 		}
 
-		columns, err := getCRDColumnsForVersion(crd, v.Name)
-		if err != nil {
-			utilruntime.HandleError(err)
-			return nil, fmt.Errorf("the server could not properly server the CRD columns")
-		}
+		columns := getCRDColumnsForVersionOrDie(crd, v.Name)
 		table, err := tableconvertor.New(columns)
 		if err != nil {
 			glog.V(2).Infof("The CRD for %v has an invalid printer specification, falling back to default printing: %v", kind, err)
