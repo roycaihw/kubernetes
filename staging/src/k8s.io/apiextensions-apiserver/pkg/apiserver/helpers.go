@@ -28,10 +28,7 @@ func getCRDSchemaForVersion(crd *apiextensions.CustomResourceDefinition, version
 		if version != v.Name {
 			continue
 		}
-		if crd.Spec.Validation != nil && v.Schema != nil {
-			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version schemas must be mutual exclusive", crd.Name, version)
-		}
-		if v.Schema != nil {
+		if hasPerVersionSchema(crd.Spec.Versions) {
 			return v.Schema, nil
 		}
 		return crd.Spec.Validation, nil
@@ -45,10 +42,7 @@ func getCRDSubresourcesForVersion(crd *apiextensions.CustomResourceDefinition, v
 		if version != v.Name {
 			continue
 		}
-		if crd.Spec.Subresources != nil && v.Subresources != nil {
-			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version subresources must be mutual exclusive", crd.Name, version)
-		}
-		if v.Subresources != nil {
+		if hasPerVersionSubresources(crd.Spec.Versions) {
 			return v.Subresources, nil
 		}
 		return crd.Spec.Subresources, nil
@@ -62,13 +56,40 @@ func getCRDColumnsForVersion(crd *apiextensions.CustomResourceDefinition, versio
 		if version != v.Name {
 			continue
 		}
-		if len(crd.Spec.AdditionalPrinterColumns) > 0 && len(v.AdditionalPrinterColumns) > 0 {
-			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version additionalPrinterColumns must be mutual exclusive", crd.Name, version)
-		}
-		if len(v.AdditionalPrinterColumns) > 0 {
+		if hasPerVersionColumns(crd.Spec.Versions) {
 			return v.AdditionalPrinterColumns, nil
 		}
 		return crd.Spec.AdditionalPrinterColumns, nil
 	}
 	return nil, fmt.Errorf("version %s not found in CustomResourceDefinition: %v", version, crd.Name)
+}
+
+// hasPerVersionSchema returns true if a CRD uses per-version schema.
+func hasPerVersionSchema(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if v.Schema != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPerVersionSubresources returns true if a CRD uses per-version subresources.
+func hasPerVersionSubresources(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if v.Subresources != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// hasPerVersionColumns returns true if a CRD uses per-version columns.
+func hasPerVersionColumns(versions []apiextensions.CustomResourceDefinitionVersion) bool {
+	for _, v := range versions {
+		if len(v.AdditionalPrinterColumns) > 0 {
+			return true
+		}
+	}
+	return false
 }
