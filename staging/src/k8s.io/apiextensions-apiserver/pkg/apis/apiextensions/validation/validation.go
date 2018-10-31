@@ -108,7 +108,7 @@ func ValidateCustomResourceDefinitionVersion(version *apiextensions.CustomResour
 	if version.Subresources != nil && version.Subresources.Status != nil {
 		statusEnabled = true
 	}
-	allErrs = append(allErrs, ValidateCustomResourceDefinitionValidation(&apiextensions.CustomResourceValidation{OpenAPIV3Schema: version.Schema}, statusEnabled, fldPath.Child("schema"))...)
+	allErrs = append(allErrs, ValidateCustomResourceDefinitionValidation(version.Schema, statusEnabled, fldPath.Child("schema"))...)
 
 	// Validate per-version subresources
 	allErrs = append(allErrs, ValidateCustomResourceDefinitionSubresources(version.Subresources, fldPath.Child("subresources"))...)

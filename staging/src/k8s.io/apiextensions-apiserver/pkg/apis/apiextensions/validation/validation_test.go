@@ -381,18 +381,22 @@ func TestValidateCustomResourceDefinition(t *testing.T) {
 					Version: "version",
 					Versions: []apiextensions.CustomResourceDefinitionVersion{
 						{
-							Name:                     "version",
-							Served:                   true,
-							Storage:                  true,
-							Schema:                   validValidationSchema,
+							Name:    "version",
+							Served:  true,
+							Storage: true,
+							Schema: &apiextensions.CustomResourceValidation{
+								OpenAPIV3Schema: validValidationSchema,
+							},
 							Subresources:             &apiextensions.CustomResourceSubresources{},
 							AdditionalPrinterColumns: []apiextensions.CustomResourceColumnDefinition{{Name: "Alpha", Type: "string", JSONPath: ".spec.alpha"}},
 						},
 						{
-							Name:                     "version2",
-							Served:                   true,
-							Storage:                  false,
-							Schema:                   validValidationSchema,
+							Name:    "version2",
+							Served:  true,
+							Storage: false,
+							Schema: &apiextensions.CustomResourceValidation{
+								OpenAPIV3Schema: validValidationSchema,
+							},
 							Subresources:             &apiextensions.CustomResourceSubresources{},
 							AdditionalPrinterColumns: []apiextensions.CustomResourceColumnDefinition{{Name: "Alpha", Type: "string", JSONPath: ".spec.alpha"}},
 						},
@@ -876,10 +880,12 @@ func TestValidateCustomResourceDefinitionUpdate(t *testing.T) {
 							Storage: true,
 						},
 						{
-							Name:                     "version2",
-							Served:                   true,
-							Storage:                  false,
-							Schema:                   validValidationSchema,
+							Name:    "version2",
+							Served:  true,
+							Storage: false,
+							Schema: &apiextensions.CustomResourceValidation{
+								OpenAPIV3Schema: validValidationSchema,
+							},
 							Subresources:             &apiextensions.CustomResourceSubresources{},
 							AdditionalPrinterColumns: []apiextensions.CustomResourceColumnDefinition{{Name: "Alpha", Type: "string", JSONPath: ".spec.alpha"}},
 						},

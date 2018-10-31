@@ -186,13 +186,17 @@ func newNoxuValidationCRDs(scope apiextensionsv1beta1.ResourceScope) []*apiexten
 						Name:    "v1beta1",
 						Served:  true,
 						Storage: true,
-						Schema:  validationSchema,
+						Schema: &apiextensionsv1beta1.CustomResourceValidation{
+							OpenAPIV3Schema: validationSchema,
+						},
 					},
 					{
 						Name:    "v1",
 						Served:  true,
 						Storage: false,
-						Schema:  validationSchemaWithDescription,
+						Schema: &apiextensionsv1beta1.CustomResourceValidation{
+							OpenAPIV3Schema: validationSchemaWithDescription,
+						},
 					},
 				},
 			},

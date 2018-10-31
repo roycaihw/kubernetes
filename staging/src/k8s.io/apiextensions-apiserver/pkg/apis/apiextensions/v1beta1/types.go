@@ -77,7 +77,7 @@ type CustomResourceDefinitionVersion struct {
 	// Per-version schemas may not all be set to identical values (top-level validation schema should be used instead)
 	// This field is alpha-level and is only honored by servers that enable the CustomResourceWebhookConversion feature.
 	// +optional
-	Schema *JSONSchemaProps `json:"schema,omitempty" protobuf:"bytes,4,opt,name=schema"`
+	Schema *CustomResourceValidation `json:"schema,omitempty" protobuf:"bytes,4,opt,name=schema"`
 	// Subresources describes the subresources for CustomResources
 	// Top-level and per-version subresources are mutually exclusive.
 	// Per-version subresources may not all be set to identical values (top-level subresources should be used instead)

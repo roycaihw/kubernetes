@@ -104,11 +104,7 @@ func getCRDSchemaForVersion(crd *apiextensionsv1beta1.CustomResourceDefinition, 
 			return nil, fmt.Errorf("malformed CustomResourceDefinition %s version %s: top-level and per-version schemas must be mutual exclusive", crd.Name, version)
 		}
 		if v.Schema != nil {
-			// For backwards compatibility with existing code path, we wrap the OpenAPIV3Schema into
-			// a CustomResourceValidation struct
-			return &apiextensionsv1beta1.CustomResourceValidation{
-				OpenAPIV3Schema: v.Schema,
-			}, nil
+			return v.Schema, nil
 		}
 		return crd.Spec.Validation, nil
 	}

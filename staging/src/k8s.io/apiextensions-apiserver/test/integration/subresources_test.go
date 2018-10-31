@@ -498,10 +498,14 @@ func TestValidateOnlyStatus(t *testing.T) {
 				OpenAPIV3Schema: schema,
 			}
 		} else {
-			noxuDefinition.Spec.Versions[0].Schema = schema
+			noxuDefinition.Spec.Versions[0].Schema = &apiextensionsv1beta1.CustomResourceValidation{
+				OpenAPIV3Schema: schema,
+			}
 			schemaWithDescription := schema.DeepCopy()
 			schemaWithDescription.Description = "test"
-			noxuDefinition.Spec.Versions[1].Schema = schemaWithDescription
+			noxuDefinition.Spec.Versions[1].Schema = &apiextensionsv1beta1.CustomResourceValidation{
+				OpenAPIV3Schema: schemaWithDescription,
+			}
 		}
 
 		noxuDefinition, err = fixtures.CreateNewCustomResourceDefinition(noxuDefinition, apiExtensionClient, dynamicClient)
