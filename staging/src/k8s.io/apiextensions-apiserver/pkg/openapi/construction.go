@@ -97,6 +97,15 @@ func (c *SwaggerConstructor) ConstructCRDOpenAPISpec() *spec.Swagger {
 	if c.schema != nil {
 		schema = *c.schema
 	}
+	// Extension must be added for the schema to appear in lookup, even if the
+	// schema is empty
+	schema.AddExtension("x-kubernetes-group-version-kind", []map[string]string{
+		{
+			"group":   c.group,
+			"kind":    c.kind,
+			"version": c.version,
+		},
+	})
 
 	ret := &spec.Swagger{
 		SwaggerProps: spec.SwaggerProps{
@@ -291,10 +300,12 @@ func (c *SwaggerConstructor) listSchema() *spec.Schema {
 			WithDescription(swaggerTypeMetaDescriptions["kind"])).
 		SetProperty("metadata", *spec.RefSchema(listMetaSchemaRef).
 			WithDescription(swaggerListDescriptions["metadata"]))
-	s.AddExtension("x-kubernetes-group-version-kind", map[string]string{
-		"group":   c.group,
-		"kind":    c.listKind,
-		"version": c.version,
+	s.AddExtension("x-kubernetes-group-version-kind", []map[string]string{
+		{
+			"group":   c.group,
+			"kind":    c.listKind,
+			"version": c.version,
+		},
 	})
 	return s
 }
