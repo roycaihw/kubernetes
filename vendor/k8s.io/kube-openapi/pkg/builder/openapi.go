@@ -320,6 +320,7 @@ func (o *openAPI) buildOperations(route restful.Route, inPathCommonParamsMap map
 }
 
 func (o *openAPI) buildResponse(model interface{}, description string) (spec.Response, error) {
+	// TODO(roycaihw): we should allow model to be nil?
 	schema, err := o.toSchema(util.GetCanonicalTypeName(model))
 	if err != nil {
 		return spec.Response{}, err

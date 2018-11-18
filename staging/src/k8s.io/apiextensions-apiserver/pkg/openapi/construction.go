@@ -18,10 +18,23 @@ package openapi
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
+	restful "github.com/emicklei/go-restful"
 	"github.com/go-openapi/spec"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/endpoints"
+	apiopenapi "k8s.io/apiserver/pkg/endpoints/openapi"
+	"k8s.io/apiserver/pkg/server"
+	"k8s.io/kube-openapi/pkg/builder"
+	"k8s.io/kube-openapi/pkg/common"
+)
+
+const (
+	ROUTE_META_GVK    = "x-kubernetes-group-version-kind"
+	ROUTE_META_ACTION = "x-kubernetes-action"
 )
 
 // ResourceKind determines the scope of an API object: if it's the parent resource,
@@ -85,89 +98,129 @@ func NewSwaggerConstructor(schema *spec.Schema, crdSpec *apiextensions.CustomRes
 
 // ConstructCRDOpenAPISpec constructs the complete OpenAPI swagger (spec).
 func (c *SwaggerConstructor) ConstructCRDOpenAPISpec() *spec.Swagger {
-	basePath := fmt.Sprintf("/apis/%s/%s/%s", c.group, c.version, c.plural)
-	if c.scope == apiextensions.NamespaceScoped {
-		basePath = fmt.Sprintf("/apis/%s/%s/namespaces/{namespace}/%s", c.group, c.version, c.plural)
-	}
+	// a := endpoints.APIInstaller{}
+	prefix := fmt.Sprintf("/apis/%s/%s", c.group, c.version)
+	// }
 
-	model := fmt.Sprintf("%s.%s.%s", c.group, c.version, c.kind)
-	listModel := fmt.Sprintf("%s.%s.%s", c.group, c.version, c.listKind)
-
-	var schema spec.Schema
-	if c.schema != nil {
-		schema = *c.schema
-	}
-	// Extension must be added for the schema to appear in lookup, even if the
-	// schema is empty
-	schema.AddExtension("x-kubernetes-group-version-kind", []map[string]string{
-		{
-			"group":   c.group,
-			"kind":    c.kind,
-			"version": c.version,
-		},
+	ws := new(restful.WebService)
+	ws.Path(prefix)
+	ws.ApiVersion("test")
+	namespaced := "namespaced"
+	route := ws.GET("getpath").To(func(*restful.Request, *restful.Response) {}).
+		Doc("doc").
+		Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed.")).
+		Operation("read"+namespaced+c.kind+strings.Title("subresource")+"operationSuffix").
+		Produces("production").
+		Returns(http.StatusOK, "OK", endpoints.APIInstaller{})
+	route.Metadata(ROUTE_META_GVK, metav1.GroupVersionKind{
+		Group:   c.group,
+		Version: c.version,
+		Kind:    c.kind,
 	})
+	route.Metadata(ROUTE_META_ACTION, strings.ToLower("GET"))
+	ws = ws.Route(route)
+	// Writes(producedObject)
+	// // a.prefix contains "prefix/group/version"
+	// ws.Doc("API at " + a.prefix)
+	// // Backwards compatibility, we accepted objects with empty content-type at V1.
+	// // If we stop using go-restful, we can default empty content-type to application/json on an
+	// // endpoint by endpoint basis
+	// ws.Consumes("*/*")
+	// mediaTypes, streamMediaTypes := negotiation.MediaTypesForSerializer(a.group.Serializer)
+	// ws.Produces(append(mediaTypes, streamMediaTypes...)...)
+	// ws.ApiVersion(a.group.GroupVersion.String())
 
-	ret := &spec.Swagger{
-		SwaggerProps: spec.SwaggerProps{
-			Paths: &spec.Paths{
-				Paths: map[string]spec.PathItem{
-					basePath: {
-						PathItemProps: spec.PathItemProps{
-							Get:        c.listOperation(),
-							Post:       c.createOperation(),
-							Delete:     c.deleteCollectionOperation(),
-							Parameters: pathParameters(),
-						},
-					},
-					fmt.Sprintf("%s/{name}", basePath): {
-						PathItemProps: spec.PathItemProps{
-							Get:        c.readOperation(Resource),
-							Put:        c.replaceOperation(Resource),
-							Delete:     c.deleteOperation(),
-							Patch:      c.patchOperation(Resource),
-							Parameters: pathParameters(),
-						},
-					},
-				},
-			},
-			Definitions: spec.Definitions{
-				model:     schema,
-				listModel: *c.listSchema(),
-			},
-		},
+	swagger, err := builder.BuildOpenAPISpec([]*restful.WebService{ws}, server.DefaultOpenAPIConfig(func(common.ReferenceCallback) map[string]common.OpenAPIDefinition {
+		return nil
+	}, &apiopenapi.DefinitionNamer{})) // &common.Config{})
+	if err != nil {
+		panic(err)
 	}
+	return swagger
 
-	if c.status {
-		ret.SwaggerProps.Paths.Paths[fmt.Sprintf("%s/{name}/status", basePath)] = spec.PathItem{
-			PathItemProps: spec.PathItemProps{
-				Get:        c.readOperation(Status),
-				Put:        c.replaceOperation(Status),
-				Patch:      c.patchOperation(Status),
-				Parameters: pathParameters(),
-			},
-		}
-	}
+	// basePath := fmt.Sprintf("/apis/%s/%s/%s", c.group, c.version, c.plural)
+	// if c.scope == apiextensions.NamespaceScoped {
+	// 	basePath = fmt.Sprintf("/apis/%s/%s/namespaces/{namespace}/%s", c.group, c.version, c.plural)
+	// }
 
-	if c.scale {
-		ret.SwaggerProps.Paths.Paths[fmt.Sprintf("%s/{name}/scale", basePath)] = spec.PathItem{
-			PathItemProps: spec.PathItemProps{
-				Get:        c.readOperation(Scale),
-				Put:        c.replaceOperation(Scale),
-				Patch:      c.patchOperation(Scale),
-				Parameters: pathParameters(),
-			},
-		}
-		// TODO(roycaihw): this is a hack to let apiExtension apiserver and generic kube-apiserver
-		// to have the same io.k8s.api.autoscaling.v1.Scale definition, so that aggregator server won't
-		// detect name conflict and create a duplicate io.k8s.api.autoscaling.v1.Scale_V2 schema
-		// when aggregating the openapi spec. It would be better if apiExtension apiserver serves
-		// identical definition through the same code path (using routes) as generic kube-apiserver.
-		ret.SwaggerProps.Definitions["io.k8s.api.autoscaling.v1.Scale"] = *scaleSchema()
-		ret.SwaggerProps.Definitions["io.k8s.api.autoscaling.v1.ScaleSpec"] = *scaleSpecSchema()
-		ret.SwaggerProps.Definitions["io.k8s.api.autoscaling.v1.ScaleStatus"] = *scaleStatusSchema()
-	}
+	// model := fmt.Sprintf("%s.%s.%s", c.group, c.version, c.kind)
+	// listModel := fmt.Sprintf("%s.%s.%s", c.group, c.version, c.listKind)
 
-	return ret
+	// var schema spec.Schema
+	// if c.schema != nil {
+	// 	schema = *c.schema
+	// }
+	// // Extension must be added for the schema to appear in lookup, even if the
+	// // schema is empty
+	// schema.AddExtension("x-kubernetes-group-version-kind", []map[string]string{
+	// 	{
+	// 		"group":   c.group,
+	// 		"kind":    c.kind,
+	// 		"version": c.version,
+	// 	},
+	// })
+
+	// ret := &spec.Swagger{
+	// 	SwaggerProps: spec.SwaggerProps{
+	// 		Paths: &spec.Paths{
+	// 			Paths: map[string]spec.PathItem{
+	// 				basePath: {
+	// 					PathItemProps: spec.PathItemProps{
+	// 						Get:        c.listOperation(),
+	// 						Post:       c.createOperation(),
+	// 						Delete:     c.deleteCollectionOperation(),
+	// 						Parameters: pathParameters(),
+	// 					},
+	// 				},
+	// 				fmt.Sprintf("%s/{name}", basePath): {
+	// 					PathItemProps: spec.PathItemProps{
+	// 						Get:        c.readOperation(Resource),
+	// 						Put:        c.replaceOperation(Resource),
+	// 						Delete:     c.deleteOperation(),
+	// 						Patch:      c.patchOperation(Resource),
+	// 						Parameters: pathParameters(),
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 		Definitions: spec.Definitions{
+	// 			model:     schema,
+	// 			listModel: *c.listSchema(),
+	// 		},
+	// 	},
+	// }
+
+	// if c.status {
+	// 	ret.SwaggerProps.Paths.Paths[fmt.Sprintf("%s/{name}/status", basePath)] = spec.PathItem{
+	// 		PathItemProps: spec.PathItemProps{
+	// 			Get:        c.readOperation(Status),
+	// 			Put:        c.replaceOperation(Status),
+	// 			Patch:      c.patchOperation(Status),
+	// 			Parameters: pathParameters(),
+	// 		},
+	// 	}
+	// }
+
+	// if c.scale {
+	// 	ret.SwaggerProps.Paths.Paths[fmt.Sprintf("%s/{name}/scale", basePath)] = spec.PathItem{
+	// 		PathItemProps: spec.PathItemProps{
+	// 			Get:        c.readOperation(Scale),
+	// 			Put:        c.replaceOperation(Scale),
+	// 			Patch:      c.patchOperation(Scale),
+	// 			Parameters: pathParameters(),
+	// 		},
+	// 	}
+	// 	// TODO(roycaihw): this is a hack to let apiExtension apiserver and generic kube-apiserver
+	// 	// to have the same io.k8s.api.autoscaling.v1.Scale definition, so that aggregator server won't
+	// 	// detect name conflict and create a duplicate io.k8s.api.autoscaling.v1.Scale_V2 schema
+	// 	// when aggregating the openapi spec. It would be better if apiExtension apiserver serves
+	// 	// identical definition through the same code path (using routes) as generic kube-apiserver.
+	// 	ret.SwaggerProps.Definitions["io.k8s.api.autoscaling.v1.Scale"] = *scaleSchema()
+	// 	ret.SwaggerProps.Definitions["io.k8s.api.autoscaling.v1.ScaleSpec"] = *scaleSpecSchema()
+	// 	ret.SwaggerProps.Definitions["io.k8s.api.autoscaling.v1.ScaleStatus"] = *scaleStatusSchema()
+	// }
+
+	// return ret
 }
 
 // baseOperation initializes a base operation that all operations build upon
