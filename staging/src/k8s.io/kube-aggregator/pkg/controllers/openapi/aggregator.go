@@ -53,12 +53,18 @@ type specAggregator struct {
 	// provided for dynamic OpenAPI spec
 	openAPIService          *handler.OpenAPIService
 	openAPIVersionedService *handler.OpenAPIService
+
+	// initialized blocks local spec installation after startup
+	initialized bool
 }
 
 var _ AggregationManager = &specAggregator{}
 
 // This function is not thread safe as it only being called on startup.
 func (s *specAggregator) addLocalSpec(spec *spec.Swagger, localHandler http.Handler, name, etag string) {
+	if s.initialized {
+		panic(fmt.Sprintf("local spec installation forbidden after startup: %v", name))
+	}
 	localAPIService := apiregistration.APIService{}
 	localAPIService.Name = name
 	s.openAPISpecs[name] = &openAPISpecInfo{
@@ -124,6 +130,7 @@ func BuildAndRegisterAggregator(downloader *Downloader, delegationTarget server.
 		return nil, err
 	}
 
+	s.initialized = true
 	return s, nil
 }
 
@@ -211,6 +218,7 @@ func (s *specAggregator) buildOpenAPISpec() (specToReturn *spec.Swagger, err err
 			return nil, err
 		}
 	}
+
 	return specToReturn, nil
 }
 
@@ -240,7 +248,14 @@ func (s *specAggregator) updateOpenAPISpec() error {
 // tryUpdatingServiceSpecs tries updating openAPISpecs map with specified specInfo, and keeps the map intact
 // if the update fails.
 func (s *specAggregator) tryUpdatingServiceSpecs(specInfo *openAPISpecInfo) error {
+	if specInfo == nil {
+		return fmt.Errorf("invalid input: specInfo must be non-nil")
+	}
 	orgSpecInfo, exists := s.openAPISpecs[specInfo.apiService.Name]
+	// Skip aggregation if OpenAPI spec didn't change
+	if exists && orgSpecInfo != nil && orgSpecInfo.etag == specInfo.etag {
+		return nil
+	}
 	s.openAPISpecs[specInfo.apiService.Name] = specInfo
 	if err := s.updateOpenAPISpec(); err != nil {
 		if exists {
@@ -288,6 +303,22 @@ func (s *specAggregator) UpdateAPIServiceSpec(apiServiceName string, spec *spec.
 		apiService: specInfo.apiService,
 		spec:       spec,
 		handler:    specInfo.handler,
+		etag:       etag,
+	})
+}
+
+// AddUpdateLocalAPIService allows adding/updating local API service with nil handler and
+// nil Spec.Service. This function can be used for local dynamic OpenAPI spec aggregation
+// management (e.g. CRD)
+func (s *specAggregator) AddUpdateLocalAPIServiceSpec(name string, spec *spec.Swagger, etag string) error {
+	s.rwMutex.Lock()
+	defer s.rwMutex.Unlock()
+
+	localAPIService := apiregistration.APIService{}
+	localAPIService.Name = name
+	return s.tryUpdatingServiceSpecs(&openAPISpecInfo{
+		apiService: localAPIService,
+		spec:       spec,
 		etag:       etag,
 	})
 }
