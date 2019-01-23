@@ -136,7 +136,7 @@ type sampleListType struct {
 	dummy string
 }
 
-// builder contains validation schema and basic naming infomation for a CRD in
+// builder contains validation schema and basic naming information for a CRD in
 // one version. The builder works to build a WebService that kube-openapi can
 // consume.
 type builder struct {
