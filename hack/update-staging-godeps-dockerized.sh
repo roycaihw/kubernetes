@@ -73,11 +73,9 @@ function updateGodepManifest() {
     GOPATH="${TMP_GOPATH}:${GOPATH}:${GOPATH}/src/k8s.io/kubernetes/staging" ${KUBE_GODEP:?} save ${GODEP_OPTS} ./... 2>&1 | sed 's/^/  /'
 
     # Rewriting Godeps.json to cross-out commits that don't really exist because we haven't pushed the prereqs yet
-    local repos=$(ls -1 ${KUBE_ROOT}/staging/src/k8s.io)
-    # TODO(roycaihw): this line handles staging importing k/k, which should be restricted
-    repos+=("kubernetes")
     local repo
-    for repo in ${repos}; do
+    # TODO(roycaihw): this line handles staging importing k/k, which should be restricted
+    for repo in $(ls -1 ${KUBE_ROOT}/staging/src/k8s.io) kubernetes; do
       # remove staging prefix
       jq '.Deps |= map(.ImportPath |= ltrimstr("k8s.io/kubernetes/staging/src/"))' Godeps/Godeps.json |
 
