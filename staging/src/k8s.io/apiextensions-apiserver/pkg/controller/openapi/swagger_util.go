@@ -32,3 +32,12 @@ func calcETag(swagger *spec.Swagger) (string, error) {
 	}
 	return fmt.Sprintf("\"%X\"", sha512.Sum512(specBytes)), nil
 }
+
+func swaggerWithETag(swagger *spec.Swagger) (*spec.Swagger, string, error) {
+	etag, err := calcETag(swagger)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return swagger, etag, nil
+}

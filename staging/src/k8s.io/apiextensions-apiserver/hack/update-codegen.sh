@@ -32,3 +32,5 @@ ${CODEGEN_PKG}/generate-internal-groups.sh all \
   "apiextensions:v1beta1" \
   --output-base "$(dirname ${BASH_SOURCE})/../../.." \
   --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt
+
+go run ${SCRIPT_ROOT}/cmd/template-gen/main.go --boilerplate-file ${SCRIPT_ROOT}/hack/boilerplate.go.txt --output-file ${SCRIPT_ROOT}/pkg/controller/openapi/zz_generated.template.go

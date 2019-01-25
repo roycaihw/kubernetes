@@ -117,12 +117,7 @@ func BuildSwagger(crd *apiextensions.CustomResourceDefinition, version string) (
 	elapsed := time.Since(start)
 	klog.Errorf(">>>>> CRD openapi building took %s", elapsed)
 
-	etag, err := calcETag(openAPISpec)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return openAPISpec, etag, nil
+	return swaggerWithETag(openAPISpec)
 }
 
 // A dummy Go type that allows kube-openapi to run reflect.TypeOf()
@@ -229,6 +224,7 @@ func (b *builder) buildRoute(root, path, action, verb string, sample interface{}
 		Returns(http.StatusOK, "OK", sample).
 		Writes(sample)
 
+	// Add consume media types
 	if action == "PATCH" {
 		route.Consumes("application/json-patch+json",
 			"application/merge-patch+json",
@@ -237,6 +233,7 @@ func (b *builder) buildRoute(root, path, action, verb string, sample interface{}
 		route.Consumes("*/*")
 	}
 
+	// Add option parameters
 	switch verb {
 	case "get":
 		// TODO: CRD support for export is still under consideration
@@ -252,6 +249,7 @@ func (b *builder) buildRoute(root, path, action, verb string, sample interface{}
 		endpoints.AddObjectParams(b.ws, route, &metav1.DeleteOptions{})
 	}
 
+	// Add responses
 	switch verb {
 	case "create":
 		route.Returns(http.StatusAccepted, "Accepted", sample)

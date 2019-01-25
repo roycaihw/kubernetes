@@ -35,6 +35,7 @@ filegroup(
     name = "all-srcs",
     srcs = [
         ":package-srcs",
+        "//staging/src/k8s.io/apiextensions-apiserver/cmd/template-gen:all-srcs",
         "//staging/src/k8s.io/apiextensions-apiserver/examples/client-go:all-srcs",
         "//staging/src/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions:all-srcs",
         "//staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver:all-srcs",

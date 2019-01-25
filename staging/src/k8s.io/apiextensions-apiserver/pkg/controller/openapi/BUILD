@@ -8,6 +8,7 @@ go_library(
         "conversion.go",
         "helpers.go",
         "swagger_util.go",
+        "template.go",
     ],
     importmap = "k8s.io/kubernetes/vendor/k8s.io/apiextensions-apiserver/pkg/controller/openapi",
     importpath = "k8s.io/apiextensions-apiserver/pkg/controller/openapi",

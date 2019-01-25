@@ -146,7 +146,7 @@ func (c *Controller) sync(gvk schema.GroupVersionKind) error {
 		}
 
 		found = true
-		spec, etag, err := BuildSwagger(crd, gvk.Version)
+		spec, etag, err := buildSwaggerTemplating(crd, gvk.Version)
 		if err != nil {
 			return err
 		}
