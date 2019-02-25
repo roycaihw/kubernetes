@@ -59,37 +59,38 @@ var _ = SIGDescribe("CustomResourcePublishOpenAPI [Feature:CustomResourcePublish
 		}
 
 		meta := fmt.Sprintf(metaPattern, crd.Kind, crd.ApiGroup, crd.Versions[0].Name, "test-foo")
+		ns := fmt.Sprintf("--namespace=%v", f.Namespace.Name)
 
 		By("client-side validation (kubectl create and apply) allows request with known and required properties")
 		validCR := fmt.Sprintf(`{%s,"spec":{"bars":[{"name":"test-bar"}]}}`, meta)
-		if _, err := framework.RunKubectlInput(validCR, "create", "-f", "-"); err != nil {
+		if _, err := framework.RunKubectlInput(validCR, ns, "create", "-f", "-"); err != nil {
 			framework.Failf("failed to create valid CR %s: %v", validCR, err)
 		}
-		if _, err := framework.RunKubectl("delete", crd.GetPluralName(), "test-foo"); err != nil {
+		if _, err := framework.RunKubectl(ns, "delete", crd.GetPluralName(), "test-foo"); err != nil {
 			framework.Failf("failed to delete valid CR: %v", err)
 		}
-		if _, err := framework.RunKubectlInput(validCR, "apply", "-f", "-"); err != nil {
+		if _, err := framework.RunKubectlInput(validCR, ns, "apply", "-f", "-"); err != nil {
 			framework.Failf("failed to apply valid CR %s: %v", validCR, err)
 		}
-		if _, err := framework.RunKubectl("delete", crd.GetPluralName(), "test-foo"); err != nil {
+		if _, err := framework.RunKubectl(ns, "delete", crd.GetPluralName(), "test-foo"); err != nil {
 			framework.Failf("failed to delete valid CR: %v", err)
 		}
 
 		By("client-side validation (kubectl create and apply) rejects request with unknown properties when disallowed by the schema")
 		unknownCR := fmt.Sprintf(`{%s,"spec":{"foo":true}}`, meta)
-		if _, err := framework.RunKubectlInput(unknownCR, "create", "-f", "-"); err == nil || !strings.Contains(err.Error(), `unknown field "foo"`) {
+		if _, err := framework.RunKubectlInput(unknownCR, ns, "create", "-f", "-"); err == nil || !strings.Contains(err.Error(), `unknown field "foo"`) {
 			framework.Failf("unexpected no error when creating CR with unknown field: %v", err)
 		}
-		if _, err := framework.RunKubectlInput(unknownCR, "apply", "-f", "-"); err == nil || !strings.Contains(err.Error(), `unknown field "foo"`) {
+		if _, err := framework.RunKubectlInput(unknownCR, ns, "apply", "-f", "-"); err == nil || !strings.Contains(err.Error(), `unknown field "foo"`) {
 			framework.Failf("unexpected no error when applying CR with unknown field: %v", err)
 		}
 
 		By("client-side validation (kubectl create and apply) rejects request without required properties")
 		noRequireCR := fmt.Sprintf(`{%s,"spec":{"bars":[{"age":"10"}]}}`, meta)
-		if _, err := framework.RunKubectlInput(noRequireCR, "create", "-f", "-"); err == nil || !strings.Contains(err.Error(), `missing required field "name"`) {
+		if _, err := framework.RunKubectlInput(noRequireCR, ns, "create", "-f", "-"); err == nil || !strings.Contains(err.Error(), `missing required field "name"`) {
 			framework.Failf("unexpected no error when creating CR without required field: %v", err)
 		}
-		if _, err := framework.RunKubectlInput(noRequireCR, "apply", "-f", "-"); err == nil || !strings.Contains(err.Error(), `missing required field "name"`) {
+		if _, err := framework.RunKubectlInput(noRequireCR, ns, "apply", "-f", "-"); err == nil || !strings.Contains(err.Error(), `missing required field "name"`) {
 			framework.Failf("unexpected no error when applying CR without required field: %v", err)
 		}
 
@@ -110,7 +111,7 @@ var _ = SIGDescribe("CustomResourcePublishOpenAPI [Feature:CustomResourcePublish
 		}
 
 		By("kubectl explain works to return error when explain is called on property that doesn't exist")
-		if _, err := framework.RunKubectl("explain", crd.GetPluralName()+".spec.bars2"); err == nil || !strings.Contains(err.Error(), `field "bars2" does not exist`) {
+		if _, err := framework.RunKubectl(ns, "explain", crd.GetPluralName()+".spec.bars2"); err == nil || !strings.Contains(err.Error(), `field "bars2" does not exist`) {
 			framework.Failf("unexpected no error when explaining property that doesn't exist: %v", err)
 		}
 
@@ -126,19 +127,20 @@ var _ = SIGDescribe("CustomResourcePublishOpenAPI [Feature:CustomResourcePublish
 		}
 
 		meta := fmt.Sprintf(metaPattern, crd.Kind, crd.ApiGroup, crd.Versions[0].Name, "test-cr")
+		ns := fmt.Sprintf("--namespace=%v", f.Namespace.Name)
 
 		By("client-side validation (kubectl create and apply) allows request with any unknown properties")
 		randomCR := fmt.Sprintf(`{%s,"a":{"b":[{"c":"d"}]}}`, meta)
-		if _, err := framework.RunKubectlInput(randomCR, "create", "-f", "-"); err != nil {
+		if _, err := framework.RunKubectlInput(randomCR, ns, "create", "-f", "-"); err != nil {
 			framework.Failf("failed to create random CR %s for CRD without schema: %v", randomCR, err)
 		}
-		if _, err := framework.RunKubectl("delete", crd.GetPluralName(), "test-cr"); err != nil {
+		if _, err := framework.RunKubectl(ns, "delete", crd.GetPluralName(), "test-cr"); err != nil {
 			framework.Failf("failed to delete random CR: %v", err)
 		}
-		if _, err := framework.RunKubectlInput(randomCR, "apply", "-f", "-"); err != nil {
+		if _, err := framework.RunKubectlInput(randomCR, ns, "apply", "-f", "-"); err != nil {
 			framework.Failf("failed to apply random CR %s for CRD without schema: %v", randomCR, err)
 		}
-		if _, err := framework.RunKubectl("delete", crd.GetPluralName(), "test-cr"); err != nil {
+		if _, err := framework.RunKubectl(ns, "delete", crd.GetPluralName(), "test-cr"); err != nil {
 			framework.Failf("failed to delete random CR: %v", err)
 		}
 
