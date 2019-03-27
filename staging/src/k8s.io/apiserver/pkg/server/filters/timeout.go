@@ -102,8 +102,8 @@ func (t *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				buf := make([]byte, size)
 				buf = buf[:runtime.Stack(buf, false)]
 				err = fmt.Sprintf("%v\n%s", err, buf)
+				errCh <- err
 			}
-			errCh <- err
 		}()
 		t.handler.ServeHTTP(tw, r)
 	}()
