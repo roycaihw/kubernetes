@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/url"
 	"reflect"
+	goruntime "runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -176,6 +177,10 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
+					const size = 64 << 10
+					buf := make([]byte, size)
+					buf = buf[:goruntime.Stack(buf, false)]
+					r = fmt.Sprintf("%v\n%s", r, buf)
 					panicCh <- r
 				}
 			}()
