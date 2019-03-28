@@ -105,6 +105,10 @@ type kubeGenericRuntimeManager struct {
 	// CPUCFSQuotaPeriod sets the CPU CFS quota period value, cpu.cfs_period_us, defaults to 100ms
 	cpuCFSQuotaPeriod metav1.Duration
 
+	// Collection of Linux kernel parameters (sysctls) that will be applied to
+	// the pods running on this node.
+	podSysctls map[string]string
+
 	// wrapped image puller.
 	imagePuller images.ImageManager
 
@@ -165,6 +169,7 @@ func NewKubeGenericRuntimeManager(
 	imagePullBurst int,
 	cpuCFSQuota bool,
 	cpuCFSQuotaPeriod metav1.Duration,
+	podSysctls map[string]string,
 	runtimeService internalapi.RuntimeService,
 	imageService internalapi.ImageManagerService,
 	internalLifecycle cm.InternalContainerLifecycle,
@@ -175,6 +180,7 @@ func NewKubeGenericRuntimeManager(
 		recorder:            recorder,
 		cpuCFSQuota:         cpuCFSQuota,
 		cpuCFSQuotaPeriod:   cpuCFSQuotaPeriod,
+		podSysctls:          podSysctls,
 		seccompProfileRoot:  seccompProfileRoot,
 		livenessManager:     livenessManager,
 		containerRefManager: containerRefManager,
