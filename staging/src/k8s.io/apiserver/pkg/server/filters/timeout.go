@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -98,10 +98,7 @@ func (t *timeoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			err := recover()
 			if err != nil {
-				const size = 64 << 10
-				buf := make([]byte, size)
-				buf = buf[:runtime.Stack(buf, false)]
-				err = fmt.Sprintf("%v\n%s", err, buf)
+				err = fmt.Sprintf("%v\n%s", err, debug.Stack())
 			}
 			errCh <- err
 		}()

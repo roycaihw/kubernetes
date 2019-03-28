@@ -24,8 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	goruntime "runtime"
-	"strings"
+	"runtime/debug"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -197,10 +196,7 @@ func finishRequest(timeout time.Duration, fn resultFunc) (result runtime.Object,
 		defer func() {
 			panicReason := recover()
 			if panicReason != nil {
-				const size = 64 << 10
-				buf := make([]byte, size)
-				buf = buf[:goruntime.Stack(buf, false)]
-				panicReason = strings.TrimSuffix(fmt.Sprintf("%v\n%s", panicReason, string(buf)), "\n")
+				panicReason = fmt.Sprintf("%v\n%s", panicReason, debug.Stack())
 				// Propagate to parent goroutine
 				panicCh <- panicReason
 			}
