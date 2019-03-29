@@ -205,6 +205,7 @@ func finishRequest(timeout time.Duration, fn resultFunc) (result runtime.Object,
 		if result, err := fn(); err != nil {
 			errCh <- err
 		} else {
+			panic("test panic")
 			ch <- result
 		}
 	}()
