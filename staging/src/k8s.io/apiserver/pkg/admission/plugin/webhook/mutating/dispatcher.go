@@ -19,6 +19,7 @@ limitations under the License.
 package mutating
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -156,6 +157,18 @@ func (a *mutatingDispatcher) callAttrMutatingHook(ctx context.Context, h *v1beta
 	patchedJS, err := patchObj.Apply(objJS)
 	if err != nil {
 		return apierrors.NewInternalError(err)
+	}
+
+	// If object is mutated, record the mutation in audit log
+	if !bytes.Equal(objJS, patchedJS) {
+		// use a key prefix different from the webhook name to avoid key conflict, where:
+		//     "webhooktrace" is the name of the virtual plugin,
+		//     "admission.k8s.io" is the name of the org,
+		//     webhook name (h.Name) is the key name,
+		//     "mutation" is the value
+		if err := attr.AddAnnotation("webhooktrace.admission.k8s.io/"+h.Name, "mutation"); err != nil {
+			klog.Warningf("Failed to set webhooktrace annotation for mutating webhook %s: %v", h.Name, err)
+		}
 	}
 
 	var newVersionedObject runtime.Object
