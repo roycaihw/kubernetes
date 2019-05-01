@@ -1607,6 +1607,7 @@ function start-kube-apiserver {
       params+=" --etcd-certfile=${ETCD_APISERVER_CLIENT_CERT_PATH}"
       params+=" --etcd-keyfile=${ETCD_APISERVER_CLIENT_KEY_PATH}"
   elif [[ -z "${ETCD_APISERVER_CA_KEY:-}" && -z "${ETCD_APISERVER_CA_CERT:-}" && -z "${ETCD_APISERVER_SERVER_KEY:-}" && -z "${ETCD_APISERVER_SERVER_CERT:-}" && -z "${ETCD_APISERVER_CLIENT_KEY:-}" && -z "${ETCD_APISERVER_CLIENT_CERT:-}" ]]; then
+      params+=" --etcd-servers=${ETCD_SERVERS:-http://127.0.0.1:2379}"
       echo "WARNING: ALL of ETCD_APISERVER_CA_KEY, ETCD_APISERVER_CA_CERT, ETCD_APISERVER_SERVER_KEY, ETCD_APISERVER_SERVER_CERT, ETCD_APISERVER_CLIENT_KEY and ETCD_APISERVER_CLIENT_CERT are missing, mTLS between etcd server and kube-apiserver is not enabled."
   else
       echo "ERROR: Some of ETCD_APISERVER_CA_KEY, ETCD_APISERVER_CA_CERT, ETCD_APISERVER_SERVER_KEY, ETCD_APISERVER_SERVER_CERT, ETCD_APISERVER_CLIENT_KEY and ETCD_APISERVER_CLIENT_CERT are missing, mTLS between etcd server and kube-apiserver cannot be enabled. Please provide all mTLS credential."
