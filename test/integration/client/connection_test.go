@@ -18,62 +18,74 @@ package client
 
 import (
 	"fmt"
-	"net/url"
+	"net/http"
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
-	utildbus "k8s.io/kubernetes/pkg/util/dbus"
-	"k8s.io/utils/exec"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
 	kubeapiservertesting "k8s.io/kubernetes/cmd/kube-apiserver/app/testing"
-	"k8s.io/kubernetes/pkg/util/iptables"
-	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
 	"k8s.io/kubernetes/test/integration/framework"
 )
+
+type MyTransport struct {
+	rt http.RoundTripper
+}
+
+func (t *MyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.rt.RoundTrip(req)
+	klog.Errorf(">>>> Response header %v", resp.Header)
+	klog.Errorf(">>>> Response trailer %v", resp.Trailer)
+	return resp, err
+}
 
 func TestReconnection(t *testing.T) {
 	result := kubeapiservertesting.StartTestServerOrDie(t, nil, nil, framework.SharedEtcd())
 	defer result.TearDownFn()
 	// result.ClientConfig.Timeout = 10 * time.Second
-	execer := exec.New()
-	dbus := utildbus.New()
-	protocol := utiliptables.ProtocolIpv4
-	protocol6 := utiliptables.ProtocolIpv6
-	iptInterface := utiliptables.New(execer, dbus, protocol)
-	ip6tInterface := utiliptables.New(execer, dbus, protocol6)
+	// execer := exec.New()
+	// dbus := utildbus.New()
+	// protocol := utiliptables.ProtocolIpv4
+	// protocol6 := utiliptables.ProtocolIpv6
+	// iptInterface := utiliptables.New(execer, dbus, protocol)
+	// ip6tInterface := utiliptables.New(execer, dbus, protocol6)
+	klog.Errorf(">>> host: %v", result.ClientConfig.Host)
 	klog.Errorf(">>> creating client")
+	klog.Errorf(">>> nil wrap? %v", result.ClientConfig.WrapTransport == nil)
+	result.ClientConfig.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return &MyTransport{rt: rt}
+	}
 	client := clientset.NewForConfigOrDie(result.ClientConfig).CoreV1().Endpoints("default")
 	klog.Errorf(">>> done creating client")
 	w, err := client.Watch(metav1.ListOptions{ResourceVersion: "0"})
 	if err != nil {
 		t.Fatalf("failed to watch pods: %v", err)
 	}
-	u, err := url.Parse(result.ClientConfig.Host)
-	if err != nil {
-		t.Fatalf("failed to parse url: %s", result.ClientConfig.Host)
-	}
-	defer func() {
-		klog.Errorf(">>> deleting rule")
-		if err := iptInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-			t.Fatalf("%v", err)
-		}
-		if err := ip6tInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-			t.Fatalf("%v", err)
-		}
-		klog.Errorf(">>> done deleting rule")
-	}()
-	klog.Errorf(">>> adding rule")
-	if _, err := iptInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-		t.Fatalf("%v", err)
-	}
-	if _, err := ip6tInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-		t.Fatalf("%v", err)
-	}
-	klog.Errorf(">>> done adding rule")
+	// u, err := url.Parse(result.ClientConfig.Host)
+	// if err != nil {
+	// 	t.Fatalf("failed to parse url: %s", result.ClientConfig.Host)
+	// }
+	// defer func() {
+	// 	klog.Errorf(">>> deleting rule")
+	// 	if err := iptInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
+	// 		t.Fatalf("%v", err)
+	// 	}
+	// 	if err := ip6tInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
+	// 		t.Fatalf("%v", err)
+	// 	}
+	// 	klog.Errorf(">>> done deleting rule")
+	// }()
+	// klog.Errorf(">>> adding rule")
+	// if _, err := iptInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
+	// 	t.Fatalf("%v", err)
+	// }
+	// if _, err := ip6tInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
+	// 	t.Fatalf("%v", err)
+	// }
+	// klog.Errorf(">>> done adding rule")
 	for i := 0; i < 3; i++ {
 		if _, err := client.Create(&v1.Endpoints{
 			ObjectMeta: metav1.ObjectMeta{
