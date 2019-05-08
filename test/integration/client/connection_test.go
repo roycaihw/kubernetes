@@ -19,6 +19,9 @@ package client
 import (
 	"fmt"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"reflect"
 	"testing"
 	"time"
 
@@ -37,14 +40,41 @@ type MyTransport struct {
 
 func (t *MyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.rt.RoundTrip(req)
-	klog.Errorf(">>>> Response header %v", resp.Header)
-	klog.Errorf(">>>> Response trailer %v", resp.Trailer)
+	klog.Errorf(">>> type of interface %v", reflect.TypeOf(t.rt))
+	klog.Errorf(">>> Response header %v", resp.Header)
+	klog.Errorf(">>> Response trailer %v", resp.Trailer)
+	klog.Errorf(">>> Response req %v", resp.Request)
 	return resp, err
+}
+
+var target string
+
+func handleRequestAndRedirect(res http.ResponseWriter, req *http.Request) {
+	klog.Errorf("---target %v", target)
+	url, _ := url.Parse(target)
+	proxy := httputil.NewSingleHostReverseProxy(url)
+	req.URL.Host = url.Host
+	req.URL.Scheme = url.Scheme
+	req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
+	req.Host = url.Host
+	proxy.ServeHTTP(res, req)
+}
+
+func getListenAddress() string {
+	port := "1338"
+	return ":" + port
 }
 
 func TestReconnection(t *testing.T) {
 	result := kubeapiservertesting.StartTestServerOrDie(t, nil, nil, framework.SharedEtcd())
 	defer result.TearDownFn()
+	target = result.ClientConfig.Host
+	result.ClientConfig.Host = "localhost:1338"
+
+	http.HandleFunc("/", handleRequestAndRedirect)
+	if err := http.ListenAndServe(getListenAddress(), nil); err != nil {
+		panic(err)
+	}
 	// result.ClientConfig.Timeout = 10 * time.Second
 	// execer := exec.New()
 	// dbus := utildbus.New()
