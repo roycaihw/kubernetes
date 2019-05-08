@@ -18,113 +18,90 @@ package client
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/httputil"
 	"net/url"
-	"reflect"
+	"os/exec"
+	"regexp"
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/klog"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 	kubeapiservertesting "k8s.io/kubernetes/cmd/kube-apiserver/app/testing"
+	utildbus "k8s.io/kubernetes/pkg/util/dbus"
+	"k8s.io/kubernetes/pkg/util/iptables"
+	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
 	"k8s.io/kubernetes/test/integration/framework"
+	utilsexec "k8s.io/utils/exec"
 )
 
-type MyTransport struct {
-	rt http.RoundTripper
-}
-
-func (t *MyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp, err := t.rt.RoundTrip(req)
-	klog.Errorf(">>> type of interface %v", reflect.TypeOf(t.rt))
-	klog.Errorf(">>> Response header %v", resp.Header)
-	klog.Errorf(">>> Response trailer %v", resp.Trailer)
-	klog.Errorf(">>> Response req %v", resp.Request)
-	return resp, err
-}
-
-var target string
-
-func handleRequestAndRedirect(res http.ResponseWriter, req *http.Request) {
-	klog.Errorf("---target %v", target)
-	url, _ := url.Parse(target)
-	proxy := httputil.NewSingleHostReverseProxy(url)
-	req.URL.Host = url.Host
-	req.URL.Scheme = url.Scheme
-	req.Header.Set("X-Forwarded-Host", req.Header.Get("Host"))
-	req.Host = url.Host
-	proxy.ServeHTTP(res, req)
-}
-
-func getListenAddress() string {
-	port := "1338"
-	return ":" + port
-}
-
 func TestReconnection(t *testing.T) {
-	result := kubeapiservertesting.StartTestServerOrDie(t, nil, nil, framework.SharedEtcd())
-	defer result.TearDownFn()
-	target = result.ClientConfig.Host
-	result.ClientConfig.Host = "localhost:1338"
+	// TODO: skip if OS is not linux
+	server := kubeapiservertesting.StartTestServerOrDie(t, nil, nil, framework.SharedEtcd())
+	defer server.TearDownFn()
 
-	http.HandleFunc("/", handleRequestAndRedirect)
-	if err := http.ListenAndServe(getListenAddress(), nil); err != nil {
-		panic(err)
-	}
-	// result.ClientConfig.Timeout = 10 * time.Second
-	// execer := exec.New()
-	// dbus := utildbus.New()
-	// protocol := utiliptables.ProtocolIpv4
-	// protocol6 := utiliptables.ProtocolIpv6
-	// iptInterface := utiliptables.New(execer, dbus, protocol)
-	// ip6tInterface := utiliptables.New(execer, dbus, protocol6)
-	klog.Errorf(">>> host: %v", result.ClientConfig.Host)
-	klog.Errorf(">>> creating client")
-	klog.Errorf(">>> nil wrap? %v", result.ClientConfig.WrapTransport == nil)
-	result.ClientConfig.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return &MyTransport{rt: rt}
-	}
-	client := clientset.NewForConfigOrDie(result.ClientConfig).CoreV1().Endpoints("default")
+	// server.ClientConfig.Timeout = 10 * time.Second
+	execer := utilsexec.New()
+	dbus := utildbus.New()
+	protocol := utiliptables.ProtocolIpv4
+	protocol6 := utiliptables.ProtocolIpv6
+	iptInterface := utiliptables.New(execer, dbus, protocol)
+	ip6tInterface := utiliptables.New(execer, dbus, protocol6)
+	client := clientset.NewForConfigOrDie(server.ClientConfig).CoreV1().Endpoints("default")
 	klog.Errorf(">>> done creating client")
+
 	w, err := client.Watch(metav1.ListOptions{ResourceVersion: "0"})
 	if err != nil {
 		t.Fatalf("failed to watch pods: %v", err)
 	}
-	// u, err := url.Parse(result.ClientConfig.Host)
-	// if err != nil {
-	// 	t.Fatalf("failed to parse url: %s", result.ClientConfig.Host)
-	// }
-	// defer func() {
-	// 	klog.Errorf(">>> deleting rule")
-	// 	if err := iptInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-	// 		t.Fatalf("%v", err)
-	// 	}
-	// 	if err := ip6tInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-	// 		t.Fatalf("%v", err)
-	// 	}
-	// 	klog.Errorf(">>> done deleting rule")
-	// }()
-	// klog.Errorf(">>> adding rule")
-	// if _, err := iptInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-	// 	t.Fatalf("%v", err)
-	// }
-	// if _, err := ip6tInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--dport", u.Port()); err != nil {
-	// 	t.Fatalf("%v", err)
-	// }
-	// klog.Errorf(">>> done adding rule")
-	for i := 0; i < 3; i++ {
-		if _, err := client.Create(&v1.Endpoints{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("configmaps-%d", i),
-			},
-		}); err != nil {
-			t.Fatalf("failed to list pods: %v", err)
-		}
+
+	connections, err := exec.Command("ss", "-t").Output()
+	if err != nil {
+		t.Fatalf("failed ot list tcp connections")
 	}
+
+	u, err := url.Parse(server.ClientConfig.Host)
+	if err != nil {
+		t.Fatalf("failed to parse url: %s", server.ClientConfig.Host)
+	}
+	// klog.Errorf("--- target: %v", u.Host)
+	// klog.Errorf("--- connections: %v", string(connections))
+	pattern := regexp.MustCompile(fmt.Sprintf(`%s[\t ]+[0-9.]+:([0-9]+)`, u.Host))
+	// pattern := regexp.MustCompile(fmt.Sprintf(`%s`, u.Host))
+	ports := pattern.FindStringSubmatch(string(connections))
+	sport := ports[1]
+	// klog.Errorf("--- ports: %v", ports)
+
+	defer func() {
+		klog.Errorf(">>> deleting rule")
+		if err := iptInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--sport", sport); err != nil {
+			t.Fatalf("%v", err)
+		}
+		if err := ip6tInterface.DeleteRule(iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--sport", sport); err != nil {
+			t.Fatalf("%v", err)
+		}
+		klog.Errorf(">>> done deleting rule")
+	}()
+	klog.Errorf(">>> adding rule")
+	if _, err := iptInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--sport", sport); err != nil {
+		t.Fatalf("%v", err)
+	}
+	if _, err := ip6tInterface.EnsureRule(iptables.Prepend, iptables.TableFilter, iptables.ChainOutput, "-p", "tcp", "--jump", "DROP", "--sport", sport); err != nil {
+		t.Fatalf("%v", err)
+	}
+	klog.Errorf(">>> done adding rule")
+	go func() {
+		for i := 0; i < 3; i++ {
+			if _, err := client.Create(&v1.Endpoints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: fmt.Sprintf("configmaps-%d", i),
+				},
+			}); err != nil {
+				t.Fatalf("failed to list pods: %v", err)
+			}
+		}
+	}()
 	klog.Errorf(">>> done listing")
 	stopTimer := time.NewTimer(15 * time.Second)
 	defer stopTimer.Stop()
@@ -139,7 +116,13 @@ func TestReconnection(t *testing.T) {
 				t.Fatalf("Watch closed unexpectedly")
 			}
 		case <-stopTimer.C:
-			t.Fatalf("timeout reached")
+			if count != 3 {
+				klog.Errorf("--- count: %v", count)
+				t.Fatalf("timeout and not matching")
+			} else {
+				klog.Errorf("--- count: %v", count)
+				t.Fatalf("timeout reached")
+			}
 		}
 	}
 }
