@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -114,6 +115,18 @@ func SetTransportDefaults(t *http.Transport) *http.Transport {
 	} else {
 		if err := http2.ConfigureTransport(t); err != nil {
 			klog.Warningf("Transport failed http2 configuration: %v", err)
+		}
+		conn, err := t.DialContext(context.Background(), "tcp", "golang.org:http")
+		if err != nil {
+			klog.Errorf("--- failed to dial connection: %v", err)
+		} else {
+			next := t.TLSNextProto["h2"]
+			tlsConn := tls.Client(conn, &tls.Config{InsecureSkipVerify: true})
+			rt := next("example.com", tlsConn)
+			klog.Errorf("--- transport type: %v", reflect.TypeOf(rt))
+			if err := tlsConn.Close(); err != nil {
+				klog.Errorf("--- failed to close tls conn: %v", err)
+			}
 		}
 	}
 	return t
