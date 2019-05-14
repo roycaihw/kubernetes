@@ -17,6 +17,7 @@ limitations under the License.
 package apimachinery
 
 import (
+	"bufio"
 	"fmt"
 	"reflect"
 	"strings"
@@ -24,17 +25,21 @@ import (
 
 	"k8s.io/api/admissionregistration/v1beta1"
 	apps "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	crdclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilversion "k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
+	auditinternal "k8s.io/apiserver/pkg/apis/audit"
+	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
+	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -46,6 +51,7 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+
 	// ensure libs have a chance to initialize
 	_ "github.com/stretchr/testify/assert"
 )
@@ -231,6 +237,12 @@ var _ = SIGDescribe("AdmissionWebhook", func() {
 		slowWebhookCleanup = registerSlowWebhook(f, context, &policyFail, nil)
 		testSlowWebhookTimeoutNoError(f)
 		slowWebhookCleanup()
+	})
+
+	ginkgo.It("Should record name of mutating webhooks in audit log", func() {
+		webhookCleanup := registerMutatingWebhookForConfigMap(f, context)
+		defer webhookCleanup()
+		testMutatingConfigMapWebhookAuditing(f)
 	})
 
 	// TODO: add more e2e tests for mutating webhooks
@@ -593,6 +605,39 @@ func testMutatingConfigMapWebhook(f *framework.Framework) {
 	if !reflect.DeepEqual(expectedConfigMapData, mutatedConfigMap.Data) {
 		framework.Failf("\nexpected %#v\n, got %#v\n", expectedConfigMapData, mutatedConfigMap.Data)
 	}
+}
+
+func testMutatingConfigMapWebhookAuditing(f *framework.Framework) {
+	ginkgo.By("create a configmap that should be updated by the webhook")
+	client := f.ClientSet
+	configMap := toBeMutatedConfigMap(f)
+	_, err := client.CoreV1().ConfigMaps(f.Namespace.Name).Create(configMap)
+	gomega.Expect(err).To(gomega.BeNil())
+	// The default flush timeout is 30 seconds, therefore it should be enough to retry once
+	// to find all expected events. However, we're waiting for 5 minutes to avoid flakes.
+	pollingInterval := 30 * time.Second
+	pollingTimeout := 5 * time.Minute
+	err = wait.Poll(pollingInterval, pollingTimeout, func() (bool, error) {
+		stream, err := f.ClientSet.CoreV1().RESTClient().Get().AbsPath("/logs/kube-apiserver-audit.log").Stream()
+		if err != nil {
+			return false, err
+		}
+		defer stream.Close()
+		scanner := bufio.NewScanner(stream)
+		for scanner.Scan() {
+			line := scanner.Text()
+			e := &auditinternal.Event{}
+			decoder := audit.Codecs.UniversalDecoder(auditv1.SchemeGroupVersion)
+			if err := runtime.DecodeInto(decoder, []byte(line), e); err != nil {
+				return false, err
+			}
+			if e.Annotations["webhooktrace.admission.k8s.io/adding-configmap-data-stage-1.k8s.io"] == "mutation" {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	framework.ExpectNoError(err, "after %v failed to observe audit events", pollingTimeout)
 }
 
 func registerMutatingWebhookForPod(f *framework.Framework, context *certContext) func() {
