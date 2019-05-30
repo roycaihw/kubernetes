@@ -25,6 +25,7 @@ go_test(
         "//staging/src/k8s.io/apiserver/pkg/apis/apiserver:go_default_library",
         "//staging/src/k8s.io/apiserver/pkg/apis/apiserver/v1alpha1:go_default_library",
         "//staging/src/k8s.io/apiserver/pkg/apis/audit:go_default_library",
+        "//staging/src/k8s.io/apiserver/pkg/audit:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",
         "//vendor/github.com/stretchr/testify/require:go_default_library",
     ],

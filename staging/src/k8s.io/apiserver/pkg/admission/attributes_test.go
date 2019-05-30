@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	auditinternal "k8s.io/apiserver/pkg/apis/audit"
+	"k8s.io/apiserver/pkg/audit"
 )
 
 func TestAddAnnotation(t *testing.T) {
@@ -29,13 +31,13 @@ func TestAddAnnotation(t *testing.T) {
 	attr.AddAnnotation("podsecuritypolicy.admission.k8s.io/validate-policy", "privileged")
 	attr.AddAnnotation("podsecuritypolicy.admission.k8s.io/admit-policy", "privileged")
 	annotations := attr.getAnnotations()
-	assert.Equal(t, annotations["podsecuritypolicy.admission.k8s.io/validate-policy"], "privileged")
+	assert.Equal(t, annotations["podsecuritypolicy.admission.k8s.io/validate-policy"], audit.Annotation{Value: "privileged", Level: auditinternal.LevelMetadata})
 
 	// test overwrite
 	assert.Error(t, attr.AddAnnotation("podsecuritypolicy.admission.k8s.io/validate-policy", "privileged-overwrite"),
 		"admission annotations should not be allowd to be overwritten")
 	annotations = attr.getAnnotations()
-	assert.Equal(t, annotations["podsecuritypolicy.admission.k8s.io/validate-policy"], "privileged", "admission annotations should not be overwritten")
+	assert.Equal(t, annotations["podsecuritypolicy.admission.k8s.io/validate-policy"], audit.Annotation{Value: "privileged", Level: auditinternal.LevelMetadata}, "admission annotations should not be overwritten")
 
 	// test invalid plugin names
 	var testCases map[string]string = map[string]string{
@@ -48,16 +50,16 @@ func TestAddAnnotation(t *testing.T) {
 		err := attr.AddAnnotation(invalidKey, "value-foo")
 		assert.Error(t, err)
 		annotations = attr.getAnnotations()
-		assert.Equal(t, annotations[invalidKey], "", name+": invalid pluginName is not allowed ")
+		assert.Equal(t, annotations[invalidKey], audit.Annotation{}, name+": invalid pluginName is not allowed ")
 	}
 
 	// test all saved annotations
 	assert.Equal(
 		t,
 		annotations,
-		map[string]string{
-			"podsecuritypolicy.admission.k8s.io/validate-policy": "privileged",
-			"podsecuritypolicy.admission.k8s.io/admit-policy":    "privileged",
+		map[string]audit.Annotation{
+			"podsecuritypolicy.admission.k8s.io/validate-policy": audit.Annotation{Value: "privileged", Level: auditinternal.LevelMetadata},
+			"podsecuritypolicy.admission.k8s.io/admit-policy":    audit.Annotation{Value: "privileged", Level: auditinternal.LevelMetadata},
 		},
 		"unexpected final annotations",
 	)
