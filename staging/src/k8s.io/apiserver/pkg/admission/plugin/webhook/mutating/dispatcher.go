@@ -40,6 +40,7 @@ import (
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/generic"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/request"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/util"
+	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/util/webhook"
 )
 
@@ -191,7 +192,7 @@ func (a *mutatingDispatcher) callAttrMutatingHook(ctx context.Context, invocatio
 	// !apiequality.Semantic.DeepEqual(attr.VersionedObject, newVersionedObject)
 	if !bytes.Equal(objJS, patchedJS) {
 		mutation = "true"
-		if err := attr.Attributes.AddAnnotation(patchAuditAnnotationPrefix+annotationKey, string(patchJS)); err != nil {
+		if err := attr.Attributes.AddAnnotationWithLevel(patchAuditAnnotationPrefix+annotationKey, string(patchJS), auditinternal.LevelRequest); err != nil {
 			// NOTE: we don't log actual patch in kube-apiserver log to avoid potentially
 			// leaking information
 			klog.Warningf("failed to set patch annotation for mutating webhook %s", annotationKey)

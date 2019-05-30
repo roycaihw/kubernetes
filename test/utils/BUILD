@@ -8,6 +8,7 @@ load(
 go_library(
     name = "go_default_library",
     srcs = [
+        "admission_webhook.go",
         "audit.go",
         "audit_dynamic.go",
         "conditions.go",
@@ -34,6 +35,7 @@ go_library(
         "//pkg/controller/deployment/util:go_default_library",
         "//pkg/kubectl:go_default_library",
         "//pkg/util/labels:go_default_library",
+        "//staging/src/k8s.io/api/admission/v1beta1:go_default_library",
         "//staging/src/k8s.io/api/apps/v1:go_default_library",
         "//staging/src/k8s.io/api/auditregistration/v1alpha1:go_default_library",
         "//staging/src/k8s.io/api/batch/v1:go_default_library",
