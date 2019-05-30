@@ -19,6 +19,7 @@ limitations under the License.
 package mutating
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -39,7 +40,17 @@ import (
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/generic"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/request"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/util"
+	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/util/webhook"
+)
+
+const (
+	// PatchAuditAnnotationPrefix is a prefix for persisting webhook patch in audit annotation.
+	// Audit handler decides whether annotation with this prefix should be logged based on audit level.
+	// Since mutating webhook patches the request body, audit level must be greater or equal to Request
+	// for the annotation to be logged
+	PatchAuditAnnotationPrefix    = "patch.webhook.admission.k8s.io/"
+	MutationAuditAnnotationPrefix = "mutation.webhook.admission.k8s.io/"
 )
 
 type mutatingDispatcher struct {
@@ -172,6 +183,23 @@ func (a *mutatingDispatcher) callAttrMutatingHook(ctx context.Context, invocatio
 	patchedJS, err := patchObj.Apply(objJS)
 	if err != nil {
 		return apierrors.NewInternalError(err)
+	}
+
+	annotationKey := fmt.Sprintf("%s", h.Name)
+	mutation := "false"
+	// NOTE: here we determine if a webhook mutated the object by comparing byte to byte.
+	// In future if we find this causing too much false positive, we can switch to use
+	// !apiequality.Semantic.DeepEqual(attr.VersionedObject, newVersionedObject)
+	if !bytes.Equal(objJS, patchedJS) {
+		mutation = "true"
+		if err := attr.Attributes.AddAnnotationWithLevel(PatchAuditAnnotationPrefix+annotationKey, string(patchJS), auditinternal.LevelRequest); err != nil {
+			// NOTE: we don't log actual patch in kube-apiserver log to avoid potentially
+			// leaking information
+			klog.Warningf("failed to set patch annotation for mutating webhook %s", annotationKey)
+		}
+	}
+	if err := attr.Attributes.AddAnnotation(MutationAuditAnnotationPrefix+annotationKey, mutation); err != nil {
+		klog.Warningf("failed to set mutation annotation for mutating webhook %s to %s: %v", annotationKey, mutation, err)
 	}
 
 	var newVersionedObject runtime.Object
