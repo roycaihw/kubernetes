@@ -17,13 +17,10 @@ limitations under the License.
 package master
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -205,11 +202,17 @@ func TestAudit(t *testing.T) {
 
 func testAudit(t *testing.T, version string, level auditinternal.Level, enableMutatingWebhook bool) {
 	var url string
+	var err error
 	closeFunc := func() {}
 	if enableMutatingWebhook {
-		url, closeFunc = newWebhookServer(t)
+		webhookMux := http.NewServeMux()
+		webhookMux.Handle("/mutation", utils.WebhookHandler(t, admitFunc))
+		url, closeFunc, err = utils.NewWebhookServer(webhookMux)
 	}
 	defer closeFunc()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
 	// prepare audit policy file
 	auditPolicy := strings.Replace(auditPolicyPattern, "{version}", version, 1)
@@ -378,87 +381,35 @@ func expectNoError(t *testing.T, err error, msg string) {
 	}
 }
 
-// admission webhook registration helpers
-func newWebhookServer(t *testing.T) (string, func()) {
-	// set up webhook server
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(localhostCert) {
-		t.Fatal("Failed to append Cert from PEM")
+func admitFunc(review *v1beta1.AdmissionReview) error {
+	gvk := schema.GroupVersionKind{Group: "admission.k8s.io", Version: "v1beta1", Kind: "AdmissionReview"}
+	if review.GetObjectKind().GroupVersionKind() != gvk {
+		return fmt.Errorf("Invalid admission review kind: %#v", review.GetObjectKind().GroupVersionKind())
 	}
-	cert, err := tls.X509KeyPair(localhostCert, localhostKey)
-	if err != nil {
-		t.Fatalf("Failed to build cert with error: %+v", err)
+	if len(review.Request.Object.Raw) > 0 {
+		u := &unstructured.Unstructured{Object: map[string]interface{}{}}
+		if err := json.Unmarshal(review.Request.Object.Raw, u); err != nil {
+			return fmt.Errorf("Fail to deserialize object: %s with error: %v", string(review.Request.Object.Raw), err)
+		}
+		review.Request.Object.Object = u
+	}
+	if len(review.Request.OldObject.Raw) > 0 {
+		u := &unstructured.Unstructured{Object: map[string]interface{}{}}
+		if err := json.Unmarshal(review.Request.OldObject.Raw, u); err != nil {
+			return fmt.Errorf("Fail to deserialize object: %s with error: %v", string(review.Request.OldObject.Raw), err)
+		}
+		review.Request.OldObject.Object = u
 	}
 
-	webhookMux := http.NewServeMux()
-	webhookMux.Handle("/mutation", webhookHandler(t))
-	webhookServer := httptest.NewUnstartedServer(webhookMux)
-	webhookServer.TLS = &tls.Config{
-		RootCAs:      roots,
-		Certificates: []tls.Certificate{cert},
+	review.Response = &v1beta1.AdmissionResponse{
+		Allowed: true,
+		UID:     review.Request.UID,
+		Result:  &metav1.Status{Message: "admitted"},
 	}
-	webhookServer.StartTLS()
-	return webhookServer.URL, webhookServer.Close
-}
-
-func webhookHandler(t *testing.T) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		data, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		if contentType := r.Header.Get("Content-Type"); contentType != "application/json" {
-			t.Errorf("contentType=%s, expect application/json", contentType)
-			return
-		}
-
-		review := v1beta1.AdmissionReview{}
-		if err := json.Unmarshal(data, &review); err != nil {
-			t.Errorf("Fail to deserialize object: %s with error: %v", string(data), err)
-			http.Error(w, err.Error(), 400)
-			return
-		}
-		gvk := schema.GroupVersionKind{Group: "admission.k8s.io", Version: "v1beta1", Kind: "AdmissionReview"}
-		if review.GetObjectKind().GroupVersionKind() != gvk {
-			t.Errorf("Invalid admission review kind: %#v", review.GetObjectKind().GroupVersionKind())
-			http.Error(w, err.Error(), 400)
-			return
-		}
-		if len(review.Request.Object.Raw) > 0 {
-			u := &unstructured.Unstructured{Object: map[string]interface{}{}}
-			if err := json.Unmarshal(review.Request.Object.Raw, u); err != nil {
-				t.Errorf("Fail to deserialize object: %s with error: %v", string(review.Request.Object.Raw), err)
-				http.Error(w, err.Error(), 400)
-				return
-			}
-			review.Request.Object.Object = u
-		}
-		if len(review.Request.OldObject.Raw) > 0 {
-			u := &unstructured.Unstructured{Object: map[string]interface{}{}}
-			if err := json.Unmarshal(review.Request.OldObject.Raw, u); err != nil {
-				t.Errorf("Fail to deserialize object: %s with error: %v", string(review.Request.OldObject.Raw), err)
-				http.Error(w, err.Error(), 400)
-				return
-			}
-			review.Request.OldObject.Object = u
-		}
-
-		review.Response = &v1beta1.AdmissionResponse{
-			Allowed: true,
-			UID:     review.Request.UID,
-			Result:  &metav1.Status{Message: "admitted"},
-		}
-		review.Response.Patch = []byte(`[{"op":"add","path":"/foo","value":"test"}]`)
-		jsonPatch := v1beta1.PatchTypeJSONPatch
-		review.Response.PatchType = &jsonPatch
-
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(review); err != nil {
-			t.Errorf("Marshal of response failed with error: %v", err)
-		}
-	})
+	review.Response.Patch = []byte(`[{"op":"add","path":"/foo","value":"test"}]`)
+	jsonPatch := v1beta1.PatchTypeJSONPatch
+	review.Response.PatchType = &jsonPatch
+	return nil
 }
 
 func createV1beta1MutationWebhook(client clientset.Interface, endpoint string) error {
@@ -470,7 +421,7 @@ func createV1beta1MutationWebhook(client clientset.Interface, endpoint string) e
 			Name: "auditmutation.integration.test",
 			ClientConfig: admissionv1beta1.WebhookClientConfig{
 				URL:      &endpoint,
-				CABundle: localhostCert,
+				CABundle: utils.LocalhostCert,
 			},
 			Rules: []admissionv1beta1.RuleWithOperations{{
 				Operations: []admissionv1beta1.OperationType{admissionv1beta1.Create, admissionv1beta1.Update},
@@ -482,28 +433,3 @@ func createV1beta1MutationWebhook(client clientset.Interface, endpoint string) e
 	})
 	return err
 }
-
-// localhostCert was generated from crypto/tls/generate_cert.go with the following command:
-//     go run generate_cert.go  --rsa-bits 512 --host 127.0.0.1,::1,example.com --ca --start-date "Jan 1 00:00:00 1970" --duration=1000000h
-var localhostCert = []byte(`-----BEGIN CERTIFICATE-----
-MIIBjzCCATmgAwIBAgIRAKpi2WmTcFrVjxrl5n5YDUEwDQYJKoZIhvcNAQELBQAw
-EjEQMA4GA1UEChMHQWNtZSBDbzAgFw03MDAxMDEwMDAwMDBaGA8yMDg0MDEyOTE2
-MDAwMFowEjEQMA4GA1UEChMHQWNtZSBDbzBcMA0GCSqGSIb3DQEBAQUAA0sAMEgC
-QQC9fEbRszP3t14Gr4oahV7zFObBI4TfA5i7YnlMXeLinb7MnvT4bkfOJzE6zktn
-59zP7UiHs3l4YOuqrjiwM413AgMBAAGjaDBmMA4GA1UdDwEB/wQEAwICpDATBgNV
-HSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MC4GA1UdEQQnMCWCC2V4
-YW1wbGUuY29thwR/AAABhxAAAAAAAAAAAAAAAAAAAAABMA0GCSqGSIb3DQEBCwUA
-A0EAUsVE6KMnza/ZbodLlyeMzdo7EM/5nb5ywyOxgIOCf0OOLHsPS9ueGLQX9HEG
-//yjTXuhNcUugExIjM/AIwAZPQ==
------END CERTIFICATE-----`)
-
-// localhostKey is the private key for localhostCert.
-var localhostKey = []byte(`-----BEGIN RSA PRIVATE KEY-----
-MIIBOwIBAAJBAL18RtGzM/e3XgavihqFXvMU5sEjhN8DmLtieUxd4uKdvsye9Phu
-R84nMTrOS2fn3M/tSIezeXhg66quOLAzjXcCAwEAAQJBAKcRxH9wuglYLBdI/0OT
-BLzfWPZCEw1vZmMR2FF1Fm8nkNOVDPleeVGTWoOEcYYlQbpTmkGSxJ6ya+hqRi6x
-goECIQDx3+X49fwpL6B5qpJIJMyZBSCuMhH4B7JevhGGFENi3wIhAMiNJN5Q3UkL
-IuSvv03kaPR5XVQ99/UeEetUgGvBcABpAiBJSBzVITIVCGkGc7d+RCf49KTCIklv
-bGWObufAR8Ni4QIgWpILjW8dkGg8GOUZ0zaNA6Nvt6TIv2UWGJ4v5PoV98kCIQDx
-rIiZs5QbKdycsv9gQJzwQAogC8o04X3Zz3dsoX+h4A==
------END RSA PRIVATE KEY-----`)
