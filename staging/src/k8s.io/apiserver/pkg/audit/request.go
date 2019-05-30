@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -40,6 +41,12 @@ import (
 const (
 	maxUserAgentLength      = 1024
 	userAgentTruncateSuffix = "...TRUNCATED"
+
+	// patchAuditAnnotationPrefix is a prefix for persisting webhook patch in audit annotation.
+	// Audit handler decides whether annotation with this prefix should be logged based on audit level.
+	// Since mutating webhook patches the request body, audit level must be greater or equal to Request
+	// for the annotation to be logged
+	patchAuditAnnotationPrefix = "patch.webhook.admission.k8s.io/"
 )
 
 func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs authorizer.Attributes) (*auditinternal.Event, error) {
@@ -218,6 +225,11 @@ func encodeObject(obj runtime.Object, gv schema.GroupVersion, serializer runtime
 // LogAnnotation fills in the Annotations according to the key value pair.
 func LogAnnotation(ae *auditinternal.Event, key, value string) {
 	if ae == nil || ae.Level.Less(auditinternal.LevelMetadata) {
+		return
+	}
+	// In mutating webhooks we persist webhook patch in audit annotation with patchAuditAnnotationPrefix.
+	// Since the patch mutates request body, we skip logging if audit level is less than Request.
+	if strings.HasPrefix(key, patchAuditAnnotationPrefix) && ae.Level.Less(auditinternal.LevelRequest) {
 		return
 	}
 	if ae.Annotations == nil {
