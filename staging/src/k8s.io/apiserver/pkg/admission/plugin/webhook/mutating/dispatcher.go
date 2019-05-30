@@ -45,12 +45,12 @@ import (
 )
 
 const (
-	// patchAuditAnnotationPrefix is a prefix for persisting webhook patch in audit annotation.
+	// PatchAuditAnnotationPrefix is a prefix for persisting webhook patch in audit annotation.
 	// Audit handler decides whether annotation with this prefix should be logged based on audit level.
 	// Since mutating webhook patches the request body, audit level must be greater or equal to Request
 	// for the annotation to be logged
-	patchAuditAnnotationPrefix    = "patch.webhook.admission.k8s.io/"
-	mutationAuditAnnotationPrefix = "mutation.webhook.admission.k8s.io/"
+	PatchAuditAnnotationPrefix    = "patch.webhook.admission.k8s.io/"
+	MutationAuditAnnotationPrefix = "mutation.webhook.admission.k8s.io/"
 )
 
 type mutatingDispatcher struct {
@@ -192,13 +192,13 @@ func (a *mutatingDispatcher) callAttrMutatingHook(ctx context.Context, invocatio
 	// !apiequality.Semantic.DeepEqual(attr.VersionedObject, newVersionedObject)
 	if !bytes.Equal(objJS, patchedJS) {
 		mutation = "true"
-		if err := attr.Attributes.AddAnnotationWithLevel(patchAuditAnnotationPrefix+annotationKey, string(patchJS), auditinternal.LevelRequest); err != nil {
+		if err := attr.Attributes.AddAnnotationWithLevel(PatchAuditAnnotationPrefix+annotationKey, string(patchJS), auditinternal.LevelRequest); err != nil {
 			// NOTE: we don't log actual patch in kube-apiserver log to avoid potentially
 			// leaking information
 			klog.Warningf("failed to set patch annotation for mutating webhook %s", annotationKey)
 		}
 	}
-	if err := attr.Attributes.AddAnnotation(mutationAuditAnnotationPrefix+annotationKey, mutation); err != nil {
+	if err := attr.Attributes.AddAnnotation(MutationAuditAnnotationPrefix+annotationKey, mutation); err != nil {
 		klog.Warningf("failed to set mutation annotation for mutating webhook %s to %s: %v", annotationKey, mutation, err)
 	}
 

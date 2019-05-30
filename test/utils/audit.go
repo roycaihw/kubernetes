@@ -27,13 +27,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apiserver/pkg/admission/plugin/webhook/mutating"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/audit"
-)
-
-const (
-	PatchAuditAnnotationPrefix    = "patch.webhook.admission.k8s.io/"
-	MutationAuditAnnotationPrefix = "mutation.webhook.admission.k8s.io/"
 )
 
 // AuditEvent is a simplified representation of an audit event for testing purposes
@@ -57,47 +53,6 @@ type AuditEvent struct {
 	// not reference these maps after calling the Check functions.
 	WebhookMutationAnnotations map[string]string
 	WebhookPatchAnnotations    map[string]string
-}
-
-// auditEvent is a private wrapper on top of AuditEvent used by auditEventTracker
-type auditEvent struct {
-	event AuditEvent
-	found bool
-}
-
-// auditEventTracker keeps track of AuditEvent expectations and marks matching events as found
-type auditEventTracker struct {
-	events []*auditEvent
-}
-
-// newAuditEventTracker creates a tracker that tracks whether expect events are found
-func newAuditEventTracker(expected []AuditEvent) *auditEventTracker {
-	expectations := &auditEventTracker{events: []*auditEvent{}}
-	for _, event := range expected {
-		// we copy the references to the maps in event
-		expectations.events = append(expectations.events, &auditEvent{event: event, found: false})
-	}
-	return expectations
-}
-
-// Match marks the given event as found if it's expected
-func (t *auditEventTracker) Match(event AuditEvent) {
-	for _, e := range t.events {
-		if reflect.DeepEqual(e.event, event) {
-			e.found = true
-		}
-	}
-}
-
-// Missing reports events that are expected but not found
-func (t *auditEventTracker) Missing() []AuditEvent {
-	var missing []AuditEvent
-	for _, e := range t.events {
-		if !e.found {
-			missing = append(missing, e.event)
-		}
-	}
-	return missing
 }
 
 // MissingEventsReport provides an analysis if any events are missing
@@ -150,7 +105,7 @@ func CheckAuditLines(stream io.Reader, expected []AuditEvent, version schema.Gro
 			return missingReport, err
 		}
 
-		expectations.Match(event)
+		expectations.Mark(event)
 	}
 	if err := scanner.Err(); err != nil {
 		return missingReport, err
@@ -171,7 +126,7 @@ func CheckAuditList(el auditinternal.EventList, expected []AuditEvent) (missing 
 			return expected, err
 		}
 
-		expectations.Match(event)
+		expectations.Mark(event)
 	}
 
 	return expectations.Missing(), nil
@@ -230,12 +185,12 @@ func testEventFromInternal(e *auditinternal.Event) (AuditEvent, error) {
 	}
 	event.AuthorizeDecision = e.Annotations["authorization.k8s.io/decision"]
 	for k, v := range e.Annotations {
-		if strings.HasPrefix(k, PatchAuditAnnotationPrefix) {
+		if strings.HasPrefix(k, mutating.PatchAuditAnnotationPrefix) {
 			if event.WebhookPatchAnnotations == nil {
 				event.WebhookPatchAnnotations = map[string]string{}
 			}
 			event.WebhookPatchAnnotations[k] = v
-		} else if strings.HasPrefix(k, MutationAuditAnnotationPrefix) {
+		} else if strings.HasPrefix(k, mutating.MutationAuditAnnotationPrefix) {
 			if event.WebhookMutationAnnotations == nil {
 				event.WebhookMutationAnnotations = map[string]string{}
 			}
@@ -243,4 +198,45 @@ func testEventFromInternal(e *auditinternal.Event) (AuditEvent, error) {
 		}
 	}
 	return event, nil
+}
+
+// auditEvent is a private wrapper on top of AuditEvent used by auditEventTracker
+type auditEvent struct {
+	event AuditEvent
+	found bool
+}
+
+// auditEventTracker keeps track of AuditEvent expectations and marks matching events as found
+type auditEventTracker struct {
+	events []*auditEvent
+}
+
+// newAuditEventTracker creates a tracker that tracks whether expect events are found
+func newAuditEventTracker(expected []AuditEvent) *auditEventTracker {
+	expectations := &auditEventTracker{events: []*auditEvent{}}
+	for _, event := range expected {
+		// we copy the references to the maps in event
+		expectations.events = append(expectations.events, &auditEvent{event: event, found: false})
+	}
+	return expectations
+}
+
+// Mark marks the given event as found if it's expected
+func (t *auditEventTracker) Mark(event AuditEvent) {
+	for _, e := range t.events {
+		if reflect.DeepEqual(e.event, event) {
+			e.found = true
+		}
+	}
+}
+
+// Missing reports events that are expected but not found
+func (t *auditEventTracker) Missing() []AuditEvent {
+	var missing []AuditEvent
+	for _, e := range t.events {
+		if !e.found {
+			missing = append(missing, e.event)
+		}
+	}
+	return missing
 }

@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apiserver/pkg/admission/plugin/webhook/mutating"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	auditv1beta1 "k8s.io/apiserver/pkg/apis/audit/v1beta1"
@@ -265,12 +266,12 @@ func testAudit(t *testing.T, version string, level auditinternal.Level, enableMu
 		// check for corresponding audit logs
 		stream, err := os.Open(logFile.Name())
 		if err != nil {
-			return false, fmt.Errorf("Unexpected error: %v", err)
+			return false, fmt.Errorf("unexpected error: %v", err)
 		}
 		defer stream.Close()
 		missingReport, err := utils.CheckAuditLines(stream, getExpectedEvents(level, enableMutatingWebhook), versions[version])
 		if err != nil {
-			return false, fmt.Errorf("Unexpected error: %v", err)
+			return false, fmt.Errorf("unexpected error: %v", err)
 		}
 		if len(missingReport.MissingEvents) > 0 {
 			lastMissingReport = missingReport.String()
@@ -290,19 +291,24 @@ func getExpectedEvents(level auditinternal.Level, enableMutatingWebhook bool) []
 	var webhookMutationAnnotations, webhookPatchAnnotations map[string]string
 	var requestObject, responseObject bool
 	if level.GreaterOrEqual(auditinternal.LevelMetadata) {
+		// expect mutation existence annotation
 		webhookMutationAnnotations = map[string]string{}
-		webhookMutationAnnotations[utils.MutationAuditAnnotationPrefix+"auditmutation.integration.test"] = "true"
+		webhookMutationAnnotations[mutating.MutationAuditAnnotationPrefix+"auditmutation.integration.test"] = "true"
 	}
 	if level.GreaterOrEqual(auditinternal.LevelRequest) {
+		// expect actual patch annotation
 		webhookPatchAnnotations = map[string]string{}
-		webhookPatchAnnotations[utils.PatchAuditAnnotationPrefix+"auditmutation.integration.test"] = `[{"op":"add","path":"/foo","value":"test"}]`
+		webhookPatchAnnotations[mutating.PatchAuditAnnotationPrefix+"auditmutation.integration.test"] = `[{"op":"add","path":"/foo","value":"test"}]`
+		// expect request object in audit log
 		requestObject = true
 	}
 	if level.GreaterOrEqual(auditinternal.LevelRequestResponse) {
+		// expect response obect in audit log
 		responseObject = true
 	}
 	return []utils.AuditEvent{
 		{
+			// expect CREATE audit event with webhook in effect
 			Level:                      level,
 			Stage:                      auditinternal.StageResponseComplete,
 			RequestURI:                 fmt.Sprintf("/api/v1/namespaces/%s/configmaps", namespace),
@@ -317,6 +323,7 @@ func getExpectedEvents(level auditinternal.Level, enableMutatingWebhook bool) []
 			WebhookMutationAnnotations: webhookMutationAnnotations,
 			WebhookPatchAnnotations:    webhookPatchAnnotations,
 		}, {
+			// expect UPDATE audit event with webhook in effect
 			Level:                      level,
 			Stage:                      auditinternal.StageResponseComplete,
 			RequestURI:                 fmt.Sprintf("/api/v1/namespaces/%s/configmaps/audit-configmap", namespace),
@@ -384,19 +391,19 @@ func expectNoError(t *testing.T, err error, msg string) {
 func admitFunc(review *v1beta1.AdmissionReview) error {
 	gvk := schema.GroupVersionKind{Group: "admission.k8s.io", Version: "v1beta1", Kind: "AdmissionReview"}
 	if review.GetObjectKind().GroupVersionKind() != gvk {
-		return fmt.Errorf("Invalid admission review kind: %#v", review.GetObjectKind().GroupVersionKind())
+		return fmt.Errorf("invalid admission review kind: %#v", review.GetObjectKind().GroupVersionKind())
 	}
 	if len(review.Request.Object.Raw) > 0 {
 		u := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		if err := json.Unmarshal(review.Request.Object.Raw, u); err != nil {
-			return fmt.Errorf("Fail to deserialize object: %s with error: %v", string(review.Request.Object.Raw), err)
+			return fmt.Errorf("failed to deserialize object: %s with error: %v", string(review.Request.Object.Raw), err)
 		}
 		review.Request.Object.Object = u
 	}
 	if len(review.Request.OldObject.Raw) > 0 {
 		u := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		if err := json.Unmarshal(review.Request.OldObject.Raw, u); err != nil {
-			return fmt.Errorf("Fail to deserialize object: %s with error: %v", string(review.Request.OldObject.Raw), err)
+			return fmt.Errorf("failed to deserialize object: %s with error: %v", string(review.Request.OldObject.Raw), err)
 		}
 		review.Request.OldObject.Object = u
 	}

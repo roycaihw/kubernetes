@@ -29,6 +29,8 @@ import (
 	"k8s.io/api/admission/v1beta1"
 )
 
+// NewWebhookServer sets up a webhook server with TLS enabled, returns URL and Close function
+// for the server
 func NewWebhookServer(handler http.Handler) (string, func(), error) {
 	// set up webhook server
 	roots := x509.NewCertPool()
@@ -48,6 +50,8 @@ func NewWebhookServer(handler http.Handler) (string, func(), error) {
 	return webhookServer.URL, webhookServer.Close, nil
 }
 
+// WebhookHandler creates a HandlerFunc that decodes/encodes AdmissionReview and performs
+// given admit function
 func WebhookHandler(t *testing.T, admit func(*v1beta1.AdmissionReview) error) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
