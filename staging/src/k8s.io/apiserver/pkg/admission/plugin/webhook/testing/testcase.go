@@ -517,10 +517,14 @@ func NewMutatingTestCases(url *url.URL) []Test {
 				NamespaceSelector:       &metav1.LabelSelector{},
 				AdmissionReviewVersions: []string{"v1beta1"},
 			}},
-			ExpectAllow:       true,
-			AdditionalLabels:  map[string]string{"remove": "me"},
-			ExpectLabels:      map[string]string{"pod.name": "my-pod"},
-			ExpectAnnotations: map[string]string{"removelabel.example.com/key1": "value1"},
+			ExpectAllow:      true,
+			AdditionalLabels: map[string]string{"remove": "me"},
+			ExpectLabels:     map[string]string{"pod.name": "my-pod"},
+			ExpectAnnotations: map[string]string{
+				"removelabel.example.com/key1":                              "value1",
+				"mutation.webhook.admission.k8s.io/removelabel.example.com": "true",
+				"patch.webhook.admission.k8s.io/removelabel.example.com":    `[{"op": "remove", "path": "/metadata/labels/remove"}]`,
+			},
 		},
 		{
 			Name: "match & add label",
@@ -533,6 +537,10 @@ func NewMutatingTestCases(url *url.URL) []Test {
 			}},
 			ExpectAllow:  true,
 			ExpectLabels: map[string]string{"pod.name": "my-pod", "added": "test"},
+			ExpectAnnotations: map[string]string{
+				"mutation.webhook.admission.k8s.io/addLabel": "true",
+				"patch.webhook.admission.k8s.io/addLabel":    `[{"op": "add", "path": "/metadata/labels/added", "value": "test"}]`,
+			},
 		},
 		{
 			Name: "match CRD & add label",
@@ -546,6 +554,10 @@ func NewMutatingTestCases(url *url.URL) []Test {
 			IsCRD:        true,
 			ExpectAllow:  true,
 			ExpectLabels: map[string]string{"crd.name": "my-test-crd", "added": "test"},
+			ExpectAnnotations: map[string]string{
+				"mutation.webhook.admission.k8s.io/addLabel": "true",
+				"patch.webhook.admission.k8s.io/addLabel":    `[{"op": "add", "path": "/metadata/labels/added", "value": "test"}]`,
+			},
 		},
 		{
 			Name: "match CRD & remove label",
@@ -556,11 +568,15 @@ func NewMutatingTestCases(url *url.URL) []Test {
 				NamespaceSelector:       &metav1.LabelSelector{},
 				AdmissionReviewVersions: []string{"v1beta1"},
 			}},
-			IsCRD:             true,
-			ExpectAllow:       true,
-			AdditionalLabels:  map[string]string{"remove": "me"},
-			ExpectLabels:      map[string]string{"crd.name": "my-test-crd"},
-			ExpectAnnotations: map[string]string{"removelabel.example.com/key1": "value1"},
+			IsCRD:            true,
+			ExpectAllow:      true,
+			AdditionalLabels: map[string]string{"remove": "me"},
+			ExpectLabels:     map[string]string{"crd.name": "my-test-crd"},
+			ExpectAnnotations: map[string]string{
+				"removelabel.example.com/key1":                              "value1",
+				"mutation.webhook.admission.k8s.io/removelabel.example.com": "true",
+				"patch.webhook.admission.k8s.io/removelabel.example.com":    `[{"op": "remove", "path": "/metadata/labels/remove"}]`,
+			},
 		},
 		{
 			Name: "match & invalid mutation",

@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -28,6 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/audit"
+)
+
+const (
+	PatchAuditAnnotationPrefix    = "patch.webhook.admission.k8s.io/"
+	MutationAuditAnnotationPrefix = "mutation.webhook.admission.k8s.io/"
 )
 
 // AuditEvent is a simplified representation of an audit event for testing purposes
@@ -46,6 +52,52 @@ type AuditEvent struct {
 	RequestObject      bool
 	ResponseObject     bool
 	AuthorizeDecision  string
+
+	// The Check functions in this package takes ownerships of these maps. You should
+	// not reference these maps after calling the Check functions.
+	WebhookMutationAnnotations map[string]string
+	WebhookPatchAnnotations    map[string]string
+}
+
+// auditEvent is a private wrapper on top of AuditEvent used by auditEventTracker
+type auditEvent struct {
+	event AuditEvent
+	found bool
+}
+
+// auditEventTracker keeps track of AuditEvent expectations and marks matching events as found
+type auditEventTracker struct {
+	events []*auditEvent
+}
+
+// newAuditEventTracker creates a tracker that tracks whether expect events are found
+func newAuditEventTracker(expected []AuditEvent) *auditEventTracker {
+	expectations := &auditEventTracker{events: []*auditEvent{}}
+	for _, event := range expected {
+		// we copy the references to the maps in event
+		expectations.events = append(expectations.events, &auditEvent{event: event, found: false})
+	}
+	return expectations
+}
+
+// Match marks the given event as found if it's expected
+func (t *auditEventTracker) Match(event AuditEvent) {
+	for _, e := range t.events {
+		if reflect.DeepEqual(e.event, event) {
+			e.found = true
+		}
+	}
+}
+
+// Missing reports events that are expected but not found
+func (t *auditEventTracker) Missing() []AuditEvent {
+	var missing []AuditEvent
+	for _, e := range t.events {
+		if !e.found {
+			missing = append(missing, e.event)
+		}
+	}
+	return missing
 }
 
 // MissingEventsReport provides an analysis if any events are missing
@@ -71,7 +123,7 @@ func (m *MissingEventsReport) String() string {
 
 // CheckAuditLines searches the audit log for the expected audit lines.
 func CheckAuditLines(stream io.Reader, expected []AuditEvent, version schema.GroupVersion) (missingReport *MissingEventsReport, err error) {
-	expectations := buildEventExpectations(expected)
+	expectations := newAuditEventTracker(expected)
 
 	scanner := bufio.NewScanner(stream)
 
@@ -98,24 +150,20 @@ func CheckAuditLines(stream io.Reader, expected []AuditEvent, version schema.Gro
 			return missingReport, err
 		}
 
-		// If the event was expected, mark it as found.
-		if _, found := expectations[event]; found {
-			expectations[event] = true
-		}
+		expectations.Match(event)
 	}
 	if err := scanner.Err(); err != nil {
 		return missingReport, err
 	}
 
-	missingEvents := findMissing(expectations)
-	missingReport.MissingEvents = missingEvents
+	missingReport.MissingEvents = expectations.Missing()
 	missingReport.NumEventsChecked = i
 	return missingReport, nil
 }
 
 // CheckAuditList searches an audit event list for the expected audit events.
 func CheckAuditList(el auditinternal.EventList, expected []AuditEvent) (missing []AuditEvent, err error) {
-	expectations := buildEventExpectations(expected)
+	expectations := newAuditEventTracker(expected)
 
 	for _, e := range el.Items {
 		event, err := testEventFromInternal(&e)
@@ -123,20 +171,16 @@ func CheckAuditList(el auditinternal.EventList, expected []AuditEvent) (missing 
 			return expected, err
 		}
 
-		// If the event was expected, mark it as found.
-		if _, found := expectations[event]; found {
-			expectations[event] = true
-		}
+		expectations.Match(event)
 	}
 
-	missing = findMissing(expectations)
-	return missing, nil
+	return expectations.Missing(), nil
 }
 
 // CheckForDuplicates checks a list for duplicate events
 func CheckForDuplicates(el auditinternal.EventList) (auditinternal.EventList, error) {
-	// eventMap holds a map of audit events with just a nil value
-	eventMap := map[AuditEvent]*bool{}
+	// existingEvents holds a slice of audit events that have been seen
+	existingEvents := []AuditEvent{}
 	duplicates := auditinternal.EventList{}
 	var err error
 	for _, e := range el.Items {
@@ -145,23 +189,16 @@ func CheckForDuplicates(el auditinternal.EventList) (auditinternal.EventList, er
 			return duplicates, err
 		}
 		event.ID = e.AuditID
-		if _, ok := eventMap[event]; ok {
-			duplicates.Items = append(duplicates.Items, e)
-			err = fmt.Errorf("failed duplicate check")
-			continue
+		for _, existing := range existingEvents {
+			if reflect.DeepEqual(existing, event) {
+				duplicates.Items = append(duplicates.Items, e)
+				err = fmt.Errorf("failed duplicate check")
+				continue
+			}
 		}
-		eventMap[event] = nil
+		existingEvents = append(existingEvents, event)
 	}
 	return duplicates, err
-}
-
-// buildEventExpectations creates a bool map out of a list of audit events
-func buildEventExpectations(expected []AuditEvent) map[AuditEvent]bool {
-	expectations := map[AuditEvent]bool{}
-	for _, event := range expected {
-		expectations[event] = false
-	}
-	return expectations
 }
 
 // testEventFromInternal takes an internal audit event and returns a test event
@@ -192,16 +229,18 @@ func testEventFromInternal(e *auditinternal.Event) (AuditEvent, error) {
 		event.ImpersonatedGroups = strings.Join(e.ImpersonatedUser.Groups, ",")
 	}
 	event.AuthorizeDecision = e.Annotations["authorization.k8s.io/decision"]
-	return event, nil
-}
-
-// findMissing checks for false values in the expectations map and returns them as a list
-func findMissing(expectations map[AuditEvent]bool) []AuditEvent {
-	var missing []AuditEvent
-	for event, found := range expectations {
-		if !found {
-			missing = append(missing, event)
+	for k, v := range e.Annotations {
+		if strings.HasPrefix(k, PatchAuditAnnotationPrefix) {
+			if event.WebhookPatchAnnotations == nil {
+				event.WebhookPatchAnnotations = map[string]string{}
+			}
+			event.WebhookPatchAnnotations[k] = v
+		} else if strings.HasPrefix(k, MutationAuditAnnotationPrefix) {
+			if event.WebhookMutationAnnotations == nil {
+				event.WebhookMutationAnnotations = map[string]string{}
+			}
+			event.WebhookMutationAnnotations[k] = v
 		}
 	}
-	return missing
+	return event, nil
 }
