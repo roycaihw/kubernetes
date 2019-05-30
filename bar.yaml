@@ -1,0 +1,4 @@
+apiVersion: stable.example.com/v1
+kind: Bar
+metadata:
+  name: barv1
