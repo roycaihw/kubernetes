@@ -216,8 +216,11 @@ func encodeObject(obj runtime.Object, gv schema.GroupVersion, serializer runtime
 }
 
 // LogAnnotation fills in the Annotations according to the key value pair.
-func LogAnnotation(ae *auditinternal.Event, key, value string) {
+func LogAnnotation(ae *auditinternal.Event, key, value string, level auditinternal.Level) {
 	if ae == nil || ae.Level.Less(auditinternal.LevelMetadata) {
+		return
+	}
+	if ae.Level.Less(level) {
 		return
 	}
 	if ae.Annotations == nil {
@@ -231,12 +234,12 @@ func LogAnnotation(ae *auditinternal.Event, key, value string) {
 }
 
 // LogAnnotations fills in the Annotations according to the annotations map.
-func LogAnnotations(ae *auditinternal.Event, annotations map[string]string) {
+func LogAnnotations(ae *auditinternal.Event, annotations map[string]Annotation) {
 	if ae == nil || ae.Level.Less(auditinternal.LevelMetadata) {
 		return
 	}
 	for key, value := range annotations {
-		LogAnnotation(ae, key, value)
+		LogAnnotation(ae, key, value.Value, value.Level)
 	}
 }
 

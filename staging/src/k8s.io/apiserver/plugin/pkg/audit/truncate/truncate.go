@@ -126,7 +126,7 @@ func truncate(e *auditinternal.Event) *auditinternal.Event {
 
 	newEvent.RequestObject = nil
 	newEvent.ResponseObject = nil
-	audit.LogAnnotation(newEvent, annotationKey, annotationValue)
+	audit.LogAnnotation(newEvent, annotationKey, annotationValue, auditinternal.LevelMetadata)
 	return newEvent
 }
 

@@ -21,6 +21,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	auditinternal "k8s.io/apiserver/pkg/apis/audit"
+	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authentication/user"
 )
 
@@ -62,6 +64,7 @@ type Attributes interface {
 	// An error is returned if the format of key is invalid. When trying to overwrite annotation with a new value, an error is returned.
 	// Both ValidationInterface and MutationInterface are allowed to add Annotations.
 	AddAnnotation(key, value string) error
+	AddAnnotationWithLevel(key, value string, level auditinternal.Level) error
 }
 
 // ObjectInterfaces is an interface used by AdmissionController to get object interfaces
@@ -82,13 +85,13 @@ type ObjectInterfaces interface {
 
 // privateAnnotationsGetter is a private interface which allows users to get annotations from Attributes.
 type privateAnnotationsGetter interface {
-	getAnnotations() map[string]string
+	getAnnotations() map[string]audit.Annotation
 }
 
 // AnnotationsGetter allows users to get annotations from Attributes. An alternate Attribute should implement
 // this interface.
 type AnnotationsGetter interface {
-	GetAnnotations() map[string]string
+	GetAnnotations() map[string]audit.Annotation
 }
 
 // Interface is an abstract, pluggable interface for Admission Control decisions.

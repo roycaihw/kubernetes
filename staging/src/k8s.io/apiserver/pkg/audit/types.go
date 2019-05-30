@@ -44,3 +44,8 @@ type Backend interface {
 	// Returns the backend PluginName.
 	String() string
 }
+
+type Annotation struct {
+	Level auditinternal.Level
+	Value string
+}

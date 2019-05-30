@@ -24,6 +24,7 @@ import (
 	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
@@ -59,20 +60,20 @@ func WithAuthorization(handler http.Handler, a authorizer.Authorizer, s runtime.
 		authorized, reason, err := a.Authorize(attributes)
 		// an authorizer like RBAC could encounter evaluation errors and still allow the request, so authorizer decision is checked before error here.
 		if authorized == authorizer.DecisionAllow {
-			audit.LogAnnotation(ae, decisionAnnotationKey, decisionAllow)
-			audit.LogAnnotation(ae, reasonAnnotationKey, reason)
+			audit.LogAnnotation(ae, decisionAnnotationKey, decisionAllow, auditinternal.LevelMetadata)
+			audit.LogAnnotation(ae, reasonAnnotationKey, reason, auditinternal.LevelMetadata)
 			handler.ServeHTTP(w, req)
 			return
 		}
 		if err != nil {
-			audit.LogAnnotation(ae, reasonAnnotationKey, reasonError)
+			audit.LogAnnotation(ae, reasonAnnotationKey, reasonError, auditinternal.LevelMetadata)
 			responsewriters.InternalError(w, req, err)
 			return
 		}
 
 		klog.V(4).Infof("Forbidden: %#v, Reason: %q", req.RequestURI, reason)
-		audit.LogAnnotation(ae, decisionAnnotationKey, decisionForbid)
-		audit.LogAnnotation(ae, reasonAnnotationKey, reason)
+		audit.LogAnnotation(ae, decisionAnnotationKey, decisionForbid, auditinternal.LevelMetadata)
+		audit.LogAnnotation(ae, reasonAnnotationKey, reason, auditinternal.LevelMetadata)
 		responsewriters.Forbidden(ctx, attributes, w, req, reason, s)
 	})
 }
