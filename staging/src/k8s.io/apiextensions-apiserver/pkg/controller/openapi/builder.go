@@ -308,6 +308,8 @@ func (b *builder) buildKubeNative(schema *structuralschema.Structural, v2 bool) 
 			schema = ToStructuralOpenAPIV2(schema)
 		}
 		ret = schema.ToGoOpenAPI()
+		// TODO(roycaihw, 1.16): go through unfolding and v3->v2 conversion following the KEP, if the root schema
+		// is a x-kubernetes-embedded-resource
 		ret.SetProperty("metadata", *spec.RefSchema(objectMetaSchemaRef).
 			WithDescription(swaggerPartialObjectMetadataDescriptions["metadata"]))
 		addTypeMetaProperties(ret)
@@ -324,6 +326,7 @@ func (b *builder) buildKubeNative(schema *structuralschema.Structural, v2 bool) 
 	return ret
 }
 
+// TODO(roycaihw, 1.16): go through unfolding and v3->v2 conversion following the KEP
 func addEmbeddedProperties(s *spec.Schema) {
 	if s == nil {
 		return
@@ -336,27 +339,22 @@ func addEmbeddedProperties(s *spec.Schema) {
 	if s.Items != nil {
 		addEmbeddedProperties(s.Items.Schema)
 	}
+	if s.AdditionalProperties != nil {
+		addEmbeddedProperties(s.AdditionalProperties.Schema)
+	}
 	if isTrue, ok := s.VendorExtensible.Extensions.GetBool("x-kubernetes-embedded-resource"); ok && isTrue {
+		s.SetProperty("metadata", *spec.RefSchema(objectMetaSchemaRef).
+			WithDescription(swaggerPartialObjectMetadataDescriptions["metadata"]))
 		addTypeMetaProperties(s)
-
+		// add client-side requirement for kind and apiVersion. This doesn't hurt
+		// TODO(roycaihw, 1.16): add the same requirement to builtin spec, to be consistent
 		req := sets.NewString(s.Required...)
-
 		if !req.Has("kind") {
 			s.Required = append(s.Required, "kind")
 		}
-		kindProp := s.Properties["kind"]
-		kindProp.Description = "kind is a string value representing the type of this object. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds"
-		s.Properties["kind"] = kindProp
-
-		if !req.Has("kind") {
+		if !req.Has("apiVersion") {
 			s.Required = append(s.Required, "apiVersion")
 		}
-		apiVersionProp := s.Properties["apiVersion"]
-		apiVersionProp.Description = "apiVersion defines the versioned schema of this representation of an object. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources"
-		s.Properties["apiVersion"] = apiVersionProp
-
-		// metadata is not required
-		s.SetProperty("metadata", *spec.RefSchema(objectMetaSchemaRef).WithDescription(swaggerPartialObjectMetadataDescriptions["metadata"]))
 	}
 }
 
