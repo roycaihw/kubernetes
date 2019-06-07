@@ -46,10 +46,10 @@ func TestRoundtripObjectMeta(t *testing.T) {
 		u := &unstructured.Unstructured{Object: map[string]interface{}{}}
 		original := &metav1.ObjectMeta{}
 		fuzzer.Fuzz(original)
-		if err := SetObjectMeta(u, original); err != nil {
+		if err := SetObjectMeta(u.Object, original); err != nil {
 			t.Fatalf("unexpected error setting ObjectMeta: %v", err)
 		}
-		o, _, err := GetObjectMeta(u, false)
+		o, _, err := GetObjectMeta(u.Object, false)
 		if err != nil {
 			t.Fatalf("unexpected error getting the Objectmeta: %v", err)
 		}
@@ -145,7 +145,7 @@ func TestMalformedObjectMetaFields(t *testing.T) {
 
 				// make sure dropInvalidTypedFields+getObjectMeta matches what we expect
 				u := &unstructured.Unstructured{Object: map[string]interface{}{"metadata": spuriousMetaMap}}
-				actualObjectMeta, _, err := GetObjectMeta(u, true)
+				actualObjectMeta, _, err := GetObjectMeta(u.Object, true)
 				if err != nil {
 					t.Errorf("got unexpected error after dropping invalid typed fields on %v=%#v: %v", pth, v, err)
 					continue
@@ -174,7 +174,7 @@ func TestGetObjectMetaNils(t *testing.T) {
 		},
 	}
 
-	o, _, err := GetObjectMeta(u, true)
+	o, _, err := GetObjectMeta(u.Object, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestGetObjectMeta(t *testing.T) {
 			},
 		}}
 
-		meta, _, err := GetObjectMeta(u, true)
+		meta, _, err := GetObjectMeta(u.Object, true)
 		if err != nil {
 			t.Fatal(err)
 		}
