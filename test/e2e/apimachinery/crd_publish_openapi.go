@@ -601,3 +601,23 @@ properties:
         type: array
         items:
           type: object`)
+var schemaEmbedded = []byte(`description: CRD for Testing Embedded Resource
+type: object
+properties:
+  embeddedSpec:
+    type: object
+    properties:
+      apiVersion:
+        pattern: v1
+      value:
+        type: string
+      listFoo:
+        type: array
+        items:
+          type: object
+          x-kubernetes-embedded-resource: true
+    additionalProperties:
+      type: object
+      x-kubernetes-embedded-resource: true
+    x-kubernetes-embedded-resource: true
+x-kubernetes-embedded-resource: true`)
