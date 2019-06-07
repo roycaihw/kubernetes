@@ -17,6 +17,7 @@ go_test(
         "//staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver/schema:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/util/json:go_default_library",
+        "//vendor/k8s.io/utils/diff:go_default_library",
     ],
 )
 
