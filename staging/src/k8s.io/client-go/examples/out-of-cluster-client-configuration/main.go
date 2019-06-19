@@ -24,10 +24,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 	//
 	// Uncomment to load all auth plugins
 	// _ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -54,35 +54,23 @@ func main() {
 		panic(err.Error())
 	}
 
+	config.QPS = 5
+	klog.Errorf("qps: %v", config.QPS)
+	klog.Errorf("burst: %v", config.Burst)
+	klog.Errorf("ratelimiter: %v", config.RateLimiter)
+
 	// create the clientset
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := apiextensionsclientset.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
 	}
+
 	for {
-		pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
+		crds, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{})
 		if err != nil {
 			panic(err.Error())
 		}
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-
-		// Examples for error handling:
-		// - Use helper functions like e.g. errors.IsNotFound()
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		namespace := "default"
-		pod := "example-xxxxx"
-		_, err = clientset.CoreV1().Pods(namespace).Get(pod, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod %s in namespace %s not found\n", pod, namespace)
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %s in namespace %s: %v\n",
-				pod, namespace, statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Printf("Found pod %s in namespace %s\n", pod, namespace)
-		}
-
+		fmt.Printf("There are %d CRDs in the cluster\n", len(crds.Items))
 		time.Sleep(10 * time.Second)
 	}
 }
