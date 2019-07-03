@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"sort"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
@@ -73,6 +74,45 @@ func ValidateStructural(s *Structural, fldPath *field.Path) field.ErrorList {
 	})
 
 	return allErrs
+}
+
+// ValidateStructuralUpdate checks invariants of a structural schema on update or creation (old being nil)
+// to keep backwards compatibility
+func ValidateStructuralUpdate(s *Structural, old *Structural, fldPath *field.Path) field.ErrorList {
+	if s == nil {
+		return nil
+	}
+
+	allErrs := field.ErrorList{}
+
+	if old != nil {
+		allErrs = append(allErrs, ValidateStructuralUpdate(s.Items, old.Items, fldPath.Child("items"))...)
+		for k, v := range s.Properties {
+			// shallow copy because map values are not addressable
+			oldV := old.Properties[k]
+			allErrs = append(allErrs, ValidateStructuralUpdate(&v, &oldV, fldPath.Child("properties").Key(k))...)
+		}
+	} else {
+		allErrs = append(allErrs, ValidateStructuralUpdate(s.Items, nil, fldPath.Child("items"))...)
+		for k, v := range s.Properties {
+			allErrs = append(allErrs, ValidateStructuralUpdate(&v, nil, fldPath.Child("properties").Key(k))...)
+		}
+	}
+
+	// invalid type is not allowed for creation or update if the old property was valid-typed
+	if !validPropertyType(s) && validPropertyType(old) {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("type"), s.Type, jsonSchemaSupportedTypes.List()))
+	}
+
+	return allErrs
+}
+
+var jsonSchemaSupportedTypes = sets.NewString(
+	"null", "boolean", "integer", "object", "array", "number", "string",
+)
+
+func validPropertyType(s *Structural) bool {
+	return s == nil || len(s.Type) == 0 || jsonSchemaSupportedTypes.Has(s.Type)
 }
 
 // validateStructuralInvariants checks the invariants of a structural schema.

@@ -67,7 +67,7 @@ func BuildSwagger(crd *apiextensions.CustomResourceDefinition, version string) (
 	}
 	if s != nil && s.OpenAPIV3Schema != nil {
 		ss, err := structuralschema.NewStructural(s.OpenAPIV3Schema)
-		if err == nil && len(structuralschema.ValidateStructural(ss, nil)) == 0 {
+		if err == nil && len(structuralschema.ValidateStructural(ss, nil)) == 0 && len(structuralschema.ValidateStructuralUpdate(ss, nil, nil)) == 0 {
 			// skip non-structural schemas
 			schema = ss.Unfold()
 		}
