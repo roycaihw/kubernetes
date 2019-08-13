@@ -27,6 +27,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
+	"k8s.io/klog"
 )
 
 // CustomResourceDefinitionsGetter has a method to return a CustomResourceDefinitionInterface.
@@ -106,11 +107,13 @@ func (c *customResourceDefinitions) Watch(opts v1.ListOptions) (watch.Interface,
 // Create takes the representation of a customResourceDefinition and creates it.  Returns the server's representation of the customResourceDefinition, and an error, if there is any.
 func (c *customResourceDefinitions) Create(customResourceDefinition *v1beta1.CustomResourceDefinition) (result *v1beta1.CustomResourceDefinition, err error) {
 	result = &v1beta1.CustomResourceDefinition{}
-	err = c.client.Post().
+	r := c.client.Post().
 		Resource("customresourcedefinitions").
 		Body(customResourceDefinition).
-		Do().
-		Into(result)
+		Do()
+	err = r.Into(result)
+	raw, _ := r.Raw()
+	klog.Errorf("\n--- content type: %v\n--- raw: %v\n--- deserialized: %v", r.ContentType(), string(raw), result)
 	return
 }
 

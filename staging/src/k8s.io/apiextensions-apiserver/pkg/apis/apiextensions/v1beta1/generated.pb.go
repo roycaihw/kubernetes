@@ -28,6 +28,7 @@ import (
 	proto "github.com/gogo/protobuf/proto"
 	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 
 	math "math"
 	math_bits "math/bits"
@@ -5593,6 +5594,7 @@ func (m *CustomResourceDefinitionStatus) Unmarshal(dAtA []byte) error {
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: CustomResourceDefinitionStatus: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
+		klog.Errorf("--- fieldNum in CustomResourceDefinitionStatus: %v (1 is Conditions)", fieldNum)
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {

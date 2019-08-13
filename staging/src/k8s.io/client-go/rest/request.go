@@ -1075,6 +1075,10 @@ type Result struct {
 	decoder runtime.Decoder
 }
 
+func (r Result) ContentType() string {
+	return r.contentType
+}
+
 // Raw returns the raw result.
 func (r Result) Raw() ([]byte, error) {
 	return r.body, r.err
