@@ -66,9 +66,9 @@ var (
 	deprecatedRequestCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "apiserver_request_count",
-			Help: "(Deprecated) Counter of apiserver requests broken out for each verb, group, version, resource, scope, component, client, and HTTP response contentType and code.",
+			Help: "(Deprecated) Counter of apiserver requests broken out for each verb, dry run value, group, version, resource, scope, component, client, and HTTP response contentType and code.",
 		},
-		[]string{"verb", "group", "version", "resource", "subresource", "scope", "component", "client", "contentType", "code"},
+		[]string{"verb", "dry_run", "group", "version", "resource", "subresource", "scope", "component", "client", "contentType", "code"},
 	)
 	longRunningRequestGauge = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -92,11 +92,11 @@ var (
 	deprecatedRequestLatencies = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name: "apiserver_request_latencies",
-			Help: "(Deprecated) Response latency distribution in microseconds for each verb, group, version, resource, subresource, scope and component.",
+			Help: "(Deprecated) Response latency distribution in microseconds for each verb, dry run value, group, version, resource, subresource, scope and component.",
 			// Use buckets ranging from 125 ms to 8 seconds.
 			Buckets: prometheus.ExponentialBuckets(125000, 2.0, 7),
 		},
-		[]string{"verb", "group", "version", "resource", "subresource", "scope", "component"},
+		[]string{"verb", "dry_run", "group", "version", "resource", "subresource", "scope", "component"},
 	)
 	deprecatedRequestLatenciesSummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
@@ -251,9 +251,9 @@ func MonitorRequest(req *http.Request, verb, group, version, resource, subresour
 	elapsedMicroseconds := float64(elapsed / time.Microsecond)
 	elapsedSeconds := elapsed.Seconds()
 	requestCounter.WithLabelValues(reportedVerb, dryRun, group, version, resource, subresource, scope, component, client, contentType, codeToString(httpCode)).Inc()
-	deprecatedRequestCounter.WithLabelValues(reportedVerb, group, version, resource, subresource, scope, component, client, contentType, codeToString(httpCode)).Inc()
+	deprecatedRequestCounter.WithLabelValues(reportedVerb, dryRun, group, version, resource, subresource, scope, component, client, contentType, codeToString(httpCode)).Inc()
 	requestLatencies.WithLabelValues(reportedVerb, dryRun, group, version, resource, subresource, scope, component).Observe(elapsedSeconds)
-	deprecatedRequestLatencies.WithLabelValues(reportedVerb, group, version, resource, subresource, scope, component).Observe(elapsedMicroseconds)
+	deprecatedRequestLatencies.WithLabelValues(reportedVerb, dryRun, group, version, resource, subresource, scope, component).Observe(elapsedMicroseconds)
 	deprecatedRequestLatenciesSummary.WithLabelValues(reportedVerb, group, version, resource, subresource, scope, component).Observe(elapsedMicroseconds)
 	// We are only interested in response sizes of read requests.
 	if verb == "GET" || verb == "LIST" {
