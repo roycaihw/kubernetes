@@ -1246,7 +1246,7 @@ var _ testsuites.DynamicPVTestDriver = &vSphereDriver{}
 func InitVSphereDriver() testsuites.TestDriver {
 	return &vSphereDriver{
 		driverInfo: testsuites.DriverInfo{
-			Name:        "vSphere",
+			Name:        "vsphere",
 			MaxFileSize: testpatterns.FileSizeMedium,
 			SupportedFsType: sets.NewString(
 				"", // Default fsType
