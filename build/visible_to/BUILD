@@ -71,6 +71,7 @@ package_group(
     name = "cmd_kubectl_app_CONSUMERS",
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
     ],
 )
 
@@ -81,6 +82,7 @@ package_group(
     ],
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
         "//cmd/kubectl/app",
         "//pkg/kubectl/cmd",
         "//pkg/kubectl/cmd/auth",
@@ -109,6 +111,7 @@ package_group(
     ],
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
         "//cmd/kubectl/app",
         "//pkg/kubectl",
         "//pkg/kubectl/cmd",
@@ -168,6 +171,7 @@ package_group(
     ],
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
         "//cmd/kubectl/app",
         "//pkg/kubectl/cmd",
         "//pkg/kubectl/cmd/annotate",
@@ -268,6 +272,7 @@ package_group(
     ],
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
         "//cmd/kubectl/app",
         "//pkg/kubectl/cmd",
         "//pkg/kubectl/cmd/annotate",
@@ -350,6 +355,7 @@ package_group(
     ],
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
         "//cmd/kubectl/app",
         "//pkg/kubectl",
         "//pkg/kubectl/cmd",
@@ -365,6 +371,7 @@ package_group(
     ],
     packages = [
         "//cmd/kubectl",
+        "//cmd/kubectl-sdk",
         "//cmd/kubectl/app",
         "//pkg/kubectl",
         "//pkg/kubectl/cmd",
