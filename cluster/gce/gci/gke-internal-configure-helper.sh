@@ -359,6 +359,7 @@ EOF
   if [[ -n "${GVISOR_CONTAINERD_SHIM_PATH:-}" ]]; then
     # gvisor_platform is the platform to use for gvisor.
     local -r gvisor_platform="${GVISOR_PLATFORM:-"ptrace"}"
+    local -r gvisor_net_raw="${GVISOR_NET_RAW:-"true"}"
     # shim_config_path is the path of gvisor-containerd-shim config file.
     local -r shim_config_path="${GVISOR_CONTAINERD_SHIM_CONFIG_PATH:-"/etc/containerd/gvisor-containerd-shim.toml"}"
     cat > "${shim_config_path}" <<EOF
@@ -366,6 +367,7 @@ runc_shim = "$(which containerd-shim)"
 
 [runsc_config]
   platform = "${gvisor_platform}"
+  net-raw = "${gvisor_net_raw}"
 EOF
     if [[ "${gvisor_platform}" == "xemu" ]]; then
       insmod "${CONTAINERD_HOME}/xemu.ko"
