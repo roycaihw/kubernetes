@@ -447,10 +447,8 @@ function install-kube-binary-config {
   # Install crictl on each node.
   install-crictl
 
-  if [[ "${KUBERNETES_MASTER:-}" == "false" ]]; then
-    # TODO(awly): include the binary and license in the OS image.
-    install-exec-auth-plugin
-  fi
+  # TODO(awly): include the binary and license in the OS image.
+  install-exec-auth-plugin
 
   # Source GKE specific scripts.
   #
