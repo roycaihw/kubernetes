@@ -83,7 +83,7 @@ spec:
             - /eventer
             - --source=kubernetes:''
             - --sink=gcl
-        - image: k8s.gcr.io/addon-resizer:1.8.4
+        - image: gke.gcr.io/addon-resizer:1.8.4-gke.0
           name: heapster-nanny
           resources:
             limits:
@@ -119,7 +119,7 @@ spec:
             # Specifies the smallest cluster (defined in number of nodes)
             # resources will be scaled to.
             - --minClusterSize={{ heapster_min_cluster_size }}
-        - image: k8s.gcr.io/addon-resizer:1.8.4
+        - image: gke.gcr.io/addon-resizer:1.8.4-gke.0
           name: eventer-nanny
           resources:
             limits:
