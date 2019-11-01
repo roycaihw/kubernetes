@@ -437,7 +437,6 @@ func TestEndToEnd(t *testing.T) {
 				api.Resource("pods").WithVersion("version"),
 				"", // subresource
 				admission.Create,
-				&metav1.CreateOptions{},
 				false, // dryRun
 				&user.DefaultInfo{})
 
