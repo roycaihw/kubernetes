@@ -40,6 +40,9 @@ import (
 )
 
 func setDesiredConfiguration(initialConfig *kubeletconfig.KubeletConfiguration) {
+	if initialConfig.FeatureGates == nil {
+		initialConfig.FeatureGates = map[string]bool{}
+	}
 	initialConfig.FeatureGates[string(features.SupportNodePidsLimit)] = true
 	initialConfig.EnforceNodeAllocatable = []string{"pods", kubeReservedCgroup, systemReservedCgroup}
 	initialConfig.SystemReserved = map[string]string{
