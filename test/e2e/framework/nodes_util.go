@@ -290,7 +290,7 @@ func nodePoolsGKE() ([]string, error) {
 		locationParamGKE(),
 		"list",
 		fmt.Sprintf("--cluster=%s", TestContext.CloudConfig.Cluster),
-		`--format="get(name)"`,
+		"--format=get(name)",
 	}
 	stdout, _, err := RunCmd("gcloud", appendContainerCommandGroupIfNeeded(args)...)
 	if err != nil {
