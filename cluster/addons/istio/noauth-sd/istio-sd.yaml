@@ -2409,7 +2409,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
-    chart: istio-1.1.15
+    chart: istio-1.1.0
     k8s-app: istio
   name: istio-multi
 roleRef:
@@ -2761,7 +2761,7 @@ apiVersion: v1
 data:
   config: "policy: enabled\ntemplate: |-\n  rewriteAppHTTPProbe: false\n  initContainers:\n
     \ [[ if ne (annotation .ObjectMeta `sidecar.istio.io/interceptionMode` .ProxyConfig.InterceptionMode)
-    \"NONE\" ]]\n  - name: istio-init\n    image: \"gke.gcr.io/istio/proxy_init:1.1.16-gke.0\"\n
+    \"NONE\" ]]\n  - name: istio-init\n    image: \"gke.gcr.io/istio/proxy_init:1.1.17-gke.2\"\n
     \   args:\n    - \"-p\"\n    - [[ .MeshConfig.ProxyListenPort ]]\n    - \"-u\"\n
     \   - 1337\n    - \"-m\"\n    - [[ annotation .ObjectMeta `sidecar.istio.io/interceptionMode`
     .ProxyConfig.InterceptionMode ]]\n    - \"-i\"\n    - \"[[ annotation .ObjectMeta
@@ -2782,7 +2782,7 @@ data:
     \       exec:\n          command: [\"sh\", \"-c\", 'sleep 20; while [ $(netstat
     -plunt | grep tcp | grep -v envoy | wc -l | xargs) -ne 0 ]; do sleep 1; done']\n
     \   # PATCH #2 ends.\n    image: [[ annotation .ObjectMeta `sidecar.istio.io/proxyImage`
-    \ \"gke.gcr.io/istio/proxyv2:1.1.16-gke.0\"  ]]\n    ports:\n    - containerPort:
+    \ \"gke.gcr.io/istio/proxyv2:1.1.17-gke.2\"  ]]\n    ports:\n    - containerPort:
     15090\n      protocol: TCP\n      name: http-envoy-prom\n    args:\n    - proxy\n
     \   - sidecar\n    - --domain\n    - $(POD_NAMESPACE).svc.cluster.local\n    -
     --configPath\n    - [[ .ProxyConfig.ConfigPath ]]\n    - --binaryPath\n    - [[
@@ -3382,7 +3382,7 @@ spec:
         - --custom-dns-names=istio-pilot-service-account.istio-system:istio-pilot.istio-system
         - --monitoring-port=15014
         - --self-signed-ca=true
-        image: gke.gcr.io/istio/citadel:1.1.16-gke.0
+        image: gke.gcr.io/istio/citadel:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -3471,7 +3471,7 @@ spec:
         - /etc/config/validatingwebhookconfiguration.yaml
         - --monitoringPort=15014
         - --log_output_level=default:info
-        image: gke.gcr.io/istio/galley:1.1.16-gke.0
+        image: gke.gcr.io/istio/galley:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -3634,7 +3634,7 @@ spec:
               fieldPath: metadata.namespace
         - name: ISTIO_META_ROUTER_MODE
           value: sni-dnat
-        image: gke.gcr.io/istio/proxyv2:1.1.16-gke.0
+        image: gke.gcr.io/istio/proxyv2:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: istio-proxy
         ports:
@@ -3783,7 +3783,7 @@ spec:
           value: "1"
         - name: PILOT_DISABLE_XDS_MARSHALING_TO_ANY
           value: "1"
-        image: gke.gcr.io/istio/pilot:1.1.16-gke.0
+        image: gke.gcr.io/istio/pilot:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: discovery
         ports:
@@ -3828,7 +3828,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.podIP
-        image: gke.gcr.io/istio/proxyv2:1.1.16-gke.0
+        image: gke.gcr.io/istio/proxyv2:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: istio-proxy
         ports:
@@ -3933,7 +3933,7 @@ spec:
           value: gctrace=1
         - name: GOMAXPROCS
           value: "6"
-        image: gke.gcr.io/istio/mixer:1.1.16-gke.0
+        image: gke.gcr.io/istio/mixer:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -3977,7 +3977,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.podIP
-        image: gke.gcr.io/istio/proxyv2:1.1.16-gke.0
+        image: gke.gcr.io/istio/proxyv2:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: istio-proxy
         ports:
@@ -4080,7 +4080,7 @@ spec:
         - --meshConfig=/etc/istio/config/mesh
         - --healthCheckInterval=2s
         - --healthCheckFile=/health
-        image: gke.gcr.io/istio/sidecar_injector:1.1.16-gke.0
+        image: gke.gcr.io/istio/sidecar_injector:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         livenessProbe:
           exec:
@@ -4213,7 +4213,7 @@ spec:
           value: gctrace=1
         - name: GOMAXPROCS
           value: "6"
-        image: gke.gcr.io/istio/mixer:1.1.16-gke.0
+        image: gke.gcr.io/istio/mixer:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -4260,7 +4260,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.podIP
-        image: gke.gcr.io/istio/proxyv2:1.1.16-gke.0
+        image: gke.gcr.io/istio/proxyv2:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: istio-proxy
         ports:
@@ -4552,7 +4552,7 @@ metadata:
     heritage: Tiller
     k8s-app: istio
     release: istio
-  name: istio-cleanup-secrets-1.1.16-gke.0
+  name: istio-cleanup-secrets-1.1.17-gke.2
   namespace: istio-system
 spec:
   template:
@@ -4607,7 +4607,7 @@ spec:
             name=$(echo $entry | awk '{print $2}');
             kubectl delete secret $name -n $ns;
           done
-        image: gke.gcr.io/istio/kubectl:1.1.16-gke.0
+        image: gke.gcr.io/istio/kubectl:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: kubectl
       restartPolicy: OnFailure
@@ -4626,7 +4626,7 @@ metadata:
     heritage: Tiller
     k8s-app: istio
     release: istio
-  name: istio-security-post-install-1.1.16-gke.0
+  name: istio-security-post-install-1.1.17-gke.2
   namespace: istio-system
 spec:
   template:
@@ -4676,7 +4676,7 @@ spec:
         - /bin/bash
         - /tmp/security/run.sh
         - /tmp/security/custom-resources.yaml
-        image: gke.gcr.io/istio/kubectl:1.1.16-gke.0
+        image: gke.gcr.io/istio/kubectl:1.1.17-gke.2
         imagePullPolicy: IfNotPresent
         name: kubectl
         volumeMounts:
