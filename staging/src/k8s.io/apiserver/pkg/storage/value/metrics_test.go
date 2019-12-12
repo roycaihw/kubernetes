@@ -51,11 +51,11 @@ func TestTotals(t *testing.T) {
 				"apiserver_storage_transformation_failures_total",
 			},
 			want: `
-# HELP apiserver_storage_transformation_failures_total [ALPHA] (Deprecated) Total number of failed transformation operations.
+# HELP apiserver_storage_transformation_failures_total (Deprecated) Total number of failed transformation operations.
 # TYPE apiserver_storage_transformation_failures_total counter
 apiserver_storage_transformation_failures_total{transformation_type="from_storage"} 1
 apiserver_storage_transformation_failures_total{transformation_type="to_storage"} 1
-# HELP apiserver_storage_transformation_operations_total [ALPHA] Total number of transformations.
+# HELP apiserver_storage_transformation_operations_total Total number of transformations.
 # TYPE apiserver_storage_transformation_operations_total counter
 apiserver_storage_transformation_operations_total{status="Unknown",transformation_type="from_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
 apiserver_storage_transformation_operations_total{status="Unknown",transformation_type="to_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
@@ -69,7 +69,7 @@ apiserver_storage_transformation_operations_total{status="Unknown",transformatio
 				"apiserver_storage_transformation_failures_total",
 			},
 			want: `
-# HELP apiserver_storage_transformation_operations_total [ALPHA] Total number of transformations.
+# HELP apiserver_storage_transformation_operations_total Total number of transformations.
 # TYPE apiserver_storage_transformation_operations_total counter
 apiserver_storage_transformation_operations_total{status="OK",transformation_type="from_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
 apiserver_storage_transformation_operations_total{status="OK",transformation_type="to_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
@@ -83,11 +83,11 @@ apiserver_storage_transformation_operations_total{status="OK",transformation_typ
 				"apiserver_storage_transformation_failures_total",
 			},
 			want: `
-# HELP apiserver_storage_transformation_failures_total [ALPHA] (Deprecated) Total number of failed transformation operations.
+# HELP apiserver_storage_transformation_failures_total (Deprecated) Total number of failed transformation operations.
 # TYPE apiserver_storage_transformation_failures_total counter
 apiserver_storage_transformation_failures_total{transformation_type="from_storage"} 1
 apiserver_storage_transformation_failures_total{transformation_type="to_storage"} 1
-# HELP apiserver_storage_transformation_operations_total [ALPHA] Total number of transformations.
+# HELP apiserver_storage_transformation_operations_total Total number of transformations.
 # TYPE apiserver_storage_transformation_operations_total counter
 apiserver_storage_transformation_operations_total{status="FailedPrecondition",transformation_type="from_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
 apiserver_storage_transformation_operations_total{status="FailedPrecondition",transformation_type="to_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
@@ -101,11 +101,11 @@ apiserver_storage_transformation_operations_total{status="FailedPrecondition",tr
 				"apiserver_storage_transformation_failures_total",
 			},
 			want: `
-# HELP apiserver_storage_transformation_failures_total [ALPHA] (Deprecated) Total number of failed transformation operations.
+# HELP apiserver_storage_transformation_failures_total (Deprecated) Total number of failed transformation operations.
 # TYPE apiserver_storage_transformation_failures_total counter
 apiserver_storage_transformation_failures_total{transformation_type="from_storage"} 1
 apiserver_storage_transformation_failures_total{transformation_type="to_storage"} 1
-# HELP apiserver_storage_transformation_operations_total [ALPHA] Total number of transformations.
+# HELP apiserver_storage_transformation_operations_total Total number of transformations.
 # TYPE apiserver_storage_transformation_operations_total counter
 apiserver_storage_transformation_operations_total{status="Internal",transformation_type="from_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
 apiserver_storage_transformation_operations_total{status="Internal",transformation_type="to_storage",transformer_prefix="k8s:enc:kms:v1:"} 1
