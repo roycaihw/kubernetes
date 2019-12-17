@@ -18,7 +18,6 @@ package vsphere
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -70,10 +69,8 @@ var _ = utils.SIGDescribe("Volume Provisioning on Datastore [Feature:vsphere]", 
 		scParameters[DiskFormat] = ThinDisk
 		err := invokeInvalidDatastoreTestNeg(client, namespace, scParameters)
 		Expect(err).To(HaveOccurred())
-		errorMsg := `Failed to provision volume with StorageClass \"` + DatastoreSCName + `\": Datastore ` + InvalidDatastore + ` not found`
-		if !strings.Contains(err.Error(), errorMsg) {
-			Expect(err).NotTo(HaveOccurred(), errorMsg)
-		}
+		errorMsg := `Failed to provision volume with StorageClass \"` + DatastoreSCName + `\": Datastore '` + InvalidDatastore + `' not found`
+		Expect(err.Error()).To(ContainSubstring(errorMsg), "got incorrect error message")
 	})
 })
 
