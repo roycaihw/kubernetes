@@ -17,6 +17,7 @@ limitations under the License.
 package glusterfs
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -28,8 +29,9 @@ import (
 
 	gcli "github.com/heketi/heketi/client/api/go-client"
 	gapi "github.com/heketi/heketi/pkg/glusterfs/api"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -702,8 +704,9 @@ func (d *glusterfsVolumeDeleter) Delete() error {
 	}
 	err = cli.VolumeDelete(volumeID)
 	if err != nil {
-		klog.Errorf("failed to delete volume %s: %v", volumeName, err)
-		return err
+		// don't log error details from client calls in events
+		klog.V(4).Infof("failed to delete volume %s: %v", volumeName, err)
+		return errors.New("failed to delete volume: see kube-controller-manager.log for details")
 	}
 	klog.V(2).Infof("volume %s deleted successfully", volumeName)
 
@@ -848,8 +851,9 @@ func (p *glusterfsVolumeProvisioner) CreateVolume(gid int) (r *v1.GlusterfsPersi
 	volumeReq := &gapi.VolumeCreateRequest{Size: sz, Name: customVolumeName, Clusters: clusterIDs, Gid: gid64, Durability: p.volumeType, GlusterVolumeOptions: p.volumeOptions, Snapshot: snaps}
 	volume, err := cli.VolumeCreate(volumeReq)
 	if err != nil {
-		klog.Errorf("failed to create volume: %v", err)
-		return nil, 0, "", fmt.Errorf("failed to create volume: %v", err)
+		// don't log error details from client calls in events
+		klog.V(4).Infof("failed to create volume: %v", err)
+		return nil, 0, "", errors.New("failed to create volume: see kube-controller-manager.log for details")
 	}
 	klog.V(1).Infof("volume with size %d and name %s created", volume.Size, volume.Name)
 	volID = volume.Id
@@ -870,7 +874,8 @@ func (p *glusterfsVolumeProvisioner) CreateVolume(gid int) (r *v1.GlusterfsPersi
 		klog.Errorf("failed to create endpoint/service %v/%v: %v", epNamespace, epServiceName, err)
 		deleteErr := cli.VolumeDelete(volume.Id)
 		if deleteErr != nil {
-			klog.Errorf("failed to delete volume: %v, manual deletion of the volume required", deleteErr)
+			// don't log error details from client calls in events
+			klog.V(4).Infof("failed to delete volume: %v, manual deletion of the volume required", deleteErr)
 		}
 		return nil, 0, "", fmt.Errorf("failed to create endpoint/service %v/%v: %v", epNamespace, epServiceName, err)
 	}
@@ -911,7 +916,7 @@ func (p *glusterfsVolumeProvisioner) createEndpointService(namespace string, epS
 		return nil, nil, fmt.Errorf("failed to get kube client when creating endpoint service")
 	}
 	_, err = kubeClient.CoreV1().Endpoints(namespace).Create(endpoint)
-	if err != nil && errors.IsAlreadyExists(err) {
+	if err != nil && apierrors.IsAlreadyExists(err) {
 		klog.V(1).Infof("endpoint %s already exist in namespace %s", endpoint, namespace)
 		err = nil
 	}
@@ -931,7 +936,7 @@ func (p *glusterfsVolumeProvisioner) createEndpointService(namespace string, epS
 			Ports: []v1.ServicePort{
 				{Protocol: "TCP", Port: 1}}}}
 	_, err = kubeClient.CoreV1().Services(namespace).Create(service)
-	if err != nil && errors.IsAlreadyExists(err) {
+	if err != nil && apierrors.IsAlreadyExists(err) {
 		klog.V(1).Infof("service %s already exist in namespace %s", service, namespace)
 		err = nil
 	}
@@ -982,8 +987,9 @@ func parseSecret(namespace, secretName string, kubeClient clientset.Interface) (
 func getClusterNodes(cli *gcli.Client, cluster string) (dynamicHostIps []string, err error) {
 	clusterinfo, err := cli.ClusterInfo(cluster)
 	if err != nil {
-		klog.Errorf("failed to get cluster details: %v", err)
-		return nil, fmt.Errorf("failed to get cluster details: %v", err)
+		// don't log error details from client calls in events
+		klog.V(4).Infof("failed to get cluster details: %v", err)
+		return nil, errors.New("failed to get cluster details: see kube-controller-manager.log for details")
 	}
 
 	// For the dynamically provisioned volume, we gather the list of node IPs
@@ -992,8 +998,9 @@ func getClusterNodes(cli *gcli.Client, cluster string) (dynamicHostIps []string,
 	for _, node := range clusterinfo.Nodes {
 		nodeInfo, err := cli.NodeInfo(string(node))
 		if err != nil {
-			klog.Errorf("failed to get host ipaddress: %v", err)
-			return nil, fmt.Errorf("failed to get host ipaddress: %v", err)
+			// don't log error details from client calls in events
+			klog.V(4).Infof("failed to get host ipaddress: %v", err)
+			return nil, errors.New("failed to get host ipaddress: see kube-controller-manager.log for details")
 		}
 		ipaddr := dstrings.Join(nodeInfo.NodeAddRequest.Hostnames.Storage, "")
 		dynamicHostIps = append(dynamicHostIps, ipaddr)
@@ -1250,8 +1257,9 @@ func (plugin *glusterfsPlugin) ExpandVolumeDevice(spec *volume.Spec, newSize res
 	//Check the existing volume size
 	currentVolumeInfo, err := cli.VolumeInfo(volumeID)
 	if err != nil {
-		klog.Errorf("error when fetching details of volume %s: %v", volumeName, err)
-		return oldSize, err
+		// don't log error details from client calls in events
+		klog.V(4).Infof("error when fetching details of volume %s: %v", volumeName, err)
+		return oldSize, errors.New("failed to get volume info %s: see kube-controller-manager.log for details")
 	}
 
 	if int64(currentVolumeInfo.Size) >= requestGiB {
@@ -1264,8 +1272,9 @@ func (plugin *glusterfsPlugin) ExpandVolumeDevice(spec *volume.Spec, newSize res
 	// Expand the volume
 	volumeInfoRes, err := cli.VolumeExpand(volumeID, volumeExpandReq)
 	if err != nil {
-		klog.Errorf("failed to expand volume %s: %v", volumeName, err)
-		return oldSize, err
+		// don't log error details from client calls in events
+		klog.V(4).Infof("failed to expand volume %s: %v", volumeName, err)
+		return oldSize, errors.New("failed to expand volume: see kube-controller-manager.log for details")
 	}
 
 	klog.V(2).Infof("volume %s expanded to new size %d successfully", volumeName, volumeInfoRes.Size)
