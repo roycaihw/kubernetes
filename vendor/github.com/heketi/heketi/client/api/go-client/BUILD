@@ -9,6 +9,8 @@ go_library(
         "client.go",
         "cluster.go",
         "db.go",
+        "default_transport_clone_go112.go",
+        "default_transport_clone_go113.go",
         "device.go",
         "logging.go",
         "node.go",

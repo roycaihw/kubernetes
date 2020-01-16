@@ -18,12 +18,14 @@ package quobyte
 
 import (
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	volumehelpers "k8s.io/cloud-provider/volume/helpers"
+	proxyutil "k8s.io/kubernetes/pkg/proxy/util"
 
 	quobyteapi "github.com/quobyte/api"
 	"k8s.io/klog"
@@ -77,11 +79,42 @@ func (manager *quobyteVolumeManager) deleteVolume(deleter *quobyteVolumeDeleter)
 }
 
 func (manager *quobyteVolumeManager) createQuobyteClient() *quobyteapi.QuobyteClient {
-	return quobyteapi.NewQuobyteClient(
+	qc := quobyteapi.NewQuobyteClient(
 		manager.config.quobyteAPIServer,
 		manager.config.quobyteUser,
 		manager.config.quobytePassword,
 	)
+	t := copyTransport(http.DefaultTransport.(*http.Transport))
+	t.DialContext = proxyutil.NewFilteredDialContext(t.DialContext)
+	qc.SetTransport(t)
+	return qc
+}
+
+// copyTransport copies an HTTP transport, which is only needed in go 1.12
+// before Transport.Clone was added. This helper is needed in k8s 1.14 which is
+// built with go 1.12.
+func copyTransport(in *http.Transport) *http.Transport {
+	if in == nil {
+		return nil
+	}
+	return &http.Transport{
+		Proxy:                  in.Proxy,
+		DialContext:            in.DialContext,
+		Dial:                   in.Dial,
+		DialTLS:                in.DialTLS,
+		TLSClientConfig:        in.TLSClientConfig,
+		TLSHandshakeTimeout:    in.TLSHandshakeTimeout,
+		DisableKeepAlives:      in.DisableKeepAlives,
+		DisableCompression:     in.DisableCompression,
+		MaxIdleConns:           in.MaxIdleConns,
+		MaxIdleConnsPerHost:    in.MaxIdleConnsPerHost,
+		IdleConnTimeout:        in.IdleConnTimeout,
+		ResponseHeaderTimeout:  in.ResponseHeaderTimeout,
+		ExpectContinueTimeout:  in.ExpectContinueTimeout,
+		TLSNextProto:           in.TLSNextProto,
+		ProxyConnectHeader:     in.ProxyConnectHeader,
+		MaxResponseHeaderBytes: in.MaxResponseHeaderBytes,
+	}
 }
 
 func (mounter *quobyteMounter) pluginDirIsMounted(pluginDir string) (bool, error) {

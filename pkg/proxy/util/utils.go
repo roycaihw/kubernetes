@@ -21,8 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/record"
@@ -213,4 +214,23 @@ func filterWithCondition(strs []string, expectedCondition bool, conditionFunc fu
 		}
 	}
 	return corrects, incorrects
+}
+
+// DialContext is a dial function matching the signature of net.Dialer.DialContext.
+type DialContext = func(context.Context, string, string) (net.Conn, error)
+
+// NewFilteredDialContext returns a DialContext function that only allows
+// connections to proxyable addresses, as defined by IsProxyableHostname. If the
+// wrapped DialContext is nil, all DNS and TCP settings use golang default
+// values.
+func NewFilteredDialContext(wrapped DialContext) DialContext {
+	if wrapped == nil {
+		wrapped = http.DefaultTransport.(*http.Transport).DialContext
+	}
+	return func(ctx context.Context, network, address string) (net.Conn, error) {
+		if err := IsProxyableHostname(ctx, net.DefaultResolver, address); err != nil {
+			return nil, err
+		}
+		return wrapped(ctx, network, address)
+	}
 }
