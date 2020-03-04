@@ -342,7 +342,7 @@ while true; do sleep 1; done
 			})
 
 			It("should be able to pull image from gcr.io [LinuxOnly] [NodeConformance]", func() {
-				image := "gcr.io/google-containers/debian-base:0.4.1"
+				image := "gcr.io/google-containers/debian-base:1.0.1"
 				imagePullTest(image, false, v1.PodRunning, false, false)
 			})
 

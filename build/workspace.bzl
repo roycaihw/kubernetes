@@ -45,8 +45,8 @@ _ETCD_TARBALL_ARCH_SHA256 = {
 # Note that these are digests for the manifest list. We resolve the manifest
 # list to each of its platform-specific images in
 # debian_image_dependencies().
-_DEBIAN_BASE_DIGEST = "sha256:3801f944c765dc1b54900826ca67b1380bb8c73b9caf4a2a27ce613b3ba3e742"  # v1.0.0
-_DEBIAN_IPTABLES_DIGEST = "sha256:b522b0035dba3ac2d5c0dbaaf8217bd66248e790332ccfdf653e0f943a280dcf"  # v11.0.2
+_DEBIAN_BASE_DIGEST = "sha256:fea5ea4d6fb518231a0934f974c7ec5c6fc3e2f0dfdf3a0d7a12780a1df924bb"  # v1.0.1
+_DEBIAN_IPTABLES_DIGEST = "sha256:25c4396386a2d3f2f4785da473d3428bc542a6f774feee830e8b6bc6b053d11b"  # v11.0.3
 _DEBIAN_HYPERKUBE_BASE_DIGEST = "sha256:8cabe02be6e86685d8860b7ace7c7addc9591a339728703027a4854677f1c772"  # 0.12.1
 
 # Dependencies needed for a Kubernetes "release", e.g. building docker images,

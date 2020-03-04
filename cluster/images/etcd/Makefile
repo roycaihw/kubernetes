@@ -55,7 +55,7 @@ export DOCKER_CLI_EXPERIMENTAL := enabled
 GOLANG_VERSION?=1.10.4
 GOARM=7
 TEMP_DIR:=$(shell mktemp -d)
-BASEIMAGE?=k8s.gcr.io/debian-base-$(ARCH):0.3.2
+BASEIMAGE?=k8s.gcr.io/debian-base-$(ARCH):v1.0.1
 
 build:
 	# Copy the content in this dir to the temp dir,
