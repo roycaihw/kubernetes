@@ -422,9 +422,7 @@ func Images(nodeStatusMaxImages int32,
 		}
 
 		for _, image := range containerImages {
-			// make a copy to avoid modifying slice members of the image items in the list
-			names := append([]string{}, image.RepoDigests...)
-			names = append(names, image.RepoTags...)
+			names := append(image.RepoDigests, image.RepoTags...)
 			// Report up to MaxNamesPerImageInNodeStatus names per image.
 			if len(names) > MaxNamesPerImageInNodeStatus {
 				names = names[0:MaxNamesPerImageInNodeStatus]
