@@ -1276,6 +1276,10 @@ k8s.io/apiserver/pkg/apis/apiserver/install
 k8s.io/apiserver/pkg/apis/apiserver/v1
 k8s.io/apiserver/pkg/apis/apiserver/v1alpha1
 k8s.io/apiserver/pkg/apis/apiserver/v1beta1
+k8s.io/apiserver/pkg/apis/apiserverinternal
+k8s.io/apiserver/pkg/apis/apiserverinternal/install
+k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1
+k8s.io/apiserver/pkg/apis/apiserverinternal/validation
 k8s.io/apiserver/pkg/apis/audit
 k8s.io/apiserver/pkg/apis/audit/install
 k8s.io/apiserver/pkg/apis/audit/v1
