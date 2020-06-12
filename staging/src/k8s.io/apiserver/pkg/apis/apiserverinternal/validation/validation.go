@@ -34,6 +34,16 @@ func ValidateStorageVersion(sv *apiserverinternal.StorageVersion) field.ErrorLis
 	return allErrs
 }
 
+// ValidateStorageVersionUpdate tests if an update to a StorageVersion is valid.
+func ValidateStorageVersionUpdate(sv, oldSV *apiserverinternal.StorageVersion) field.ErrorList {
+	return ValidateStorageVersion(sv)
+}
+
+// ValidateStorageVersionStatusUpdate tests if an update to a StorageVersionStatus is valid.
+func ValidateStorageVersionStatusUpdate(sv, oldSV *apiserverinternal.StorageVersion) field.ErrorList {
+	return ValidateStorageVersion(sv)
+}
+
 func validateStorageVersionStatus(ss apiserverinternal.StorageVersionStatus, fldPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	for i, ssv := range ss.StorageVersions {

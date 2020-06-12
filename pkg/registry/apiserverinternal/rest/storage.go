@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,42 +17,43 @@ limitations under the License.
 package rest
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/apis/apiserverinternal"
 	apiserverv1alpha1 "k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
-	aggregatorscheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
-	storageversionstorage "k8s.io/kube-aggregator/pkg/registry/apiserverinternal/storageversion/storage"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
+	storageversionstorage "k8s.io/kubernetes/pkg/registry/apiserverinternal/storageversion/storage"
 )
 
 // StorageProvider is a REST storage provider for internal.apiserver.k8s.io
 type StorageProvider struct{}
 
 // NewRESTStorage returns a StorageProvider
-func (p StorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, error) {
-	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(apiserverv1alpha1.GroupName, aggregatorscheme.Scheme, metav1.ParameterCodec, aggregatorscheme.Codecs)
+func (p StorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool, error) {
+	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(apiserverinternal.GroupName, legacyscheme.Scheme, legacyscheme.ParameterCodec, legacyscheme.Codecs)
 
 	if apiResourceConfigSource.VersionEnabled(apiserverv1alpha1.SchemeGroupVersion) {
 		storageMap, err := p.v1alpha1Storage(apiResourceConfigSource, restOptionsGetter)
 		if err != nil {
-			return genericapiserver.APIGroupInfo{}, err
+			return genericapiserver.APIGroupInfo{}, false, err
 		}
 		apiGroupInfo.VersionedResourcesStorageMap[apiserverv1alpha1.SchemeGroupVersion.Version] = storageMap
 	}
-	return apiGroupInfo, nil
+	return apiGroupInfo, true, nil
 }
 
 func (p StorageProvider) v1alpha1Storage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (map[string]rest.Storage, error) {
 	storage := map[string]rest.Storage{}
-	s, err := storageversionstorage.NewREST(restOptionsGetter)
+	s, status, err := storageversionstorage.NewREST(restOptionsGetter)
 	storage["storageversions"] = s
+	storage["storageversions/status"] = status
 
 	return storage, err
 }
 
 // GroupName is the group name for the storage provider
 func (p StorageProvider) GroupName() string {
-	return apiserverv1alpha1.GroupName
+	return apiserverinternal.GroupName
 }

@@ -46,6 +46,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/duration"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apiserver/pkg/apis/apiserverinternal"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/apis/admissionregistration"
 	"k8s.io/kubernetes/pkg/apis/apps"
@@ -571,6 +572,13 @@ func AddHandlers(h printers.PrintHandler) {
 	}
 	h.TableHandler(priorityLevelColumnDefinitions, printPriorityLevelConfiguration)
 	h.TableHandler(priorityLevelColumnDefinitions, printPriorityLevelConfigurationList)
+
+	storageVersionColumnDefinitions := []metav1.TableColumnDefinition{
+		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+	}
+	h.TableHandler(storageVersionColumnDefinitions, printStorageVersion)
+	h.TableHandler(storageVersionColumnDefinitions, printStorageVersionList)
 }
 
 // Pass ports=nil for all ports.
@@ -2469,6 +2477,26 @@ func printFlowSchemaList(list *flowcontrol.FlowSchemaList, options printers.Gene
 	sort.Sort(fsSeq)
 	for i := range fsSeq {
 		r, err := printFlowSchema(fsSeq[i], options)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, r...)
+	}
+	return rows, nil
+}
+
+func printStorageVersion(obj *apiserverinternal.StorageVersion, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+	row := metav1.TableRow{
+		Object: runtime.RawExtension{Object: obj},
+	}
+	row.Cells = append(row.Cells, obj.Name, translateTimestampSince(obj.CreationTimestamp))
+	return []metav1.TableRow{row}, nil
+}
+
+func printStorageVersionList(list *apiserverinternal.StorageVersionList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
+	rows := make([]metav1.TableRow, 0, len(list.Items))
+	for i := range list.Items {
+		r, err := printStorageVersion(&list.Items[i], options)
 		if err != nil {
 			return nil, err
 		}

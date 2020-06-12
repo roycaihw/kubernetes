@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"k8s.io/apiserver/pkg/apis/apiserverinternal"
 	"k8s.io/apiserver/pkg/apis/apiserverinternal/validation"
 	"k8s.io/apiserver/pkg/storage/names"
-	aggregatorscheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 )
 
 // storageVersionStrategy implements verification logic for StorageVersion.
@@ -34,7 +34,7 @@ type storageVersionStrategy struct {
 }
 
 // Strategy is the default logic that applies when creating and updating StorageVersion objects.
-var Strategy = storageVersionStrategy{aggregatorscheme.Scheme, names.SimpleNameGenerator}
+var Strategy = storageVersionStrategy{legacyscheme.Scheme, names.SimpleNameGenerator}
 
 // NamespaceScoped returns false because all StorageVersion's need to be cluster scoped
 func (storageVersionStrategy) NamespaceScoped() bool {
@@ -43,10 +43,14 @@ func (storageVersionStrategy) NamespaceScoped() bool {
 
 // PrepareForCreate clears the status of an StorageVersion before creation.
 func (storageVersionStrategy) PrepareForCreate(ctx context.Context, obj runtime.Object) {
+	sv := obj.(*apiserverinternal.StorageVersion)
+	sv.Status = apiserverinternal.StorageVersionStatus{}
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
 func (storageVersionStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+	sv := obj.(*apiserverinternal.StorageVersion)
+	sv.Status = old.(*apiserverinternal.StorageVersion).Status
 }
 
 // Validate validates a new storageVersion.
@@ -66,7 +70,9 @@ func (storageVersionStrategy) AllowCreateOnUpdate() bool {
 
 // ValidateUpdate is the default update validation for an end user.
 func (storageVersionStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
-	validationErrorList := validation.ValidateStorageVersion(obj.(*apiserverinternal.StorageVersion))
+	newStorageVersion := obj.(*apiserverinternal.StorageVersion)
+	oldStorageVersion := old.(*apiserverinternal.StorageVersion)
+	validationErrorList := validation.ValidateStorageVersionUpdate(newStorageVersion, oldStorageVersion)
 	return validationErrorList
 }
 
@@ -74,4 +80,27 @@ func (storageVersionStrategy) ValidateUpdate(ctx context.Context, obj, old runti
 // only be allowed if version match.
 func (storageVersionStrategy) AllowUnconditionalUpdate() bool {
 	return false
+}
+
+type storageVersionStatusStrategy struct {
+	storageVersionStrategy
+}
+
+// StatusStrategy is the default logic invoked when updating object status.
+var StatusStrategy = storageVersionStatusStrategy{Strategy}
+
+func (storageVersionStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Object) {
+	newSV := obj.(*apiserverinternal.StorageVersion)
+	oldSV := old.(*apiserverinternal.StorageVersion)
+
+	// managedFields must be preserved since it's been modified to
+	// track changed fields in the status update.
+	managedFields := newSV.ManagedFields
+	newSV.ObjectMeta = oldSV.ObjectMeta
+	newSV.ManagedFields = managedFields
+	newSV.Spec = oldSV.Spec
+}
+
+func (storageVersionStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
+	return validation.ValidateStorageVersionStatusUpdate(obj.(*apiserverinternal.StorageVersion), old.(*apiserverinternal.StorageVersion))
 }
