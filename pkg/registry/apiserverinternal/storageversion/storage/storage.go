@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ import (
 	"k8s.io/apiserver/pkg/apis/apiserverinternal"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
-	strategy "k8s.io/kube-aggregator/pkg/registry/apiserverinternal/storageversion"
+	"k8s.io/kubernetes/pkg/printers"
+	printersinternal "k8s.io/kubernetes/pkg/printers/internalversion"
+	printerstorage "k8s.io/kubernetes/pkg/printers/storage"
+	strategy "k8s.io/kubernetes/pkg/registry/apiserverinternal/storageversion"
 )
 
 // REST implements a RESTStorage for storage version against etcd
@@ -42,6 +45,7 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, error) {
 		CreateStrategy: strategy.Strategy,
 		UpdateStrategy: strategy.Strategy,
 		DeleteStrategy: strategy.Strategy,
+		TableConvertor: printerstorage.TableConvertor{TableGenerator: printers.NewTableGenerator().With(printersinternal.AddHandlers)},
 	}
 	options := &generic.StoreOptions{RESTOptions: optsGetter}
 	if err := store.CompleteWithOptions(options); err != nil {

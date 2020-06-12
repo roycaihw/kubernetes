@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import (
 	"k8s.io/apiserver/pkg/apis/apiserverinternal"
 	"k8s.io/apiserver/pkg/apis/apiserverinternal/validation"
 	"k8s.io/apiserver/pkg/storage/names"
-	aggregatorscheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 )
 
 // storageVersionStrategy implements verification logic for StorageVersion.
@@ -34,7 +34,7 @@ type storageVersionStrategy struct {
 }
 
 // Strategy is the default logic that applies when creating and updating StorageVersion objects.
-var Strategy = storageVersionStrategy{aggregatorscheme.Scheme, names.SimpleNameGenerator}
+var Strategy = storageVersionStrategy{legacyscheme.Scheme, names.SimpleNameGenerator}
 
 // NamespaceScoped returns false because all StorageVersion's need to be cluster scoped
 func (storageVersionStrategy) NamespaceScoped() bool {

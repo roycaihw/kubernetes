@@ -34,19 +34,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
-	apiserverinternalv1alpha1 "k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
 	"k8s.io/apiserver/pkg/features"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/server/healthz"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
-	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/apiserver/pkg/util/feature"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	kubeexternalinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
 	v1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	v1helper "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1/helper"
-	v1beta1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
+	"k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	aggregatorapiserver "k8s.io/kube-aggregator/pkg/apiserver"
 	aggregatorscheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
 	apiregistrationclient "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/typed/apiregistration/v1"
@@ -85,22 +83,9 @@ func createAggregatorConfig(
 	// copy the etcd options so we don't mutate originals.
 	etcdOptions := *commandOptions.Etcd
 	etcdOptions.StorageConfig.Paging = utilfeature.DefaultFeatureGate.Enabled(features.APIListChunking)
-	etcdOptions.StorageConfig.Codec = aggregatorscheme.Codecs.LegacyCodec(v1beta1.SchemeGroupVersion, v1.SchemeGroupVersion, apiserverinternalv1alpha1.SchemeGroupVersion)
-	resourceEncodings := serverstorage.NewDefaultResourceEncodingConfig(aggregatorscheme.Scheme)
-	resourceEncodings.SetResourceEncoding(schema.GroupResource{Group: v1beta1.GroupName, Resource: "apiservices"}, v1beta1.SchemeGroupVersion, schema.GroupVersion{Group: v1beta1.GroupName, Version: runtime.APIVersionInternal})
-	sf := serverstorage.NewDefaultStorageFactory(
-		etcdOptions.StorageConfig,
-		etcdOptions.DefaultStorageMediaType,
-		aggregatorscheme.Codecs,
-		resourceEncodings,
-		nil,
-		nil,
-	)
-	// aggregator used to use a SimpleStorageFactory, which includes group
-	// name in the ResourcePrefix, thus we need to make the
-	// DefaultStorageFactory to do the same.
-	sf.IncludeGroupInResourcePrefix = true
-	genericConfig.RESTOptionsGetter = &genericoptions.StorageFactoryRestOptionsFactory{Options: etcdOptions, StorageFactory: sf}
+	etcdOptions.StorageConfig.Codec = aggregatorscheme.Codecs.LegacyCodec(v1beta1.SchemeGroupVersion, v1.SchemeGroupVersion)
+	etcdOptions.StorageConfig.EncodeVersioner = runtime.NewMultiGroupVersioner(v1beta1.SchemeGroupVersion, schema.GroupKind{Group: v1beta1.GroupName})
+	genericConfig.RESTOptionsGetter = &genericoptions.SimpleRestOptionsFactory{Options: etcdOptions}
 
 	// override MergedResourceConfig with aggregator defaults and registry
 	if err := commandOptions.APIEnablement.ApplyTo(
@@ -304,6 +289,7 @@ var apiVersionPriorities = map[schema.GroupVersion]priority{
 	{Group: "discovery.k8s.io", Version: "v1beta1"}:              {group: 16200, version: 12},
 	{Group: "discovery.k8s.io", Version: "v1alpha1"}:             {group: 16200, version: 9},
 	{Group: "flowcontrol.apiserver.k8s.io", Version: "v1alpha1"}: {group: 16100, version: 9},
+	{Group: "internal.apiserver.k8s.io", Version: "v1alpha1"}:    {group: 16000, version: 9},
 	// Append a new group to the end of the list if unsure.
 	// You can use min(existing group)-100 as the initial value for a group.
 	// Version can be set to 9 (to have space around) for a new group.

@@ -40,4 +40,11 @@ import (
 	_ "k8s.io/kubernetes/pkg/apis/scheduling/install"
 	_ "k8s.io/kubernetes/pkg/apis/settings/install"
 	_ "k8s.io/kubernetes/pkg/apis/storage/install"
+
+	apiserverinternal "k8s.io/apiserver/pkg/apis/apiserverinternal/install"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 )
+
+func init() {
+	apiserverinternal.Install(legacyscheme.Scheme)
+}

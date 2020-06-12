@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,4 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storageversion // import "k8s.io/kube-aggregator/pkg/registry/apiserverinternal/storageversion"
+// Package storageversion provides Registry interface and it's RESTStorage
+// implementation for storing StorageVersion api objects.
+package storageversion // import "k8s.io/kubernetes/pkg/registry/apiserverinternal/storageversion"

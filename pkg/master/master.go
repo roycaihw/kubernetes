@@ -65,6 +65,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	apiserverinternalv1alpha1 "k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
 	"k8s.io/apiserver/pkg/endpoints/discovery"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -92,6 +93,7 @@ import (
 
 	// RESTStorage installers
 	admissionregistrationrest "k8s.io/kubernetes/pkg/registry/admissionregistration/rest"
+	apiserverinternalrest "k8s.io/kubernetes/pkg/registry/apiserverinternal/rest"
 	appsrest "k8s.io/kubernetes/pkg/registry/apps/rest"
 	authenticationrest "k8s.io/kubernetes/pkg/registry/authentication/rest"
 	authorizationrest "k8s.io/kubernetes/pkg/registry/authorization/rest"
@@ -414,6 +416,7 @@ func (c completedConfig) New(delegationTarget genericapiserver.DelegationTarget)
 	// TODO: describe the priority all the way down in the RESTStorageProviders and plumb it back through the various discovery
 	// handlers that we have.
 	restStorageProviders := []RESTStorageProvider{
+		apiserverinternalrest.StorageProvider{},
 		authenticationrest.RESTStorageProvider{Authenticator: c.GenericConfig.Authentication.Authenticator, APIAudiences: c.GenericConfig.Authentication.APIAudiences},
 		authorizationrest.RESTStorageProvider{Authorizer: c.GenericConfig.Authorization.Authorizer, RuleResolver: c.GenericConfig.RuleResolver},
 		autoscalingrest.RESTStorageProvider{},
@@ -631,6 +634,7 @@ func DefaultAPIResourceConfigSource() *serverstorage.ResourceConfig {
 	)
 	// disable alpha versions explicitly so we have a full list of what's possible to serve
 	ret.DisableVersions(
+		apiserverinternalv1alpha1.SchemeGroupVersion,
 		batchapiv2alpha1.SchemeGroupVersion,
 		nodev1alpha1.SchemeGroupVersion,
 		rbacv1alpha1.SchemeGroupVersion,
