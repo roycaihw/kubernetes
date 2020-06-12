@@ -508,6 +508,13 @@ func GetEtcdStorageDataForNamespace(namespace string) map[schema.GroupVersionRes
 			ExpectedEtcdPath: "/registry/runtimeclasses/rc2",
 		},
 		// --
+
+		// k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1
+		gvr("internal.apiserver.k8s.io", "v1alpha1", "storageversions"): {
+			Stub:             `{"metadata":{"name":"sv1"},"spec":{},"status":{"commonEncodingVersion":"v1","storageVersions":[{"apiServerID":"1","decodableVersions":["v1","v2"],"encodingVersion":"v1"}],"conditions":[{"type":"AllEncodingVersionsEqual","status":"True","lastTransitionTime":"2020-01-01T00:00:00Z","reason":"allEncodingVersionsEqual","message":"all encoding versions are set to v1"}]}}`,
+			ExpectedEtcdPath: "/registry/storageversions/sv1",
+		},
+		// --
 	}
 
 	// add csinodes if CSINodeInfo feature gate is enabled

@@ -41,6 +41,7 @@ import (
 	metav1beta1 "k8s.io/apimachinery/pkg/apis/meta/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	apiserverinternalv1alpha1 "k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	diskcached "k8s.io/client-go/discovery/cached/disk"
@@ -172,6 +173,7 @@ func TestServerSidePrint(t *testing.T) {
 			extensionsv1beta1.SchemeGroupVersion,
 			nodev1alpha1.SchemeGroupVersion,
 			flowcontrolv1alpha1.SchemeGroupVersion,
+			apiserverinternalv1alpha1.SchemeGroupVersion,
 		},
 		[]schema.GroupVersionResource{},
 	)
