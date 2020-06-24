@@ -17,16 +17,18 @@ limitations under the License.
 package storageversion
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	apiserverclientset "k8s.io/apiserver/pkg/client/clientset_generated/clientset"
 	"k8s.io/client-go/rest"
 	_ "k8s.io/component-base/metrics/prometheus/workqueue" // for workqueue metric registration
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // ResourceInfo contains the information to register the resource to the
@@ -46,13 +48,15 @@ type ResourceInfo struct {
 type Manager interface {
 	// AddResourceInfo adds ResourceInfo to the manager.
 	AddResourceInfo(resources ...*ResourceInfo)
-	// RemoveResourceInfo removes ResourceInfo from the manager.
-	RemoveResourceInfo(r *ResourceInfo)
+	// MarkCompletedResourceInfo marks updated ResourceInfo as completed.
+	MarkCompletedResourceInfo(r *ResourceInfo)
+	// RecordErrorResourceInfo records latest error updating ResourceInfo.
+	RecordErrorResourceInfo(r *ResourceInfo, err error)
 	// UpdatesPending returns if the StorageVersion of a resource is still wait to be updated.
-	UpdatesPending(group, resource string) bool
+	UpdatesPending(gv schema.GroupResource) bool
 
 	// UpdateStorageVersions updates the StorageVersions.
-	UpdateStorageVersions(loopbackClientConfig *rest.Config, apiserverID string)
+	UpdateStorageVersions(kubeAPIServerClientConfig *rest.Config, apiserverID string)
 	// Completed returns if updating StorageVersions has completed.
 	Completed() bool
 }
@@ -63,7 +67,7 @@ var _ Manager = &DefaultManager{}
 func NewDefaultManager() *DefaultManager {
 	s := &DefaultManager{}
 	s.completed.Store(false)
-	s.groupResources = make(map[string]map[string]struct{})
+	s.groupResources = make(map[schema.GroupResource]*resourceStatus)
 	s.resources = make(map[*ResourceInfo]struct{})
 	return s
 }
@@ -83,55 +87,71 @@ func (s *DefaultManager) addGroupResourceFor(r *ResourceInfo) {
 		Resource: r.Resource.Name,
 	}, "")
 	for _, gvr := range gvrs {
-		s.addGroupResource(gvr.Group, gvr.Resource)
+		s.groupResources[gvr.GroupResource()] = &resourceStatus{resourceInfo: r}
 	}
 }
 
-func (s *DefaultManager) addGroupResource(group, resource string) {
-	if _, ok := s.groupResources[group]; !ok {
-		s.groupResources[group] = make(map[string]struct{})
-	}
-	s.groupResources[group][resource] = struct{}{}
-}
-
-// RemoveResourceInfo removes ResourceInfo from the manager.
+// MarkCompletedResourceInfo marks updated ResourceInfo as completed.
 // It is not safe to call this function concurrently with AddResourceInfo.
-func (s *DefaultManager) RemoveResourceInfo(r *ResourceInfo) {
+func (s *DefaultManager) MarkCompletedResourceInfo(r *ResourceInfo) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.resources, r)
-	s.removeGroupResourceFor(r)
+	s.markCompletedGroupResourceFor(r)
 }
 
-func (s *DefaultManager) removeGroupResourceFor(r *ResourceInfo) {
+func (s *DefaultManager) markCompletedGroupResourceFor(r *ResourceInfo) {
 	gvrs := r.EquivalentResourceMapper.EquivalentResourcesFor(schema.GroupVersionResource{
 		Group:    r.Group,
 		Resource: r.Resource.Name,
 	}, "")
 	for _, gvr := range gvrs {
-		s.removeGroupResource(gvr.Group, gvr.Version)
+		s.markCompletedGroupResource(gvr.GroupResource())
 	}
 }
 
-func (s *DefaultManager) removeGroupResource(group, resource string) {
-	if _, ok := s.groupResources[group]; !ok {
+func (s *DefaultManager) markCompletedGroupResource(gr schema.GroupResource) {
+	if _, ok := s.groupResources[gr]; !ok {
 		return
 	}
-	delete(s.groupResources[group], resource)
-	if len(s.groupResources[group]) == 0 {
-		delete(s.groupResources, group)
+	s.groupResources[gr].done = true
+	s.groupResources[gr].lastErr = nil
+}
+
+// RecordErrorResourceInfo records latest error updating ResourceInfo.
+// It is not safe to call this function concurrently with AddResourceInfo.
+func (s *DefaultManager) RecordErrorResourceInfo(r *ResourceInfo, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.resources, r)
+	s.recordErrorGroupResourceFor(r, err)
+}
+
+func (s *DefaultManager) recordErrorGroupResourceFor(r *ResourceInfo, err error) {
+	gvrs := r.EquivalentResourceMapper.EquivalentResourcesFor(schema.GroupVersionResource{
+		Group:    r.Group,
+		Resource: r.Resource.Name,
+	}, "")
+	for _, gvr := range gvrs {
+		s.recordErrorGroupResource(gvr.GroupResource(), err)
 	}
+}
+
+func (s *DefaultManager) recordErrorGroupResource(gr schema.GroupResource, err error) {
+	if _, ok := s.groupResources[gr]; !ok {
+		return
+	}
+	s.groupResources[gr].lastErr = err
 }
 
 // UpdatesPending returns if the StorageVersion of a resource is still wait to be updated.
-func (s *DefaultManager) UpdatesPending(group, resource string) bool {
+func (s *DefaultManager) UpdatesPending(gv schema.GroupResource) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if _, ok := s.groupResources[group]; !ok {
+	if _, ok := s.groupResources[gv]; !ok {
 		return false
 	}
-	_, ok := s.groupResources[group][resource]
-	return ok
+	return !s.groupResources[gv].done
 }
 
 // DefaultManager indicates if the aggregator, kube-apiserver, and the
@@ -141,7 +161,13 @@ type DefaultManager struct {
 
 	mu             sync.RWMutex
 	resources      map[*ResourceInfo]struct{}
-	groupResources map[string]map[string]struct{}
+	groupResources map[schema.GroupResource]*resourceStatus
+}
+
+type resourceStatus struct {
+	done         bool
+	lastErr      error
+	resourceInfo *ResourceInfo
 }
 
 // setComplete marks the completion of updating StorageVersions. No write requests need to be blocked anymore.
@@ -168,11 +194,11 @@ func decodableVersions(e runtime.EquivalentResourceRegistry, group string, resou
 
 // UpdateStorageVersions updates the StorageVersions. If the updates are
 // successful, following calls to Completed() returns true.
-func (s *DefaultManager) UpdateStorageVersions(loopbackClientConfig *rest.Config, serverID string) {
-	cfg := rest.AddUserAgent(loopbackClientConfig, "system:kube-apiserver")
+func (s *DefaultManager) UpdateStorageVersions(kubeAPIServerClientConfig *rest.Config, serverID string) {
+	cfg := rest.AddUserAgent(kubeAPIServerClientConfig, "system:kube-apiserver")
 	clientset, err := apiserverclientset.NewForConfig(cfg)
 	if err != nil {
-		klog.Fatalf("failed to get clientset: %v", err)
+		utilruntime.HandleError(fmt.Errorf("failed to get clientset: %v", err))
 		return
 	}
 	sc := clientset.InternalV1alpha1().StorageVersions()
@@ -180,14 +206,20 @@ func (s *DefaultManager) UpdateStorageVersions(loopbackClientConfig *rest.Config
 	s.mu.RLock()
 	resources := s.resources
 	s.mu.RUnlock()
+	hasFailure := false
 	for r := range resources {
 		r.DecodableVersions = decodableVersions(r.EquivalentResourceMapper, r.Group, r.Resource.Name)
 		if err := updateStorageVersionFor(sc, serverID, r.Group+"."+r.Resource.Name, r.EncodingVersion, r.DecodableVersions); err != nil {
-			klog.Fatalf("failed to update storage version for %v", r.Resource.Name)
-			return
+			utilruntime.HandleError(fmt.Errorf("failed to update storage version for %v", r.Resource.Name))
+			s.RecordErrorResourceInfo(r, err)
+			hasFailure = true
+			continue
 		}
 		klog.V(2).Infof("successfully updated storage version for %v", r.Resource.Name)
-		s.RemoveResourceInfo(r)
+		s.MarkCompletedResourceInfo(r)
+	}
+	if hasFailure {
+		return
 	}
 	klog.V(2).Infof("storage version updates complete")
 	s.setComplete()

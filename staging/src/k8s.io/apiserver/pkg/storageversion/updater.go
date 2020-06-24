@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors.
+Copyright 2020 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // Client has the methods required to update the storage version.
@@ -33,21 +33,21 @@ type Client interface {
 	Get(context.Context, string, metav1.GetOptions) (*v1alpha1.StorageVersion, error)
 }
 
-func setAgreedEncodingVersion(sv *v1alpha1.StorageVersion) {
-	if len(sv.Status.ServerStorageVersions) == 0 {
+func setCommonEncodingVersion(sv *v1alpha1.StorageVersion) {
+	if len(sv.Status.StorageVersions) == 0 {
 		return
 	}
-	firstVersion := sv.Status.ServerStorageVersions[0].EncodingVersion
+	firstVersion := sv.Status.StorageVersions[0].EncodingVersion
 	agreed := true
-	for _, ssv := range sv.Status.ServerStorageVersions {
+	for _, ssv := range sv.Status.StorageVersions {
 		if ssv.EncodingVersion != firstVersion {
 			agreed = false
 		}
 	}
 	if agreed {
-		sv.Status.AgreedEncodingVersion = &firstVersion
+		sv.Status.CommonEncodingVersion = &firstVersion
 	} else {
-		sv.Status.AgreedEncodingVersion = nil
+		sv.Status.CommonEncodingVersion = nil
 	}
 }
 
@@ -82,35 +82,37 @@ func singleUpdate(c Client, apiserverID, resource, encodingVersion string, decod
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	}
-	if err != nil && apierrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		shouldCreate = true
 		sv = &v1alpha1.StorageVersion{}
 		sv.ObjectMeta.Name = resource
 	}
-	localUpdateStorageVersion(sv, apiserverID, encodingVersion, decodableVersions)
+	updatedSV := localUpdateStorageVersion(sv, apiserverID, encodingVersion, decodableVersions)
 	if shouldCreate {
-		_, err := c.Create(context.TODO(), sv, metav1.CreateOptions{})
+		_, err := c.Create(context.TODO(), updatedSV, metav1.CreateOptions{})
 		return err
 	}
-	_, err = c.Update(context.TODO(), sv, metav1.UpdateOptions{})
+	_, err = c.Update(context.TODO(), updatedSV, metav1.UpdateOptions{})
 	return err
 }
 
-func localUpdateStorageVersion(sv *v1alpha1.StorageVersion, apiserverID, encodingVersion string, decodableVersions []string) {
+func localUpdateStorageVersion(sv *v1alpha1.StorageVersion, apiserverID, encodingVersion string, decodableVersions []string) *v1alpha1.StorageVersion {
+	updatedSV := sv.DeepCopy()
 	newSSV := v1alpha1.ServerStorageVersion{
 		APIServerID:       apiserverID,
 		EncodingVersion:   encodingVersion,
 		DecodableVersions: decodableVersions,
 	}
 	foundSSV := false
-	for i, ssv := range sv.Status.ServerStorageVersions {
+	for i, ssv := range updatedSV.Status.StorageVersions {
 		if ssv.APIServerID == apiserverID {
-			sv.Status.ServerStorageVersions[i] = newSSV
+			updatedSV.Status.StorageVersions[i] = newSSV
 			foundSSV = true
 		}
 	}
 	if !foundSSV {
-		sv.Status.ServerStorageVersions = append(sv.Status.ServerStorageVersions, newSSV)
+		updatedSV.Status.StorageVersions = append(updatedSV.Status.StorageVersions, newSSV)
 	}
-	setAgreedEncodingVersion(sv)
+	setCommonEncodingVersion(updatedSV)
+	return updatedSV
 }
