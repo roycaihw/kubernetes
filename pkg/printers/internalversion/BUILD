@@ -106,6 +106,7 @@ go_library(
         "//staging/src/k8s.io/apimachinery/pkg/util/duration:go_default_library",
         "//staging/src/k8s.io/apimachinery/pkg/util/sets:go_default_library",
         "//staging/src/k8s.io/apiserver/pkg/apis/apiserverinternal:go_default_library",
+        "//staging/src/k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1:go_default_library",
         "//staging/src/k8s.io/apiserver/pkg/util/feature:go_default_library",
     ],
 )
