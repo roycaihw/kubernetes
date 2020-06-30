@@ -19,6 +19,7 @@ package storageversion
 import (
 	"context"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/apis/apiserverinternal"
@@ -93,12 +94,8 @@ func (storageVersionStatusStrategy) PrepareForUpdate(ctx context.Context, obj, o
 	newSV := obj.(*apiserverinternal.StorageVersion)
 	oldSV := old.(*apiserverinternal.StorageVersion)
 
-	// managedFields must be preserved since it's been modified to
-	// track changed fields in the status update.
-	managedFields := newSV.ManagedFields
-	newSV.ObjectMeta = oldSV.ObjectMeta
-	newSV.ManagedFields = managedFields
 	newSV.Spec = oldSV.Spec
+	metav1.ResetObjectMetaForStatus(&newSV.ObjectMeta, &oldSV.ObjectMeta)
 }
 
 func (storageVersionStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
