@@ -5327,8 +5327,8 @@ func TestPrintStorageVersion(t *testing.T) {
 				},
 				Status: apiserverinternal.StorageVersionStatus{},
 			},
-			// Columns: Name, Age
-			expected: []metav1.TableRow{{Cells: []interface{}{"empty", "0s"}}},
+			// Columns: Name, CommonEncodingVersion, Age, StorageVersions
+			expected: []metav1.TableRow{{Cells: []interface{}{"empty", "<unset>", "0s", "<unset>"}}},
 		},
 		{
 			sv: apiserverinternal.StorageVersion{
@@ -5352,8 +5352,72 @@ func TestPrintStorageVersion(t *testing.T) {
 					CommonEncodingVersion: &commonEncodingVersion,
 				},
 			},
-			// Columns: Name, Age
-			expected: []metav1.TableRow{{Cells: []interface{}{"valid", "0s"}}},
+			// Columns: Name, CommonEncodingVersion, Age, StorageVersions
+			expected: []metav1.TableRow{{Cells: []interface{}{"valid", "v1", "0s", "{1: v1},{2: v1}"}}},
+		},
+		{
+			sv: apiserverinternal.StorageVersion{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "disagree",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(1.9e9)},
+				},
+				Status: apiserverinternal.StorageVersionStatus{
+					StorageVersions: []apiserverinternal.ServerStorageVersion{
+						{
+							APIServerID:       "1",
+							EncodingVersion:   "v1",
+							DecodableVersions: []string{"v1"},
+						},
+						{
+							APIServerID:       "2",
+							EncodingVersion:   "v1",
+							DecodableVersions: []string{"v1", "v2"},
+						},
+						{
+							APIServerID:       "3",
+							EncodingVersion:   "v2",
+							DecodableVersions: []string{"v2"},
+						},
+					},
+				},
+			},
+			// Columns: Name, CommonEncodingVersion, Age, StorageVersions
+			expected: []metav1.TableRow{{Cells: []interface{}{"disagree", "<unset>", "0s", "{1: v1},{2: v1},{3: v2}"}}},
+		},
+		{
+			sv: apiserverinternal.StorageVersion{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "agreeWithMore",
+					CreationTimestamp: metav1.Time{Time: time.Now().Add(1.9e9)},
+				},
+				Status: apiserverinternal.StorageVersionStatus{
+					StorageVersions: []apiserverinternal.ServerStorageVersion{
+						{
+							APIServerID:       "1",
+							EncodingVersion:   "v1",
+							DecodableVersions: []string{"v1"},
+						},
+						{
+							APIServerID:       "2",
+							EncodingVersion:   "v1",
+							DecodableVersions: []string{"v1", "v2"},
+						},
+						{
+							APIServerID:       "3",
+							EncodingVersion:   "v1",
+							DecodableVersions: []string{"v1", "v2"},
+						},
+						{
+							APIServerID:       "4",
+							EncodingVersion:   "v1",
+							DecodableVersions: []string{"v1", "v2", "v3alpha1"},
+						},
+					},
+					CommonEncodingVersion: &commonEncodingVersion,
+				},
+			},
+			// Columns: Name, CommonEncodingVersion, Age, StorageVersions
+			expected: []metav1.TableRow{{Cells: []interface{}{"agreeWithMore", "v1", "0s", "{1: v1},{2: v1},{3: v1} + 1 more..."}}},
 		},
 	}
 

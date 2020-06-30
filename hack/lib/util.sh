@@ -322,6 +322,11 @@ kube::util::group-version-to-pkg-path() {
     meta/v1beta1)
       echo "vendor/k8s.io/apimachinery/pkg/apis/meta/v1beta1"
       ;;
+    # TODO(roycaihw): remove this special case by moving apiserverinternal API
+    # types to k8s.io/kubernetes/pkg/apis/ and k8s.io/api/
+    apiserverinternal.apiserver.k8s.io/v1alpha1)
+      echo "vendor/k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
+      ;;
     *.k8s.io)
       echo "pkg/apis/${group_version%.*k8s.io}"
       ;;

@@ -47,6 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/duration"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/apis/apiserverinternal"
+	apiserverinternalv1alpha1 "k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/apis/admissionregistration"
 	"k8s.io/kubernetes/pkg/apis/apps"
@@ -575,7 +576,9 @@ func AddHandlers(h printers.PrintHandler) {
 
 	storageVersionColumnDefinitions := []metav1.TableColumnDefinition{
 		{Name: "Name", Type: "string", Format: "name", Description: metav1.ObjectMeta{}.SwaggerDoc()["name"]},
+		{Name: "CommonEncodingVersion", Type: "string", Description: apiserverinternalv1alpha1.StorageVersionStatus{}.SwaggerDoc()["commonEncodingVersion"]},
 		{Name: "Age", Type: "string", Description: metav1.ObjectMeta{}.SwaggerDoc()["creationTimestamp"]},
+		{Name: "StorageVersions", Type: "string", Description: apiserverinternalv1alpha1.StorageVersionStatus{}.SwaggerDoc()["storageVersions"]},
 	}
 	h.TableHandler(storageVersionColumnDefinitions, printStorageVersion)
 	h.TableHandler(storageVersionColumnDefinitions, printStorageVersionList)
@@ -2489,8 +2492,28 @@ func printStorageVersion(obj *apiserverinternal.StorageVersion, options printers
 	row := metav1.TableRow{
 		Object: runtime.RawExtension{Object: obj},
 	}
-	row.Cells = append(row.Cells, obj.Name, translateTimestampSince(obj.CreationTimestamp))
+	commonEncodingVersion := "<unset>"
+	if obj.Status.CommonEncodingVersion != nil {
+		commonEncodingVersion = *obj.Status.CommonEncodingVersion
+	}
+	row.Cells = append(row.Cells, obj.Name, commonEncodingVersion, translateTimestampSince(obj.CreationTimestamp), formatStorageVersions(obj.Status.StorageVersions))
 	return []metav1.TableRow{row}, nil
+}
+
+func formatStorageVersions(storageVersions []apiserverinternal.ServerStorageVersion) string {
+	list := []string{}
+	max := 3
+	more := false
+	count := 0
+	for _, sv := range storageVersions {
+		if len(list) < max {
+			list = append(list, fmt.Sprintf("{%s: %s}", sv.APIServerID, sv.EncodingVersion))
+		} else if len(list) == max {
+			more = true
+		}
+		count++
+	}
+	return listWithMoreString(list, more, count, max)
 }
 
 func printStorageVersionList(list *apiserverinternal.StorageVersionList, options printers.GenerateOptions) ([]metav1.TableRow, error) {
