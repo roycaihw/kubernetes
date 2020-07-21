@@ -70,6 +70,7 @@ filegroup(
         "//staging/src/k8s.io/api/admission/v1beta1:all-srcs",
         "//staging/src/k8s.io/api/admissionregistration/v1:all-srcs",
         "//staging/src/k8s.io/api/admissionregistration/v1beta1:all-srcs",
+        "//staging/src/k8s.io/api/apiserverinternal/v1alpha1:all-srcs",
         "//staging/src/k8s.io/api/apps/v1:all-srcs",
         "//staging/src/k8s.io/api/apps/v1beta1:all-srcs",
         "//staging/src/k8s.io/api/apps/v1beta2:all-srcs",
