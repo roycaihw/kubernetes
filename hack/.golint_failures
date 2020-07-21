@@ -9,6 +9,7 @@ pkg/apis/admission
 pkg/apis/admissionregistration/v1
 pkg/apis/admissionregistration/v1beta1
 pkg/apis/admissionregistration/validation
+pkg/apis/apiserverinternal
 pkg/apis/apps/v1
 pkg/apis/apps/v1beta1
 pkg/apis/apps/v1beta2
@@ -212,6 +213,7 @@ staging/src/k8s.io/api/admission/v1
 staging/src/k8s.io/api/admission/v1beta1
 staging/src/k8s.io/api/admissionregistration/v1
 staging/src/k8s.io/api/admissionregistration/v1beta1
+staging/src/k8s.io/api/apiserverinternal/v1alpha1
 staging/src/k8s.io/api/apps/v1
 staging/src/k8s.io/api/apps/v1beta1
 staging/src/k8s.io/api/apps/v1beta2
@@ -310,8 +312,6 @@ staging/src/k8s.io/apiserver/pkg/apis/apiserver
 staging/src/k8s.io/apiserver/pkg/apis/apiserver/v1
 staging/src/k8s.io/apiserver/pkg/apis/apiserver/v1alpha1
 staging/src/k8s.io/apiserver/pkg/apis/apiserver/v1beta1
-staging/src/k8s.io/apiserver/pkg/apis/apiserverinternal
-staging/src/k8s.io/apiserver/pkg/apis/apiserverinternal/v1alpha1
 staging/src/k8s.io/apiserver/pkg/apis/audit
 staging/src/k8s.io/apiserver/pkg/apis/audit/v1
 staging/src/k8s.io/apiserver/pkg/apis/audit/v1alpha1
