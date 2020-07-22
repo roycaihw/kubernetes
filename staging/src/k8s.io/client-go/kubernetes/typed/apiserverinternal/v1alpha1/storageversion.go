@@ -56,7 +56,7 @@ type storageVersions struct {
 }
 
 // newStorageVersions returns a StorageVersions
-func newStorageVersions(c *InternalV1alpha1Client) *storageVersions {
+func newStorageVersions(c *ApiserverinternalV1alpha1Client) *storageVersions {
 	return &storageVersions{
 		client: c.RESTClient(),
 	}

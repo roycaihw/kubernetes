@@ -28,8 +28,8 @@ import (
 	fakeadmissionregistrationv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1/fake"
 	admissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
 	fakeadmissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1/fake"
-	internalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1"
-	fakeinternalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1/fake"
+	apiserverinternalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1"
+	fakeapiserverinternalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1/fake"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	fakeappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1/fake"
 	appsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
@@ -168,9 +168,9 @@ func (c *Clientset) AdmissionregistrationV1beta1() admissionregistrationv1beta1.
 	return &fakeadmissionregistrationv1beta1.FakeAdmissionregistrationV1beta1{Fake: &c.Fake}
 }
 
-// InternalV1alpha1 retrieves the InternalV1alpha1Client
-func (c *Clientset) InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interface {
-	return &fakeinternalv1alpha1.FakeInternalV1alpha1{Fake: &c.Fake}
+// ApiserverinternalV1alpha1 retrieves the ApiserverinternalV1alpha1Client
+func (c *Clientset) ApiserverinternalV1alpha1() apiserverinternalv1alpha1.ApiserverinternalV1alpha1Interface {
+	return &fakeapiserverinternalv1alpha1.FakeApiserverinternalV1alpha1{Fake: &c.Fake}
 }
 
 // AppsV1 retrieves the AppsV1Client

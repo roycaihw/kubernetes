@@ -32,7 +32,7 @@ import (
 
 // FakeStorageVersions implements StorageVersionInterface
 type FakeStorageVersions struct {
-	Fake *FakeInternalV1alpha1
+	Fake *FakeApiserverinternalV1alpha1
 }
 
 var storageversionsResource = schema.GroupVersionResource{Group: "internal.apiserver.k8s.io", Version: "v1alpha1", Resource: "storageversions"}

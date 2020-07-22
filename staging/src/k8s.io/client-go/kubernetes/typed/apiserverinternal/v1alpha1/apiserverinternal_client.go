@@ -24,22 +24,22 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-type InternalV1alpha1Interface interface {
+type ApiserverinternalV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	StorageVersionsGetter
 }
 
-// InternalV1alpha1Client is used to interact with features provided by the internal.apiserver.k8s.io group.
-type InternalV1alpha1Client struct {
+// ApiserverinternalV1alpha1Client is used to interact with features provided by the internal.apiserver.k8s.io group.
+type ApiserverinternalV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *InternalV1alpha1Client) StorageVersions() StorageVersionInterface {
+func (c *ApiserverinternalV1alpha1Client) StorageVersions() StorageVersionInterface {
 	return newStorageVersions(c)
 }
 
-// NewForConfig creates a new InternalV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*InternalV1alpha1Client, error) {
+// NewForConfig creates a new ApiserverinternalV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*ApiserverinternalV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -48,12 +48,12 @@ func NewForConfig(c *rest.Config) (*InternalV1alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &InternalV1alpha1Client{client}, nil
+	return &ApiserverinternalV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new InternalV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new ApiserverinternalV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *InternalV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *ApiserverinternalV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -61,9 +61,9 @@ func NewForConfigOrDie(c *rest.Config) *InternalV1alpha1Client {
 	return client
 }
 
-// New creates a new InternalV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *InternalV1alpha1Client {
-	return &InternalV1alpha1Client{c}
+// New creates a new ApiserverinternalV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *ApiserverinternalV1alpha1Client {
+	return &ApiserverinternalV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -81,7 +81,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *InternalV1alpha1Client) RESTClient() rest.Interface {
+func (c *ApiserverinternalV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}
