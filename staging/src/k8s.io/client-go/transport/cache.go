@@ -20,12 +20,15 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"k8s.io/klog/v2"
 )
 
 // TlsTransportCache caches TLS http.RoundTrippers different configurations. The
@@ -121,6 +124,25 @@ func (c *tlsTransportCache) get(config *Config) (http.RoundTripper, error) {
 	if canCache {
 		// Cache a single transport for these options
 		c.transports[key] = transport
+	} else {
+		/*
+		   verify we don't have in-tree things hot-looping creating clients (add logging to this method and check invocations on all components in e2e/scalability run)
+		   TODO(roycaihw): remove this log before submit
+		*/
+		var caller string
+		// capture the first line in the stacktrace outside client-go
+		// hopefully it's within the first 10 callers
+		for i := 0; i < 10; i++ {
+			pc, file, line, ok := runtime.Caller(i)
+			if !ok {
+				break
+			}
+			if !strings.Contains(file, "k8s.io/client-go") {
+				caller = fmt.Sprintf("%s:%d %s", file, line, runtime.FuncForPC(pc).Name())
+				break
+			}
+		}
+		klog.Errorf(">>> created an uncacheable transport for UserAgent: %s, caller: %s", config.UserAgent, caller)
 	}
 
 	return transport, nil
