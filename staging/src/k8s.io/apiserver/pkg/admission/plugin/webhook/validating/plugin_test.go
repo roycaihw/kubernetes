@@ -22,10 +22,13 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apiserver/pkg/admission"
 	webhooktesting "k8s.io/apiserver/pkg/admission/plugin/webhook/testing"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 )
@@ -67,7 +70,7 @@ func BenchmarkValidate(b *testing.B) {
 			}
 
 			ns := "webhook-test"
-			client, informer := webhooktesting.NewFakeValidatingDataSource(ns, tt.Webhooks, stopCh)
+			client, informer := webhooktesting.NewFakeValidatingDataSource(ns, webhooktesting.PrependIsReadyValidatingWebhook(serverURL, tt.Webhooks), stopCh)
 
 			wh.SetAuthenticationInfoResolverWrapper(webhooktesting.Wrapper(webhooktesting.NewAuthenticationInfoResolver(new(int32))))
 			wh.SetServiceResolver(webhooktesting.NewServiceResolver(*serverURL))
@@ -80,6 +83,9 @@ func BenchmarkValidate(b *testing.B) {
 			if err = wh.ValidateInitialization(); err != nil {
 				b.Errorf("%s: failed to validate initialization: %v", tt.Name, err)
 				return
+			}
+			if err := waitWebhookConfigurationReady(wh, ns, objectInterfaces); err != nil {
+				b.Errorf("%s: failed to register webhooks: %v", tt.Name, err)
 			}
 
 			attr := webhooktesting.NewAttribute(ns, nil, tt.IsDryRun)
@@ -118,7 +124,7 @@ func TestValidate(t *testing.T) {
 		}
 
 		ns := "webhook-test"
-		client, informer := webhooktesting.NewFakeValidatingDataSource(ns, tt.Webhooks, stopCh)
+		client, informer := webhooktesting.NewFakeValidatingDataSource(ns, webhooktesting.PrependIsReadyValidatingWebhook(serverURL, tt.Webhooks), stopCh)
 
 		wh.SetAuthenticationInfoResolverWrapper(webhooktesting.Wrapper(webhooktesting.NewAuthenticationInfoResolver(new(int32))))
 		wh.SetServiceResolver(webhooktesting.NewServiceResolver(*serverURL))
@@ -133,6 +139,9 @@ func TestValidate(t *testing.T) {
 			continue
 		}
 
+		if err := waitWebhookConfigurationReady(wh, ns, objectInterfaces); err != nil {
+			t.Errorf("%s: failed to register webhooks: %v", tt.Name, err)
+		}
 		attr := webhooktesting.NewAttribute(ns, nil, tt.IsDryRun)
 		err = wh.Validate(context.TODO(), attr, objectInterfaces)
 		if tt.ExpectAllow != (err == nil) {
@@ -183,7 +192,7 @@ func TestValidateCachedClient(t *testing.T) {
 
 	for _, tt := range webhooktesting.NewCachedClientTestcases(serverURL) {
 		ns := "webhook-test"
-		client, informer := webhooktesting.NewFakeValidatingDataSource(ns, tt.Webhooks, stopCh)
+		client, informer := webhooktesting.NewFakeValidatingDataSource(ns, webhooktesting.PrependIsReadyValidatingWebhook(serverURL, tt.Webhooks), stopCh)
 
 		// override the webhook source. The client cache will stay the same.
 		cacheMisses := new(int32)
@@ -197,6 +206,9 @@ func TestValidateCachedClient(t *testing.T) {
 		if err = wh.ValidateInitialization(); err != nil {
 			t.Errorf("%s: failed to validate initialization: %v", tt.Name, err)
 			continue
+		}
+		if err := waitWebhookConfigurationReady(wh, ns, objectInterfaces); err != nil {
+			t.Errorf("%s: failed to register webhooks: %v", tt.Name, err)
 		}
 
 		err = wh.Validate(context.TODO(), webhooktesting.NewAttribute(ns, nil, false), objectInterfaces)
@@ -212,4 +224,21 @@ func TestValidateCachedClient(t *testing.T) {
 			t.Errorf("%s: expected client to be cached, but got %d AuthenticationInfoResolver calls", tt.Name, *cacheMisses)
 		}
 	}
+}
+
+func waitWebhookConfigurationReady(wh *Plugin, namespace string, objectInterfaces admission.ObjectInterfaces) error {
+	return wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+		err := wh.Validate(context.TODO(), webhooktesting.NewMarkerAttribute(namespace), objectInterfaces)
+		if err != nil {
+			// We cannot guarantee the marker webhook returns before the rest validating webhooks
+			// in the test case. The error can be one of:
+			//   - deny with a reason (the marker webhook)
+			//   - deny without a reason
+			//   - internal server error
+			//   - fail calling webhook
+			// But any error above guarantees the webhook configuration is honored by the server.
+			return true, nil
+		}
+		return false, nil
+	})
 }

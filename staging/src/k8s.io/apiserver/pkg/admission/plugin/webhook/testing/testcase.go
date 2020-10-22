@@ -1051,3 +1051,100 @@ func NewObjectInterfacesForTest() admission.ObjectInterfaces {
 	corev1.AddToScheme(scheme)
 	return admission.NewObjectInterfacesFromScheme(scheme)
 }
+
+// PrependIsReadyValidatingWebhook prepends a is-ready webhook to the input hooks, which can be used
+// as a marker to verify webhook registeration is finished.
+func PrependIsReadyValidatingWebhook(url *url.URL, hooks []registrationv1.ValidatingWebhook) []registrationv1.ValidatingWebhook {
+	policyFail := registrationv1.Fail
+	ccfgURL := urlConfigGenerator{url}.ccfgURL
+
+	// Marker objects are configmaps with label "webhook-ready-marker: true"
+	isReadyHook := registrationv1.ValidatingWebhook{
+		Name: "is-webhook-configuration-ready.k8s.io",
+		Rules: []registrationv1.RuleWithOperations{{
+			Operations: []registrationv1.OperationType{registrationv1.OperationAll},
+			Rule: registrationv1.Rule{
+				APIGroups:   []string{""},
+				APIVersions: []string{"v1"},
+				Resources:   []string{"configmaps"},
+			},
+		}},
+		NamespaceSelector: &metav1.LabelSelector{},
+		ObjectSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"webhook-ready-marker": "true",
+			},
+		},
+		FailurePolicy:           &policyFail,
+		AdmissionReviewVersions: []string{"v1beta1"},
+	}
+	if hooks[0].ClientConfig.Service != nil {
+		isReadyHook.ClientConfig = ccfgSVC("disallowReason")
+	} else {
+		isReadyHook.ClientConfig = ccfgURL("disallowReason")
+	}
+
+	ret := []registrationv1.ValidatingWebhook{isReadyHook}
+	for _, hook := range hooks {
+		ret = append(ret, hook)
+	}
+	return ret
+}
+
+// PrependIsReadyMutatingWebhook prepends a is-ready webhook to the input hooks, which can be used
+// as a marker to verify webhook registeration is finished.
+func PrependIsReadyMutatingWebhook(url *url.URL, hooks []registrationv1.MutatingWebhook) []registrationv1.MutatingWebhook {
+	policyFail := registrationv1.Fail
+	ccfgURL := urlConfigGenerator{url}.ccfgURL
+
+	// Marker objects are configmaps with label "webhook-ready-marker: true"
+	isReadyHook := registrationv1.MutatingWebhook{
+		Name: "is-webhook-configuration-ready.k8s.io",
+		Rules: []registrationv1.RuleWithOperations{{
+			Operations: []registrationv1.OperationType{registrationv1.OperationAll},
+			Rule: registrationv1.Rule{
+				APIGroups:   []string{""},
+				APIVersions: []string{"v1"},
+				Resources:   []string{"configmaps"},
+			},
+		}},
+		NamespaceSelector: &metav1.LabelSelector{},
+		ObjectSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"webhook-ready-marker": "true",
+			},
+		},
+		FailurePolicy:           &policyFail,
+		AdmissionReviewVersions: []string{"v1beta1"},
+	}
+	if hooks[0].ClientConfig.Service != nil {
+		isReadyHook.ClientConfig = ccfgSVC("disallowReason")
+	} else {
+		isReadyHook.ClientConfig = ccfgURL("disallowReason")
+	}
+
+	ret := []registrationv1.MutatingWebhook{isReadyHook}
+	for _, hook := range hooks {
+		ret = append(ret, hook)
+	}
+	return ret
+}
+
+// NewMarkerAttribute returns static admission Attributes for testing.
+// Marker objects are configmaps with label "webhook-ready-marker: true"
+func NewMarkerAttribute(namespace string) admission.Attributes {
+	// Set up a test object for the call
+	object := corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+	}
+	oldObject := corev1.ConfigMap{}
+	kind := corev1.SchemeGroupVersion.WithKind("ConfigMap")
+	name := "my-configmap"
+	labels := map[string]string{
+		"webhook-ready-marker": "true",
+	}
+	return newAttributesRecord(&object, &oldObject, kind, namespace, name, "configmaps", labels, false)
+}
