@@ -21,6 +21,7 @@ import (
 	cpconfig "k8s.io/cloud-provider/app/apis/config"
 	serviceconfig "k8s.io/cloud-provider/service/config"
 	cmconfig "k8s.io/controller-manager/config"
+	apiserverleasegcconfig "k8s.io/kubernetes/pkg/controller/apiserverleasegc/config"
 	csrsigningconfig "k8s.io/kubernetes/pkg/controller/certificates/signer/config"
 	daemonconfig "k8s.io/kubernetes/pkg/controller/daemon/config"
 	deploymentconfig "k8s.io/kubernetes/pkg/controller/deployment/config"
@@ -122,6 +123,9 @@ type KubeControllerManagerConfiguration struct {
 	// TTLAfterFinishedControllerConfiguration holds configuration for
 	// TTLAfterFinishedController related features.
 	TTLAfterFinishedController ttlafterfinishedconfig.TTLAfterFinishedControllerConfiguration
+	// APIServerLeaseGCControllerConfiguration holds configuration for
+	// APIServerLeaseGCController related features.
+	APIServerLeaseGCController apiserverleasegcconfig.APIServerLeaseGCControllerConfiguration
 }
 
 // DeprecatedControllerConfiguration contains elements be deprecated.

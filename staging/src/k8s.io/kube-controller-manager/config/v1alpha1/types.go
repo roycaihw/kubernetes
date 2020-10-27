@@ -158,6 +158,9 @@ type KubeControllerManagerConfiguration struct {
 	// TTLAfterFinishedControllerConfiguration holds configuration for
 	// TTLAfterFinishedController related features.
 	TTLAfterFinishedController TTLAfterFinishedControllerConfiguration
+	// APIServerLeaseGCControllerConfiguration holds configuration for
+	// APIServerLeaseGCController related features.
+	APIServerLeaseGCController APIServerLeaseGCControllerConfiguration
 }
 
 // AttachDetachControllerConfiguration contains elements describing AttachDetachController.
@@ -465,4 +468,9 @@ type TTLAfterFinishedControllerConfiguration struct {
 	// concurrentTTLSyncs is the number of TTL-after-finished collector workers that are
 	// allowed to sync concurrently.
 	ConcurrentTTLSyncs int32
+}
+
+// APIServerLeaseGCControllerConfiguration contains elements describing APIServerLeaseGCController.
+type APIServerLeaseGCControllerConfiguration struct {
+	LeaseResyncPeriod metav1.Duration
 }

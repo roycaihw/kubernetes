@@ -37,6 +37,7 @@ import (
 	cmoptions "k8s.io/controller-manager/options"
 	kubecontrollerconfig "k8s.io/kubernetes/cmd/kube-controller-manager/app/config"
 	kubectrlmgrconfig "k8s.io/kubernetes/pkg/controller/apis/config"
+	apiserverleasegcconfig "k8s.io/kubernetes/pkg/controller/apiserverleasegc/config"
 	csrsigningconfig "k8s.io/kubernetes/pkg/controller/certificates/signer/config"
 	daemonconfig "k8s.io/kubernetes/pkg/controller/daemon/config"
 	deploymentconfig "k8s.io/kubernetes/pkg/controller/deployment/config"
@@ -424,6 +425,11 @@ func TestAddFlags(t *testing.T) {
 		Master:     "192.168.4.20",
 		Metrics:    &metrics.Options{},
 		Logs:       logs.NewOptions(),
+		APIServerLeaseGCController: &APIServerLeaseGCControllerOptions{
+			&apiserverleasegcconfig.APIServerLeaseGCControllerConfiguration{
+				LeaseResyncPeriod: metav1.Duration{Duration: 1 * time.Hour},
+			},
+		},
 	}
 
 	// Sort GCIgnoredResources because it's built from a map, which means the
@@ -617,6 +623,9 @@ func TestApplyTo(t *testing.T) {
 			},
 			TTLAfterFinishedController: ttlafterfinishedconfig.TTLAfterFinishedControllerConfiguration{
 				ConcurrentTTLSyncs: 8,
+			},
+			APIServerLeaseGCController: apiserverleasegcconfig.APIServerLeaseGCControllerConfiguration{
+				LeaseResyncPeriod: metav1.Duration{Duration: 1 * time.Hour},
 			},
 		},
 	}

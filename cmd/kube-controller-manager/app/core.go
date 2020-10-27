@@ -45,6 +45,7 @@ import (
 	csitrans "k8s.io/csi-translation-lib"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
 	"k8s.io/kubernetes/pkg/controller"
+	"k8s.io/kubernetes/pkg/controller/apiserverleasegc"
 	endpointcontroller "k8s.io/kubernetes/pkg/controller/endpoint"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
@@ -673,4 +674,13 @@ func getNodeCIDRMaskSizes(clusterCIDRs []*net.IPNet, maskSizeIPv4, maskSizeIPv6 
 		}
 	}
 	return nodeMaskCIDRs
+}
+
+func startAPIServerLeaseGCController(ctx ControllerContext) (http.Handler, bool, error) {
+	go apiserverleasegc.NewAPIServerLeaseGC(
+		ctx.ClientBuilder.ClientOrDie("apiserver-lease-garbage-collector"),
+		ctx.InformerFactory.Coordination().V1().Leases(),
+		ctx.ComponentConfig.APIServerLeaseGCController.LeaseResyncPeriod.Duration,
+	).Run(ctx.Stop)
+	return nil, true, nil
 }
