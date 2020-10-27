@@ -29,6 +29,7 @@ import (
 	configv1alpha1 "k8s.io/controller-manager/config/v1alpha1"
 	v1alpha1 "k8s.io/kube-controller-manager/config/v1alpha1"
 	config "k8s.io/kubernetes/pkg/controller/apis/config"
+	apiserverleasegcconfigv1alpha1 "k8s.io/kubernetes/pkg/controller/apiserverleasegc/config/v1alpha1"
 	signerconfigv1alpha1 "k8s.io/kubernetes/pkg/controller/certificates/signer/config/v1alpha1"
 	daemonconfigv1alpha1 "k8s.io/kubernetes/pkg/controller/daemon/config/v1alpha1"
 	deploymentconfigv1alpha1 "k8s.io/kubernetes/pkg/controller/deployment/config/v1alpha1"
@@ -214,6 +215,9 @@ func autoConvert_v1alpha1_KubeControllerManagerConfiguration_To_config_KubeContr
 	if err := ttlafterfinishedconfigv1alpha1.Convert_v1alpha1_TTLAfterFinishedControllerConfiguration_To_config_TTLAfterFinishedControllerConfiguration(&in.TTLAfterFinishedController, &out.TTLAfterFinishedController, s); err != nil {
 		return err
 	}
+	if err := apiserverleasegcconfigv1alpha1.Convert_v1alpha1_APIServerLeaseGCControllerConfiguration_To_config_APIServerLeaseGCControllerConfiguration(&in.APIServerLeaseGCController, &out.APIServerLeaseGCController, s); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -296,6 +300,9 @@ func autoConvert_config_KubeControllerManagerConfiguration_To_v1alpha1_KubeContr
 		return err
 	}
 	if err := ttlafterfinishedconfigv1alpha1.Convert_config_TTLAfterFinishedControllerConfiguration_To_v1alpha1_TTLAfterFinishedControllerConfiguration(&in.TTLAfterFinishedController, &out.TTLAfterFinishedController, s); err != nil {
+		return err
+	}
+	if err := apiserverleasegcconfigv1alpha1.Convert_config_APIServerLeaseGCControllerConfiguration_To_v1alpha1_APIServerLeaseGCControllerConfiguration(&in.APIServerLeaseGCController, &out.APIServerLeaseGCController, s); err != nil {
 		return err
 	}
 	return nil

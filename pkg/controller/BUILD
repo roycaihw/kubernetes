@@ -99,6 +99,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/controller/apis/config:all-srcs",
+        "//pkg/controller/apiserverleasegc:all-srcs",
         "//pkg/controller/bootstrap:all-srcs",
         "//pkg/controller/certificates:all-srcs",
         "//pkg/controller/clusterroleaggregation:all-srcs",

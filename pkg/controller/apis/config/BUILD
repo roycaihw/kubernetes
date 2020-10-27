@@ -11,6 +11,7 @@ go_library(
     importpath = "k8s.io/kubernetes/pkg/controller/apis/config",
     visibility = ["//visibility:public"],
     deps = [
+        "//pkg/controller/apiserverleasegc/config:go_default_library",
         "//pkg/controller/certificates/signer/config:go_default_library",
         "//pkg/controller/daemon/config:go_default_library",
         "//pkg/controller/deployment/config:go_default_library",

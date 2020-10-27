@@ -38,6 +38,7 @@ filegroup(
         ":package-srcs",
         "//test/integration/apimachinery:all-srcs",
         "//test/integration/apiserver:all-srcs",
+        "//test/integration/apiserverleasegc:all-srcs",
         "//test/integration/auth:all-srcs",
         "//test/integration/benchmark/extractlog:all-srcs",
         "//test/integration/benchmark/jsonify:all-srcs",

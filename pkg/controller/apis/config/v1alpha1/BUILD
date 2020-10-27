@@ -14,6 +14,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//pkg/controller/apis/config:go_default_library",
+        "//pkg/controller/apiserverleasegc/config/v1alpha1:go_default_library",
         "//pkg/controller/certificates/signer/config/v1alpha1:go_default_library",
         "//pkg/controller/daemon/config/v1alpha1:go_default_library",
         "//pkg/controller/deployment/config/v1alpha1:go_default_library",

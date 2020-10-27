@@ -9,6 +9,7 @@ load(
 go_library(
     name = "go_default_library",
     srcs = [
+        "apiserverleasegccontroller.go",
         "attachdetachcontroller.go",
         "csrsigningcontroller.go",
         "daemonsetcontroller.go",
@@ -39,6 +40,7 @@ go_library(
         "//pkg/cluster/ports:go_default_library",
         "//pkg/controller/apis/config:go_default_library",
         "//pkg/controller/apis/config/scheme:go_default_library",
+        "//pkg/controller/apiserverleasegc/config:go_default_library",
         "//pkg/controller/certificates/signer/config:go_default_library",
         "//pkg/controller/daemon/config:go_default_library",
         "//pkg/controller/deployment/config:go_default_library",
@@ -104,6 +106,7 @@ go_test(
     deps = [
         "//cmd/kube-controller-manager/app/config:go_default_library",
         "//pkg/controller/apis/config:go_default_library",
+        "//pkg/controller/apiserverleasegc/config:go_default_library",
         "//pkg/controller/certificates/signer/config:go_default_library",
         "//pkg/controller/daemon/config:go_default_library",
         "//pkg/controller/deployment/config:go_default_library",
