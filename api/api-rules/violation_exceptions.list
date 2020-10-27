@@ -494,6 +494,7 @@ API rule violation: names_match,k8s.io/controller-manager/config/v1alpha1,Generi
 API rule violation: names_match,k8s.io/controller-manager/config/v1alpha1,GenericControllerManagerConfiguration,LeaderElection
 API rule violation: names_match,k8s.io/controller-manager/config/v1alpha1,GenericControllerManagerConfiguration,MinResyncPeriod
 API rule violation: names_match,k8s.io/controller-manager/config/v1alpha1,GenericControllerManagerConfiguration,Port
+API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,APIServerLeaseGCControllerConfiguration,LeaseResyncPeriod
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,AttachDetachControllerConfiguration,DisableAttachDetachReconcilerSync
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,AttachDetachControllerConfiguration,ReconcilerSyncLoopPeriod
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,CSRSigningConfiguration,CertFile
@@ -533,6 +534,7 @@ API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,H
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,HPAControllerConfiguration,HorizontalPodAutoscalerUpscaleForbiddenWindow
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,HPAControllerConfiguration,HorizontalPodAutoscalerUseRESTClients
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,JobControllerConfiguration,ConcurrentJobSyncs
+API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,KubeControllerManagerConfiguration,APIServerLeaseGCController
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,KubeControllerManagerConfiguration,AttachDetachController
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,KubeControllerManagerConfiguration,CSRSigningController
 API rule violation: names_match,k8s.io/kube-controller-manager/config/v1alpha1,KubeControllerManagerConfiguration,DaemonSetController
