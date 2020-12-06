@@ -42,7 +42,7 @@ func NewAPIEnablementOptions() *APIEnablementOptions {
 
 // AddFlags adds flags for a specific APIServer to the specified FlagSet
 func (s *APIEnablementOptions) AddFlags(fs *pflag.FlagSet) {
-	fs.Var(&s.RuntimeConfig, "runtime-config", ""+
+	fs.Var(&s.RuntimeConfig, "runtime-config", "internal.apiserver.k8s.io/v1alpha1=true"+
 		"A set of key=value pairs that enable or disable built-in APIs. Supported options are:\n"+
 		"v1=true|false for the core API group\n"+
 		"<group>/<version>=true|false for a specific API group and version (e.g. apps/v1=true)\n"+
@@ -92,6 +92,7 @@ func (s *APIEnablementOptions) ApplyTo(c *server.Config, defaultResourceConfig *
 		return nil
 	}
 
+	s.RuntimeConfig["internal.apiserver.k8s.io/v1alpha1"] = "true"
 	mergedResourceConfig, err := resourceconfig.MergeAPIResourceConfigs(defaultResourceConfig, s.RuntimeConfig, registry)
 	c.MergedResourceConfig = mergedResourceConfig
 
