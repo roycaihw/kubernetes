@@ -420,6 +420,8 @@ func buildControllerRoles() ([]rbacv1.ClusterRole, []rbacv1.ClusterRoleBinding) 
 				rbacv1helpers.NewRule("get", "list", "watch").Groups(coordinationGroup).Resources("leases").RuleOrDie(),
 				rbacv1helpers.NewRule("get", "list", "watch", "patch", "update", "delete").Groups(internalAPIServerGroup).
 					Resources("storageversions").RuleOrDie(),
+				rbacv1helpers.NewRule("patch", "update").Groups(internalAPIServerGroup).
+					Resources("storageversions/status").RuleOrDie(),
 			},
 		})
 	}
