@@ -115,7 +115,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		EventTTL:                          1 * time.Hour,
 		MasterCount:                       1,
 		EndpointReconcilerType:            string(reconcilers.LeaseEndpointReconcilerType),
-		IdentityLeaseDurationSeconds:      3600,
+		IdentityLeaseDurationSeconds:      180, // DO-NOT-MERGE: shorten the lease duration for test purpose
 		IdentityLeaseRenewIntervalSeconds: 10,
 		KubeletConfig: kubeletclient.KubeletClientConfig{
 			Port:         ports.KubeletPort,
