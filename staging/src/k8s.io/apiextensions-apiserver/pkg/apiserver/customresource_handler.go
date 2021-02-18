@@ -396,6 +396,7 @@ func (r *crdHandler) serveResource(w http.ResponseWriter, req *http.Request, req
 		forceWatch := true
 		return handlers.ListResource(storage, storage, requestScope, forceWatch, r.minRequestTimeout)
 	case "create":
+		time.Sleep(10 * time.Second)
 		if terminating {
 			err := apierrors.NewMethodNotSupported(schema.GroupResource{Group: requestInfo.APIGroup, Resource: requestInfo.Resource}, requestInfo.Verb)
 			err.ErrStatus.Message = fmt.Sprintf("%v not allowed while custom resource definition is terminating", requestInfo.Verb)
@@ -574,7 +575,7 @@ func (r *crdHandler) tearDown(oldInfo *crdInfo) {
 	go func() {
 		defer close(requestsDrained)
 		// Allow time for in-flight requests with a handle to the old info to register themselves
-		time.Sleep(time.Second)
+		time.Sleep(15 * time.Second)
 		// Wait for in-flight requests to drain
 		oldInfo.waitGroup.Wait()
 	}()
