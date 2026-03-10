@@ -6,6 +6,23 @@ VM_NAME="psi-experiment-node"
 REPO_URL="https://github.com/roycaihw/kubernetes.git"
 BRANCH_NAME="${1:-psi-dev-136}"
 
+echo "Verifying VM Kernel Prerequisites (cgroup v2 and PSI)..."
+gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="
+  echo 'Checking for cgroup v2...'
+  if ! stat -fc %T /sys/fs/cgroup/ | grep -q 'cgroup2fs'; then
+    echo 'ERROR: cgroup v2 is NOT enabled on this VM! PSI requires cgroup v2.'
+    exit 1
+  fi
+  echo 'cgroup v2 is active.'
+  
+  echo 'Checking for PSI kernel support...'
+  if [ ! -f /proc/pressure/memory ]; then
+    echo 'ERROR: PSI is NOT enabled in this kernel (/proc/pressure/memory missing)!'
+    exit 1
+  fi
+  echo 'Kernel PSI support is active.'
+"
+
 echo "[1/3] Installing dependencies..."
 gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="
   sudo apt-get update && \
@@ -32,9 +49,10 @@ echo "[3/3] Starting local-up-cluster.sh in the background..."
 gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="
   source ~/.bashrc
   cd kubernetes
+  ./hack/install-etcd.sh
+  export PATH=\$PATH:\$(pwd)/third_party/etcd
+  export KUBE_GIT_VERSION=v1.36.0
   export FEATURE_GATES='PSINodeCondition=true'
   export KUBELET_FLAGS='--feature-gates=PSINodeCondition=true'
   nohup hack/local-up-cluster.sh > cluster.log 2>&1 &
 "
-echo "Cluster is now provisioning in the background on $VM_NAME."
-echo "You can check the logs by running: gcloud compute ssh $VM_NAME --zone=$ZONE --command='tail -f ~/kubernetes/cluster.log'"
