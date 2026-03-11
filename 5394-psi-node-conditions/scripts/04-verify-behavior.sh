@@ -24,6 +24,49 @@ echo "Node: $NODE_NAME" >> experiment-report.md
 echo "" >> experiment-report.md
 echo "## Memory PSI Timeline" >> experiment-report.md
 
+echo "## Observation 1: Normal Operation Stability" >> experiment-report.md
+echo 'Polling node conditions for 30 seconds to ensure SystemMemoryContentionPressure remains False under baseline load...'
+for i in {1..6}; do
+  if kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "SystemMemoryContentionPressure" and .status == "True")' > /dev/null 2>&1; then
+    echo "FAIL: Node asserted SystemMemoryContentionPressure=True under normal baseline load! (False Positive)"
+    echo "FAIL: False positive triggered during baseline observation." >> experiment-report.md
+    exit 1
+  fi
+  sleep 5
+done
+echo "SUCCESS: Node condition remained stably False under baseline load."
+echo "Baseline stable. No false positives detected." >> experiment-report.md
+
+echo ''
+echo "==============================================="
+echo 'Deploying massive memory stressor pod...'
+cat <<POD | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-stressor
+spec:
+  containers:
+  # NOTE ON PSI MEMORY STALLS AND SWAPLESS ENVIRONMENTS:
+  # There is no off-the-shelf way to generate Memory PSI (stalls) on a stock, swapless
+  # Linux system. If you just allocate massive amounts of pure memory (e.g. without 
+  # any backing disk), the kernel will instantly panic and invoke the OOM Killer when
+  # physical RAM is full. An instant OOM kill evaluates to a 0% PSI stall because 
+  # the process simply dies instead of waiting/stalling for memory to become available.
+  # 
+  # To generate Kubelet's required `avg60 > 0.9` stall natively, the kernel must be 
+  # able to pause the application and thrash the disk (via Page Cache Eviction or 
+  # Swapping). This is why Experiment 1 requires the explicit creation of a 4G 
+  # /swapfile to safely bottleneck the container into a memory stall, preventing 
+  # premature OOM termination and allowing the metrics to surface accurately.
+  - name: stress
+    image: alexeiled/stress-ng
+    args: ["--vm", "1", "--vm-bytes", "17G", "--vm-hang", "0"]
+POD
+echo "==============================================="
+echo ''
+
+echo "## Observation 2: Memory Pressure Trigger" >> experiment-report.md
 echo 'Polling node conditions for SystemMemoryContentionPressure...'
 TRIGGERED=false
 LEGACY_TRIGGERED=false
