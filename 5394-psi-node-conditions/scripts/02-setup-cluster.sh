@@ -53,6 +53,6 @@ gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="
   export PATH=\$PATH:\$(pwd)/third_party/etcd
   export KUBE_GIT_VERSION=v1.36.0
   export FEATURE_GATES='PSINodeCondition=true'
-  export KUBELET_FLAGS='--feature-gates=PSINodeCondition=true'
+  export KUBELET_FLAGS='--feature-gates=PSINodeCondition=true --fail-swap-on=false'
   nohup hack/local-up-cluster.sh > cluster.log 2>&1 &
 "

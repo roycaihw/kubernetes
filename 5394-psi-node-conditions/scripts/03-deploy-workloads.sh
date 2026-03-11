@@ -44,16 +44,7 @@ if ! ps -eo args | grep "[k]ubelet " | grep "PSINodeCondition=true" > /dev/null;
 fi
 echo "Kubelet is running with PSINodeCondition feature gate enabled."
 
-echo "Lowering SystemMemoryContentionThreshold for automation verification..."
-for f in /tmp/local-up-cluster.sh.*/kubelet.yaml; do
-  # Avoid compounding appending if run multiple times
-  sed -i '/systemMemoryContentionThreshold/d' $f
-  echo 'systemMemoryContentionThreshold: 0.001' >> $f
-done
-KUBELET_CMD=$(ps -eo args | grep "[k]ubelet " | grep config | grep -v sudo | head -n 1)
-sudo pkill -9 kubelet || true
-sudo bash -c "nohup $KUBELET_CMD > /tmp/kubelet-restart.log 2>&1 &"
-echo "Waiting for Kubelet to restart..."
+echo "Waiting for Kubelet to fully stabilize..."
 sleep 15
 
 echo "Deleting old stress pod..."
@@ -72,9 +63,8 @@ metadata:
 spec:
   containers:
   - name: stress
-    image: polinux/stress
-    command: ["stress"]
-    args: ["--vm", "2", "--vm-bytes", "7G"]
+    image: alexeiled/stress-ng
+    args: ["--vm", "1", "--vm-bytes", "17G", "--vm-hang", "0"]
 POD
 echo "Workloads deployed."
 EOF

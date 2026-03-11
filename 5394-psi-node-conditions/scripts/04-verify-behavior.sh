@@ -9,8 +9,10 @@ cat << 'EOF' > /tmp/04-verify-behavior-remote.sh
 #!/bin/bash
 set -euo pipefail
 
+mkdir -p /tmp/bin
+cp $(pwd)/kubernetes/_output/local/bin/linux/amd64/kubectl /tmp/bin/
+export PATH=/tmp/bin:$PATH
 export KUBECONFIG=/var/run/kubernetes/admin.kubeconfig
-export PATH=$PATH:$(pwd)/kubernetes/_output/local/bin/linux/amd64/
 
 NODE_NAME=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
 echo "Testing against node: $NODE_NAME"
@@ -24,27 +26,47 @@ echo "## Memory PSI Timeline" >> experiment-report.md
 
 echo 'Polling node conditions for SystemMemoryContentionPressure...'
 TRIGGERED=false
+LEGACY_TRIGGERED=false
 for i in {1..120}; do
   echo "**Attempt $i:**" >> experiment-report.md
   echo '```text' >> experiment-report.md
   cat /proc/pressure/memory >> experiment-report.md
   echo '```' >> experiment-report.md
 
+  # Capture OS memory metrics to understand why legacy MemoryPressure behaves the way it does
+  MEM_TOTAL=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+  MEM_AVAIL=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
+  echo "OS Memory: ${MEM_AVAIL} kB available out of ${MEM_TOTAL} kB total" >> experiment-report.md
+
+  if [ "$LEGACY_TRIGGERED" = false ] && kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "MemoryPressure" and .status == "True")' > /dev/null 2>&1; then
+    echo "NOTICE: Legacy MemoryPressure triggered at attempt $i"
+    LEGACY_TRIGGERED=true
+    echo "Legacy MemoryPressure triggered at attempt $i" >> experiment-report.md
+  fi
+
   if kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "SystemMemoryContentionPressure" and .status == "True")' > /dev/null 2>&1; then
     echo 'SUCCESS: SystemMemoryContentionPressure condition is True!'
-    TRIGGERED=true
-    
-    echo "## Condition Triggered Successfully!" >> experiment-report.md
-    echo '```json' >> experiment-report.md
-    kubectl get node "$NODE_NAME" -o json | jq '.status.conditions[] | select(.type == "SystemMemoryContentionPressure")' >> experiment-report.md
-    echo '```' >> experiment-report.md
-    break
+    echo 'Waiting 10 seconds to verify condition stability (no flapping)...'
+    sleep 10
+    if kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "SystemMemoryContentionPressure" and .status == "True")' > /dev/null 2>&1; then
+        echo 'SUCCESS: SystemMemoryContentionPressure condition is still True after 10s (stable).'
+        TRIGGERED=true
+        
+        echo "## Condition Triggered Successfully!" >> experiment-report.md
+        echo '```json' >> experiment-report.md
+        kubectl get node "$NODE_NAME" -o json | jq '.status.conditions[] | select(.type == "SystemMemoryContentionPressure")' >> experiment-report.md
+        echo '```' >> experiment-report.md
+        break
+    else
+        echo 'WARNING: SystemMemoryContentionPressure flapped back to False within 10s!'
+        echo 'WARNING: SystemMemoryContentionPressure flapped!' >> experiment-report.md
+    fi
   fi
   sleep 5
 done
 
 if [ "$TRIGGERED" = false ]; then
-  echo 'FAIL: Condition did not trigger within 10 minutes.'
+  echo 'FAIL: Condition did not trigger stably within 10 minutes.'
   exit 1
 fi
 
@@ -91,6 +113,35 @@ if [ "$POD_STATUS" == "Pending" ]; then
   fi
 else
   echo "FAIL: Pod bypassed the taint! Status: $POD_STATUS"
+  exit 1
+fi
+
+echo 'Deleting memory stressor to observe condition recovery...'
+kubectl delete pod memory-stressor || true
+
+echo 'Polling node conditions for SystemMemoryContentionPressure recovery...'
+RECOVERED=false
+for i in {1..120}; do
+  if kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "SystemMemoryContentionPressure" and .status == "False")' > /dev/null 2>&1; then
+    echo 'SUCCESS: SystemMemoryContentionPressure condition is False!'
+    echo 'Waiting 10 seconds to verify condition stability (no flapping)...'
+    sleep 10
+    if kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "SystemMemoryContentionPressure" and .status == "False")' > /dev/null 2>&1; then
+        echo 'SUCCESS: SystemMemoryContentionPressure condition is still False after 10s (stable recovery).'
+        RECOVERED=true
+        
+        echo "## Condition Recovered Successfully!" >> experiment-report.md
+        echo "Recovery observed after stressor deletion." >> experiment-report.md
+        break
+    else
+        echo 'WARNING: SystemMemoryContentionPressure flapped back to True within 10s!'
+    fi
+  fi
+  sleep 5
+done
+
+if [ "$RECOVERED" = false ]; then
+  echo 'FAIL: Condition did not recover stably within 10 minutes.'
   exit 1
 fi
 
