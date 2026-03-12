@@ -15,6 +15,7 @@ gcloud compute instances create "$VM_NAME" \
 echo "[2/2] Waiting for SSH to become available..."
 for i in {1..15}; do
   if gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="echo 'SSH is ready.'"; then
+    sleep 10
     echo "Configuring 4G Native Swapfile to gracefully bottleneck PSI without instant OOM invocation..."
     gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile"
     echo "VM provisioning complete! Proceed to 02-setup-cluster.sh"

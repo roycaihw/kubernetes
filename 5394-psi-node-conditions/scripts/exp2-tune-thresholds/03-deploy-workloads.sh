@@ -10,6 +10,42 @@ cat << 'EOF' > /tmp/03-deploy-workloads-remote.sh
 #!/bin/bash
 set -euo pipefail
 export KUBECONFIG=/var/run/kubernetes/admin.kubeconfig
+export PATH=$PATH:$(pwd)/kubernetes/_output/local/bin/linux/amd64/
+
+echo "Waiting for kubectl compilation to finish..."
+for i in {1..120}; do
+  if command -v kubectl >/dev/null 2>&1; then
+    break
+  fi
+  sleep 5
+done
+
+echo "Waiting for node to become Ready..."
+NODE_READY=false
+for i in {1..120}; do
+  if kubectl get nodes 2>/dev/null | grep -q ' Ready'; then
+    echo "Node is Ready!"
+    NODE_READY=true
+    break
+  fi
+  sleep 5
+done
+
+if [ "$NODE_READY" = false ]; then
+  echo "ERROR: Node never became Ready. Cluster likely failed to start!"
+  cat cluster.log || true
+  exit 1
+fi
+
+echo "Verifying Kubelet feature gates are active..."
+if ! ps -eo args | grep "[k]ubelet " | grep "PSINodeCondition=true" > /dev/null; then
+  echo "ERROR: Kubelet does not have PSINodeCondition=true in its arguments!"
+  exit 1
+fi
+echo "Kubelet is running with PSINodeCondition feature gate enabled."
+
+echo "Waiting for Kubelet to fully stabilize..."
+sleep 15
 
 echo "Cleaning up old workloads..."
 kubectl delete pod --all --ignore-not-found || true

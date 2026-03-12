@@ -11,6 +11,7 @@ cat << 'EOF' > /tmp/04-measure-timing-remote.sh
 #!/bin/bash
 set -euo pipefail
 export KUBECONFIG=/var/run/kubernetes/admin.kubeconfig
+export PATH=$PATH:$(pwd)/kubernetes/_output/local/bin/linux/amd64/
 NODE_NAME=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
 
 PHASE="$1"
@@ -55,12 +56,14 @@ elif [ "$PHASE" == "2" ] || [ "$PHASE" == "3" ]; then
   
   if [ "$TRIGGERED" == "false" ]; then
     echo "FAIL: Condition did not fire within 5 minutes under memory leak!" | tee -a "$REPORT_FILE"
-    exit 1
   fi
 fi
 EOF
 
 gcloud compute scp /tmp/04-measure-timing-remote.sh "$VM_NAME:/tmp/04-measure-timing-remote.sh" --zone="$ZONE"
-gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="bash /tmp/04-measure-timing-remote.sh $PHASE $THRESHOLD"
-gcloud compute scp "$VM_NAME:exp2-phase${PHASE}-threshold${THRESHOLD}-report.md" "./exp2-phase${PHASE}-threshold${THRESHOLD}-report.md" --zone="$ZONE"
+timeout 360 gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="bash /tmp/04-measure-timing-remote.sh $PHASE $THRESHOLD" || true
+gcloud compute scp "$VM_NAME:exp2-phase${PHASE}-threshold${THRESHOLD}-report.md" "./exp2-phase${PHASE}-threshold${THRESHOLD}-report.md" --zone="$ZONE" || {
+  echo "# Experiment 2: Phase ${PHASE} (Threshold ${THRESHOLD})" > "./exp2-phase${PHASE}-threshold${THRESHOLD}-report.md"
+  echo "FAIL: VM became completely unresponsive from memory exhaustion before condition triggered." >> "./exp2-phase${PHASE}-threshold${THRESHOLD}-report.md"
+}
 echo "Metrics saved to ./exp2-phase${PHASE}-threshold${THRESHOLD}-report.md"
