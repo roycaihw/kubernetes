@@ -39,30 +39,91 @@ echo "Baseline stable. No false positives detected." >> experiment-report.md
 
 echo ''
 echo "==============================================="
+echo 'Capturing active Kubelet configuration and thresholds...'
+# Try to grab the live config endpoint first:
+KUBELET_CONFIG=$(curl -s --insecure https://127.0.0.1:10250/configz | jq '.kubeletconfig' 2>/dev/null || echo "")
+
+if [ -z "$KUBELET_CONFIG" ] || [ "$KUBELET_CONFIG" == "null" ]; then
+  # Fallback to the physical config file if the endpoint is disabled
+  KUBELET_CONFIG=$(cat /var/run/kubernetes/kubelet.yaml 2>/dev/null || echo "Unable to fetch Kubelet Config!")
+fi
+
+echo "===== EXPERIMENT KUBELET CONFIGURATION =====" >> /home/haoweic_google_com/psi-raw-dumps.log
+echo "$KUBELET_CONFIG" >> /home/haoweic_google_com/psi-raw-dumps.log
+echo "============================================" >> /home/haoweic_google_com/psi-raw-dumps.log
+
+echo 'Starting background data collection loop to capture raw timeline...'
+cat << 'COLLECTOR' > /tmp/data-collector.sh
+#!/bin/bash
+export KUBECONFIG=/var/run/kubernetes/admin.kubeconfig
+export PATH=$PATH:$(pwd)/kubernetes/_output/local/bin/linux/amd64/
+NODE_NAME=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')
+
+echo "TIMESTAMP, EVENT, PSI_SOME_AVG10, PSI_SOME_AVG60, PSI_FULL_AVG10, PSI_FULL_AVG60, MEM_AVAIL_KB, COND_MEM_PRESSURE, COND_PSI_PRESSURE" > /home/haoweic_google_com/psi-timeline.csv
+
+while true; do
+  TS=$(date +"%Y-%m-%dT%H:%M:%S.%3NZ")
+  
+  # Kernel PSI
+  RAW_PSI=$(cat /proc/pressure/memory)
+  SOME_10=$(echo "$RAW_PSI" | grep 'some' | grep -o 'avg10=[0-9.]*' | cut -d= -f2)
+  SOME_60=$(echo "$RAW_PSI" | grep 'some' | grep -o 'avg60=[0-9.]*' | cut -d= -f2)
+  FULL_10=$(echo "$RAW_PSI" | grep 'full' | grep -o 'avg10=[0-9.]*' | cut -d= -f2)
+  FULL_60=$(echo "$RAW_PSI" | grep 'full' | grep -o 'avg60=[0-9.]*' | cut -d= -f2)
+
+  # OS Memory
+  MEM_AVAIL=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
+
+  # Kubernetes Conditions
+  NODE_JSON=$(kubectl get node "$NODE_NAME" -o json 2>/dev/null || echo "{}")
+  COND_LEGACY=$(echo "$NODE_JSON" | jq -r '.status.conditions[] | select(.type=="MemoryPressure") | .status' 2>/dev/null || echo "Unknown")
+  COND_PSI=$(echo "$NODE_JSON" | jq -r '.status.conditions[] | select(.type=="SystemMemoryContentionPressure") | .status' 2>/dev/null || echo "Unknown")
+
+  EVENT="BASELINE"
+  if [ -f /tmp/stress-deployed ]; then
+    EVENT="STRESSING"
+  fi
+
+  echo "$TS, $EVENT, $SOME_10, $SOME_60, $FULL_10, $FULL_60, $MEM_AVAIL, $COND_LEGACY, $COND_PSI" >> /home/haoweic_google_com/psi-timeline.csv
+
+  # Also capture full raw blocks for deep-dive analysis
+  echo "===== $TS =====" >> /home/haoweic_google_com/psi-raw-dumps.log
+  echo "--- /proc/pressure/memory ---" >> /home/haoweic_google_com/psi-raw-dumps.log
+  cat /proc/pressure/memory >> /home/haoweic_google_com/psi-raw-dumps.log
+  echo "--- /sys/fs/cgroup/memory.stat (head) ---" >> /home/haoweic_google_com/psi-raw-dumps.log
+  head -n 20 /sys/fs/cgroup/memory.stat 2>/dev/null >> /home/haoweic_google_com/psi-raw-dumps.log || true
+  
+  echo "--- Kubelet Summary API (Node Memory) ---" >> /home/haoweic_google_com/psi-raw-dumps.log
+  timeout 1 curl -s --insecure https://127.0.0.1:10250/stats/summary -H "Authorization: Bearer $(kubectl create token default)" | jq '.node.memory' 2>/dev/null >> /home/haoweic_google_com/psi-raw-dumps.log || true
+  
+  sleep 2
+done
+COLLECTOR
+
+chmod +x /tmp/data-collector.sh
+sudo chrt -f 99 ionice -c 1 -n 0 /tmp/data-collector.sh &
+COLLECTOR_PID=$!
+echo "Data collection started in background (PID: $COLLECTOR_PID)."
+
 echo 'Deploying massive memory stressor pod...'
-cat <<POD | kubectl apply -f -
+cat << 'POD' | kubectl apply -f -
 apiVersion: v1
 kind: Pod
 metadata:
   name: memory-stressor
 spec:
   containers:
-  # NOTE ON PSI MEMORY STALLS AND SWAPLESS ENVIRONMENTS:
-  # There is no off-the-shelf way to generate Memory PSI (stalls) on a stock, swapless
-  # Linux system. If you just allocate massive amounts of pure memory (e.g. without 
-  # any backing disk), the kernel will instantly panic and invoke the OOM Killer when
-  # physical RAM is full. An instant OOM kill evaluates to a 0% PSI stall because 
-  # the process simply dies instead of waiting/stalling for memory to become available.
-  # 
-  # To generate Kubelet's required `avg60 > 0.9` stall natively, the kernel must be 
-  # able to pause the application and thrash the disk (via Page Cache Eviction or 
-  # Swapping). This is why Experiment 1 requires the explicit creation of a 4G 
-  # /swapfile to safely bottleneck the container into a memory stall, preventing 
-  # premature OOM termination and allowing the metrics to surface accurately.
-  - name: stress
+  - name: stress-ng
     image: alexeiled/stress-ng
-    args: ["--vm", "1", "--vm-bytes", "17G", "--vm-hang", "0"]
+    args: ["--vm", "1", "--vm-bytes", "150%", "--vm-keep", "--timeout", "15m"]
+    resources:
+      requests:
+        memory: "100Mi"
+        cpu: "100m"
+      limits:
+        memory: "2500Mi"
 POD
+touch /tmp/stress-deployed
 echo "==============================================="
 echo ''
 
@@ -70,17 +131,8 @@ echo "## Observation 2: Memory Pressure Trigger" >> experiment-report.md
 echo 'Polling node conditions for SystemMemoryContentionPressure...'
 TRIGGERED=false
 LEGACY_TRIGGERED=false
-for i in {1..120}; do
-  echo "**Attempt $i:**" >> experiment-report.md
-  echo '```text' >> experiment-report.md
-  cat /proc/pressure/memory >> experiment-report.md
-  echo '```' >> experiment-report.md
-
-  # Capture OS memory metrics to understand why legacy MemoryPressure behaves the way it does
-  MEM_TOTAL=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
-  MEM_AVAIL=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
-  echo "OS Memory: ${MEM_AVAIL} kB available out of ${MEM_TOTAL} kB total" >> experiment-report.md
-
+for i in {1..240}; do
+  # We can still echo basic progress to the console
   if [ "$LEGACY_TRIGGERED" = false ] && kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "MemoryPressure" and .status == "True")' > /dev/null 2>&1; then
     echo "NOTICE: Legacy MemoryPressure triggered at attempt $i"
     LEGACY_TRIGGERED=true
@@ -159,12 +211,15 @@ else
   exit 1
 fi
 
+echo 'Observing sustained memory pressure for 10 minutes to gather avg60 data...'
+sleep 600
+
 echo 'Deleting memory stressor to observe condition recovery...'
 kubectl delete pod memory-stressor || true
 
 echo 'Polling node conditions for SystemMemoryContentionPressure recovery...'
 RECOVERED=false
-for i in {1..120}; do
+for i in {1..240}; do # Polling for 20 minutes (240 * 5s)
   if kubectl get node "$NODE_NAME" -o json | jq -e '.status.conditions[] | select(.type == "SystemMemoryContentionPressure" and .status == "False")' > /dev/null 2>&1; then
     echo 'SUCCESS: SystemMemoryContentionPressure condition is False!'
     echo 'Waiting 10 seconds to verify condition stability (no flapping)...'
@@ -190,14 +245,31 @@ fi
 
 echo ''
 echo 'All Verification Checks Passed Successfully!'
+
+echo "Stopping data collection..."
+kill $COLLECTOR_PID || true
+wait $COLLECTOR_PID 2>/dev/null || true
+echo "Data collection stopped."
+
+tar -czf /home/haoweic_google_com/psi-timeline-data.tar.gz /home/haoweic_google_com/psi-timeline.csv /home/haoweic_google_com/psi-raw-dumps.log
 EOF
 
 echo "Uploading script to VM..."
-gcloud compute scp /tmp/04-verify-behavior-remote.sh "$VM_NAME:/tmp/04-verify-behavior-remote.sh" --zone="$ZONE"
+gcloud compute scp /tmp/04-verify-behavior-remote.sh "$VM_NAME:/tmp/04-verify-behavior-remote.sh" --zone="$ZONE" --ssh-key-file=/usr/local/google/home/haoweic/.ssh/google_compute_engine
 
-echo "Executing script on VM..."
-gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="bash /tmp/04-verify-behavior-remote.sh"
+echo "Execute script on VM..."
+gcloud compute ssh "$VM_NAME" --zone="$ZONE" --ssh-key-file=/usr/local/google/home/haoweic/.ssh/google_compute_engine --command="bash /tmp/04-verify-behavior-remote.sh"
 
-echo "Downloading experiment report..."
-gcloud compute scp "$VM_NAME:experiment-report.md" "./experiment-report.md" --zone="$ZONE"
+echo "Downloading experiment report and timeline data..."
+gcloud compute scp "$VM_NAME:experiment-report.md" "./experiment-report.md" --zone="$ZONE" --ssh-key-file=/usr/local/google/home/haoweic/.ssh/google_compute_engine
+gcloud compute scp "$VM_NAME:/home/haoweic_google_com/psi-timeline-data.tar.gz" "./psi-timeline-data.tar.gz" --zone="$ZONE" --ssh-key-file=/usr/local/google/home/haoweic/.ssh/google_compute_engine
+
+echo "Extracting timeline data locally..."
+tar -xzf ./psi-timeline-data.tar.gz -C ./
+mv home/haoweic_google_com/psi-timeline.csv ./
+mv home/haoweic_google_com/psi-raw-dumps.log ./
+rm -rf home/ psi-timeline-data.tar.gz
+
 echo "Report saved to ./experiment-report.md"
+echo "Timeline CSV saved to ./psi-timeline.csv"
+echo "Raw dumps saved to ./psi-raw-dumps.log"

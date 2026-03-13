@@ -1,0 +1,4865 @@
+===== EXPERIMENT KUBELET CONFIGURATION =====
+Unable to fetch Kubelet Config!
+============================================
+===== 2026-03-13T04:55:44.395Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.00 avg300=0.00 total=10
+full avg10=0.00 avg60=0.00 avg300=0.00 total=10
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 513323008
+file 5481099264
+kernel 201547776
+kernel_stack 3473408
+pagetables 8011776
+sec_pagetables 0
+percpu 1022640
+sock 20480
+vmalloc 753664
+shmem 1392640
+zswap 0
+zswapped 0
+file_mapped 529440768
+file_dirty 2285568
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 0
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:55:46.621Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.00 avg300=0.00 total=10
+full avg10=0.00 avg60=0.00 avg300=0.00 total=10
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 520966144
+file 5481992192
+kernel 204296192
+kernel_stack 3948544
+pagetables 8884224
+sec_pagetables 0
+percpu 1042056
+sock 12288
+vmalloc 757760
+shmem 1466368
+zswap 0
+zswapped 0
+file_mapped 509997056
+file_dirty 2756608
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 0
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:55:48.814Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.00 avg300=0.00 total=10
+full avg10=0.00 avg60=0.00 avg300=0.00 total=10
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 2338455552
+file 5487579136
+kernel 206036992
+kernel_stack 3571712
+pagetables 11509760
+sec_pagetables 0
+percpu 1053504
+sock 8192
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 506535936
+file_dirty 3268608
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 0
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:55:51.019Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.00 avg300=0.00 total=10
+full avg10=0.00 avg60=0.00 avg300=0.00 total=10
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 4864094208
+file 5487726592
+kernel 210944000
+kernel_stack 3571712
+pagetables 16449536
+sec_pagetables 0
+percpu 1053408
+sock 8192
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 506564608
+file_dirty 3436544
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 0
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:55:53.205Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.00 avg300=0.00 total=10
+full avg10=0.00 avg60=0.00 avg300=0.00 total=10
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 7440691200
+file 5487755264
+kernel 215797760
+kernel_stack 3555328
+pagetables 21426176
+sec_pagetables 0
+percpu 1053408
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 506589184
+file_dirty 3600384
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 0
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:55:55.393Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.00 avg300=0.00 total=10
+full avg10=0.00 avg60=0.00 avg300=0.00 total=10
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 9976696832
+file 5487935488
+kernel 220770304
+kernel_stack 3555328
+pagetables 26378240
+sec_pagetables 0
+percpu 1053312
+sock 16384
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 506638336
+file_dirty 3792896
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 0
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:55:57.686Z =====
+--- /proc/pressure/memory ---
+some avg10=30.00 avg60=11.21 avg300=2.68 total=8639542
+full avg10=29.18 avg60=10.91 avg300=2.61 total=8410022
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16089804800
+file 228241408
+kernel 75747328
+kernel_stack 3604480
+pagetables 38498304
+sec_pagetables 0
+percpu 581280
+sock 8192
+vmalloc 770048
+shmem 3723264
+zswap 0
+zswapped 0
+file_mapped 151793664
+file_dirty 856064
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 10281906176
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:57:02.823Z =====
+--- /proc/pressure/memory ---
+some avg10=24.70 avg60=25.76 avg300=9.01 total=31140537
+full avg10=23.36 avg60=24.34 avg300=8.53 total=29546372
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16094998528
+file 227364864
+kernel 74743808
+kernel_stack 3670016
+pagetables 38535168
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 786432
+shmem 3772416
+zswap 0
+zswapped 0
+file_mapped 143335424
+file_dirty 1527808
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 5763145728
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:15.996Z =====
+--- /proc/pressure/memory ---
+some avg10=25.85 avg60=30.03 avg300=13.59 total=51827783
+full avg10=24.49 avg60=28.54 avg300=12.91 total=49352773
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16094564352
+file 229937152
+kernel 75108352
+kernel_stack 3637248
+pagetables 38637568
+sec_pagetables 0
+percpu 581184
+sock 24576
+vmalloc 774144
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 143626240
+file_dirty 1056768
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 4170739712
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:42.722Z =====
+--- /proc/pressure/memory ---
+some avg10=18.75 avg60=27.52 avg300=13.59 total=53240860
+full avg10=17.68 avg60=26.13 avg300=12.90 total=50692844
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16089788416
+file 230965248
+kernel 74006528
+kernel_stack 3588096
+pagetables 38305792
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 139112448
+file_dirty 1744896
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 4169891840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:45.010Z =====
+--- /proc/pressure/memory ---
+some avg10=15.71 avg60=26.68 avg300=13.51 total=53289984
+full avg10=14.84 avg60=25.34 avg300=12.83 total=50740808
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16089866240
+file 213561344
+kernel 74010624
+kernel_stack 3588096
+pagetables 38293504
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 121110528
+file_dirty 1957888
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 4155752448
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:47.279Z =====
+--- /proc/pressure/memory ---
+some avg10=11.98 avg60=25.23 avg300=13.38 total=53462350
+full avg10=11.21 avg60=23.94 avg300=12.70 total=50896690
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16089145344
+file 238608384
+kernel 74113024
+kernel_stack 3588096
+pagetables 38297600
+sec_pagetables 0
+percpu 581184
+sock 16384
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 137441280
+file_dirty 618496
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 4154859520
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:49.881Z =====
+--- /proc/pressure/memory ---
+some avg10=10.35 avg60=24.50 avg300=13.31 total=53533562
+full avg10=9.72 avg60=23.25 avg300=12.63 total=50965433
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16089231360
+file 204361728
+kernel 73756672
+kernel_stack 3588096
+pagetables 38301696
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 111919104
+file_dirty 897024
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 3764187136
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:52.140Z =====
+--- /proc/pressure/memory ---
+some avg10=8.66 avg60=23.73 avg300=13.22 total=53632327
+full avg10=8.14 avg60=22.52 avg300=12.55 total=51049981
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16085532672
+file 222318592
+kernel 74018816
+kernel_stack 3588096
+pagetables 38309888
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 124284928
+file_dirty 1077248
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 3763851264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:54.368Z =====
+--- /proc/pressure/memory ---
+some avg10=8.18 avg60=23.15 avg300=13.17 total=53709363
+full avg10=7.57 avg60=21.95 avg300=12.50 total=51110283
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16085549056
+file 224223232
+kernel 74072064
+kernel_stack 3588096
+pagetables 38309888
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 126025728
+file_dirty 1134592
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 3763847168
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:56.597Z =====
+--- /proc/pressure/memory ---
+some avg10=6.69 avg60=22.39 avg300=13.08 total=53721185
+full avg10=6.20 avg60=21.23 avg300=12.42 total=51119493
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16085594112
+file 226529280
+kernel 74186752
+kernel_stack 3588096
+pagetables 38293504
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 127500288
+file_dirty 1372160
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 3763838976
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:58:58.828Z =====
+--- /proc/pressure/memory ---
+some avg10=5.48 avg60=21.66 avg300=12.99 total=53767042
+full avg10=5.08 avg60=20.54 avg300=12.33 total=51161174
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16085819392
+file 232296448
+kernel 74313728
+kernel_stack 3588096
+pagetables 38301696
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 132022272
+file_dirty 1466368
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 3763838976
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:01.147Z =====
+--- /proc/pressure/memory ---
+some avg10=4.33 avg60=20.39 avg300=12.84 total=53834494
+full avg10=4.06 avg60=19.34 avg300=12.19 total=51226705
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16086122496
+file 223322112
+kernel 74428416
+kernel_stack 3604480
+pagetables 38367232
+sec_pagetables 0
+percpu 581184
+sock 16384
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 129392640
+file_dirty 1904640
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 11936907264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:03.631Z =====
+--- /proc/pressure/memory ---
+some avg10=3.91 avg60=19.79 avg300=12.77 total=53898820
+full avg10=3.69 avg60=18.77 avg300=12.12 total=51289701
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16084578304
+file 237940736
+kernel 74330112
+kernel_stack 3588096
+pagetables 38293504
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 134733824
+file_dirty 626688
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 11936903168
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:05.889Z =====
+--- /proc/pressure/memory ---
+some avg10=3.38 avg60=19.18 avg300=12.69 total=53911557
+full avg10=3.20 avg60=18.19 avg300=12.04 total=51301091
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16084164608
+file 238776320
+kernel 74387456
+kernel_stack 3588096
+pagetables 38297600
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 135168000
+file_dirty 872448
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 11936677888
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:08.146Z =====
+--- /proc/pressure/memory ---
+some avg10=2.77 avg60=18.55 avg300=12.60 total=53934218
+full avg10=2.62 avg60=17.60 avg300=11.96 total=51317782
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16083820544
+file 237543424
+kernel 74506240
+kernel_stack 3588096
+pagetables 38297600
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 136294400
+file_dirty 1142784
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 11950333952
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:10.432Z =====
+--- /proc/pressure/memory ---
+some avg10=2.45 avg60=17.97 avg300=12.52 total=54154073
+full avg10=2.14 avg60=17.02 avg300=11.88 total=51507563
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16083902464
+file 229437440
+kernel 74502144
+kernel_stack 3588096
+pagetables 38297600
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 132136960
+file_dirty 1486848
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 12296167424
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:12.965Z =====
+--- /proc/pressure/memory ---
+some avg10=3.81 avg60=17.71 avg300=12.50 total=54154273
+full avg10=3.38 avg60=16.76 avg300=11.86 total=51507763
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 16083914752
+file 237387776
+kernel 74563584
+kernel_stack 3588096
+pagetables 38301696
+sec_pagetables 0
+percpu 581184
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 136974336
+file_dirty 1716224
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 12296163328
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T04:59:49.321Z =====
+--- /proc/pressure/memory ---
+some avg10=0.34 avg60=7.58 avg300=10.55 total=55647017
+full avg10=0.34 avg60=7.21 avg300=10.02 total=52982448
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 513224704
+file 423809024
+kernel 38817792
+kernel_stack 3719168
+pagetables 7966720
+sec_pagetables 0
+percpu 580680
+sock 4096
+vmalloc 782336
+shmem 1531904
+zswap 0
+zswapped 0
+file_mapped 304009216
+file_dirty 905216
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 423288832
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:00:14.820Z =====
+--- /proc/pressure/memory ---
+some avg10=0.28 avg60=7.33 avg300=10.48 total=55647017
+full avg10=0.27 avg60=6.98 avg300=9.95 total=52982448
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 2966568960
+file 488693760
+kernel 43855872
+kernel_stack 3604480
+pagetables 12718080
+sec_pagetables 0
+percpu 580680
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 280686592
+file_dirty 352256
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 423284736
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:00:17.014Z =====
+--- /proc/pressure/memory ---
+some avg10=0.22 avg60=7.09 avg300=10.41 total=55647017
+full avg10=0.22 avg60=6.75 avg300=9.89 total=52982448
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 5812146176
+file 489168896
+kernel 49229824
+kernel_stack 3588096
+pagetables 18210816
+sec_pagetables 0
+percpu 580680
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 277823488
+file_dirty 851968
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 423243776
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:00:19.194Z =====
+--- /proc/pressure/memory ---
+some avg10=0.18 avg60=6.86 avg300=10.34 total=55647017
+full avg10=0.18 avg60=6.53 avg300=9.82 total=52982448
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 8707563520
+file 489451520
+kernel 55418880
+kernel_stack 3620864
+pagetables 24051712
+sec_pagetables 0
+percpu 580680
+sock 4096
+vmalloc 774144
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 287453184
+file_dirty 1138688
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 423239680
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:00:21.380Z =====
+--- /proc/pressure/memory ---
+some avg10=0.12 avg60=6.41 avg300=10.20 total=55647017
+full avg10=0.12 avg60=6.11 avg300=9.68 total=52982448
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 11600756736
+file 489525248
+kernel 61415424
+kernel_stack 3653632
+pagetables 29827072
+sec_pagetables 0
+percpu 580680
+sock 8192
+vmalloc 778240
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 282177536
+file_dirty 1380352
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 423231488
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:00:23.565Z =====
+--- /proc/pressure/memory ---
+some avg10=0.10 avg60=6.20 avg300=10.13 total=55647017
+full avg10=0.10 avg60=5.91 avg300=9.62 total=52982448
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 14405337088
+file 489562112
+kernel 66908160
+kernel_stack 3653632
+pagetables 35323904
+sec_pagetables 0
+percpu 580680
+sock 4096
+vmalloc 778240
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 281976832
+file_dirty 1667072
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 423231488
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:00:46.573Z =====
+--- /proc/pressure/memory ---
+some avg10=0.57 avg60=4.26 avg300=9.14 total=56985482
+full avg10=0.57 avg60=4.11 avg300=8.70 total=54310437
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 512790528
+file 388358144
+kernel 39059456
+kernel_stack 3670016
+pagetables 7946240
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 782336
+shmem 1503232
+zswap 0
+zswapped 0
+file_mapped 265154560
+file_dirty 1122304
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 38887424
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:01:08.877Z =====
+--- /proc/pressure/memory ---
+some avg10=0.47 avg60=4.12 avg300=9.08 total=56985482
+full avg10=0.47 avg60=3.97 avg300=8.64 total=54310437
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 4187807744
+file 405196800
+kernel 45703168
+kernel_stack 3588096
+pagetables 15020032
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 258846720
+file_dirty 1572864
+file_writeback 0
+swapcached 0
+anon_thp 3680501760
+file_thp 0
+shmem_thp 0
+inactive_anon 38076416
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:01:11.101Z =====
+--- /proc/pressure/memory ---
+some avg10=0.38 avg60=3.98 avg300=9.01 total=56985482
+full avg10=0.38 avg60=3.84 avg300=8.58 total=54310437
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 7675740160
+file 405684224
+kernel 52748288
+kernel_stack 3588096
+pagetables 21884928
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 261218304
+file_dirty 1732608
+file_writeback 0
+swapcached 0
+anon_thp 7168065536
+file_thp 0
+shmem_thp 0
+inactive_anon 38060032
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:01:13.378Z =====
+--- /proc/pressure/memory ---
+some avg10=0.25 avg60=3.72 avg300=8.89 total=56985482
+full avg10=0.25 avg60=3.59 avg300=8.46 total=54310437
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 11128823808
+file 407916544
+kernel 59453440
+kernel_stack 3588096
+pagetables 28647424
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 269701120
+file_dirty 1908736
+file_writeback 0
+swapcached 0
+anon_thp 10619977728
+file_thp 0
+shmem_thp 0
+inactive_anon 38055936
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:01:15.632Z =====
+--- /proc/pressure/memory ---
+some avg10=0.75 avg60=3.70 avg300=8.85 total=57054743
+full avg10=0.75 avg60=3.57 avg300=8.42 total=54379698
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 14432464896
+file 408162304
+kernel 65802240
+kernel_stack 3588096
+pagetables 35074048
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 261767168
+file_dirty 2035712
+file_writeback 0
+swapcached 0
+anon_thp 13908312064
+file_thp 0
+shmem_thp 0
+inactive_anon 7614464
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:04:14.308Z =====
+--- /proc/pressure/memory ---
+some avg10=0.52 avg60=11.24 avg300=12.33 total=91333915
+full avg10=0.50 avg60=11.12 avg300=12.06 total=88422695
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 491073536
+file 440360960
+kernel 38342656
+kernel_stack 3588096
+pagetables 7761920
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283500544
+file_dirty 5042176
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 86876160
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:04:41.753Z =====
+--- /proc/pressure/memory ---
+some avg10=0.35 avg60=10.52 avg300=12.16 total=91333915
+full avg10=0.33 avg60=10.40 avg300=11.90 total=88422695
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 4121235456
+file 517931008
+kernel 47357952
+kernel_stack 3784704
+pagetables 15302656
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 790528
+shmem 3772416
+zswap 0
+zswapped 0
+file_mapped 343814144
+file_dirty 5943296
+file_writeback 0
+swapcached 0
+anon_thp 3615490048
+file_thp 0
+shmem_thp 0
+inactive_anon 86876160
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:04:43.947Z =====
+--- /proc/pressure/memory ---
+some avg10=0.28 avg60=10.17 avg300=12.08 total=91333915
+full avg10=0.27 avg60=10.06 avg300=11.81 total=88422695
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 7457030144
+file 519229440
+kernel 53104640
+kernel_stack 3637248
+pagetables 21614592
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 774144
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 294539264
+file_dirty 655360
+file_writeback 0
+swapcached 0
+anon_thp 6960447488
+file_thp 0
+shmem_thp 0
+inactive_anon 86867968
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:04:46.160Z =====
+--- /proc/pressure/memory ---
+some avg10=0.23 avg60=9.84 avg300=11.99 total=91333915
+full avg10=0.22 avg60=9.73 avg300=11.73 total=88422695
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 10838794240
+file 519573504
+kernel 59392000
+kernel_stack 3604480
+pagetables 28082176
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 292442112
+file_dirty 995328
+file_writeback 0
+swapcached 0
+anon_thp 10343153664
+file_thp 0
+shmem_thp 0
+inactive_anon 86867968
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:04:48.374Z =====
+--- /proc/pressure/memory ---
+some avg10=0.19 avg60=9.52 avg300=11.91 total=91333915
+full avg10=0.18 avg60=9.41 avg300=11.65 total=88422695
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 14265151488
+file 519639040
+kernel 66121728
+kernel_stack 3604480
+pagetables 34787328
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 292433920
+file_dirty 1224704
+file_writeback 0
+swapcached 0
+anon_thp 13769900032
+file_thp 0
+shmem_thp 0
+inactive_anon 86839296
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:06:46.826Z =====
+--- /proc/pressure/memory ---
+some avg10=1.44 avg60=21.68 avg300=17.92 total=131633836
+full avg10=1.42 avg60=21.58 avg300=17.72 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 494551040
+file 423182336
+kernel 37556224
+kernel_stack 3555328
+pagetables 7618560
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 273993728
+file_dirty 745472
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 428077056
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:14.020Z =====
+--- /proc/pressure/memory ---
+some avg10=0.96 avg60=20.28 avg300=17.68 total=131633836
+full avg10=0.95 avg60=20.19 avg300=17.48 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 494555136
+file 432332800
+kernel 37568512
+kernel_stack 3555328
+pagetables 7630848
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278138880
+file_dirty 974848
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 428064768
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:16.219Z =====
+--- /proc/pressure/memory ---
+some avg10=0.79 avg60=19.62 avg300=17.56 total=131633836
+full avg10=0.78 avg60=19.53 avg300=17.36 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 494563328
+file 432640000
+kernel 37593088
+kernel_stack 3555328
+pagetables 7618560
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278360064
+file_dirty 1228800
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 428060672
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:18.385Z =====
+--- /proc/pressure/memory ---
+some avg10=0.64 avg60=18.98 avg300=17.44 total=131633836
+full avg10=0.64 avg60=18.89 avg300=17.24 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 495390720
+file 432791552
+kernel 37629952
+kernel_stack 3555328
+pagetables 7634944
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278462464
+file_dirty 1458176
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 428060672
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:20.558Z =====
+--- /proc/pressure/memory ---
+some avg10=0.53 avg60=18.36 avg300=17.32 total=131633836
+full avg10=0.52 avg60=18.27 avg300=17.12 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 497221632
+file 433131520
+kernel 37675008
+kernel_stack 3555328
+pagetables 7634944
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278921216
+file_dirty 598016
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 428056576
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:22.767Z =====
+--- /proc/pressure/memory ---
+some avg10=0.43 avg60=17.75 avg300=17.20 total=131633836
+full avg10=0.42 avg60=17.67 avg300=17.01 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 496148480
+file 433307648
+kernel 37699584
+kernel_stack 3555328
+pagetables 7630848
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279089152
+file_dirty 909312
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427888640
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:24.935Z =====
+--- /proc/pressure/memory ---
+some avg10=0.35 avg60=17.17 avg300=17.08 total=131633836
+full avg10=0.35 avg60=17.10 avg300=16.89 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 496291840
+file 433324032
+kernel 37740544
+kernel_stack 3555328
+pagetables 7639040
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279113728
+file_dirty 1163264
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427876352
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:27.100Z =====
+--- /proc/pressure/memory ---
+some avg10=0.29 avg60=16.61 avg300=16.96 total=131633836
+full avg10=0.28 avg60=16.54 avg300=16.77 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 1006141440
+file 443371520
+kernel 39538688
+kernel_stack 3604480
+pagetables 8835072
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 288219136
+file_dirty 1622016
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427868160
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:29.284Z =====
+--- /proc/pressure/memory ---
+some avg10=0.23 avg60=16.07 avg300=16.85 total=131633836
+full avg10=0.23 avg60=15.99 avg300=16.66 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 3897122816
+file 443392000
+kernel 45240320
+kernel_stack 3604480
+pagetables 14491648
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 288317440
+file_dirty 1822720
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427864064
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:31.464Z =====
+--- /proc/pressure/memory ---
+some avg10=0.15 avg60=15.03 avg300=16.62 total=131633836
+full avg10=0.15 avg60=14.96 avg300=16.43 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 6821658624
+file 443535360
+kernel 50966528
+kernel_stack 3604480
+pagetables 20205568
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 288468992
+file_dirty 2060288
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427851776
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:33.698Z =====
+--- /proc/pressure/memory ---
+some avg10=0.12 avg60=14.54 avg300=16.50 total=131633836
+full avg10=0.12 avg60=14.47 avg300=16.32 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 9642786816
+file 443547648
+kernel 56528896
+kernel_stack 3604480
+pagetables 25735168
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 288448512
+file_dirty 2265088
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427573248
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:35.938Z =====
+--- /proc/pressure/memory ---
+some avg10=0.10 avg60=14.06 avg300=16.39 total=131633836
+full avg10=0.10 avg60=14.00 avg300=16.21 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 12598308864
+file 443822080
+kernel 62357504
+kernel_stack 3604480
+pagetables 31522816
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 288731136
+file_dirty 2478080
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427573248
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:07:38.130Z =====
+--- /proc/pressure/memory ---
+some avg10=0.08 avg60=13.60 avg300=16.28 total=131633836
+full avg10=0.08 avg60=13.54 avg300=16.10 total=128538500
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 15413547008
+file 443985920
+kernel 67883008
+kernel_stack 3604480
+pagetables 37036032
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 288714752
+file_dirty 2670592
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 427569152
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:09:47.733Z =====
+--- /proc/pressure/memory ---
+some avg10=1.27 avg60=15.68 avg300=17.44 total=162295048
+full avg10=1.26 avg60=15.57 avg300=17.29 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 513974272
+file 449974272
+kernel 39002112
+kernel_stack 3702784
+pagetables 8015872
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 786432
+shmem 1531904
+zswap 0
+zswapped 0
+file_mapped 289914880
+file_dirty 1183744
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73699328
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:15.629Z =====
+--- /proc/pressure/memory ---
+some avg10=0.85 avg60=14.67 avg300=17.20 total=162295048
+full avg10=0.84 avg60=14.57 avg300=17.05 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 516083712
+file 505470976
+kernel 38387712
+kernel_stack 3604480
+pagetables 7798784
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283877376
+file_dirty 675840
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73662464
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:17.814Z =====
+--- /proc/pressure/memory ---
+some avg10=0.70 avg60=14.19 avg300=17.09 total=162295048
+full avg10=0.69 avg60=14.09 avg300=16.93 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 514863104
+file 506089472
+kernel 38006784
+kernel_stack 3571712
+pagetables 7659520
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280367104
+file_dirty 983040
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73629696
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:19.981Z =====
+--- /proc/pressure/memory ---
+some avg10=0.57 avg60=13.73 avg300=16.97 total=162295048
+full avg10=0.56 avg60=13.63 avg300=16.82 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 514707456
+file 506400768
+kernel 38060032
+kernel_stack 3571712
+pagetables 7667712
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280592384
+file_dirty 1249280
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73424896
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:22.153Z =====
+--- /proc/pressure/memory ---
+some avg10=0.46 avg60=13.28 avg300=16.85 total=162295048
+full avg10=0.46 avg60=13.18 avg300=16.70 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 514457600
+file 506597376
+kernel 38088704
+kernel_stack 3571712
+pagetables 7667712
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280698880
+file_dirty 1474560
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73424896
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:24.394Z =====
+--- /proc/pressure/memory ---
+some avg10=0.38 avg60=12.84 avg300=16.74 total=162295048
+full avg10=0.37 avg60=12.75 avg300=16.59 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 515371008
+file 506851328
+kernel 38125568
+kernel_stack 3571712
+pagetables 7675904
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280903680
+file_dirty 1748992
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73424896
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:26.567Z =====
+--- /proc/pressure/memory ---
+some avg10=0.31 avg60=12.42 avg300=16.62 total=162295048
+full avg10=0.31 avg60=12.33 avg300=16.47 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 515792896
+file 507019264
+kernel 38170624
+kernel_stack 3571712
+pagetables 7675904
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280944640
+file_dirty 1957888
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73416704
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:28.734Z =====
+--- /proc/pressure/memory ---
+some avg10=0.25 avg60=12.02 avg300=16.51 total=162295048
+full avg10=0.25 avg60=11.93 avg300=16.36 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 516747264
+file 507158528
+kernel 38170624
+kernel_stack 3571712
+pagetables 7663616
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280977408
+file_dirty 2142208
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73416704
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:30.938Z =====
+--- /proc/pressure/memory ---
+some avg10=0.21 avg60=11.62 avg300=16.40 total=162295048
+full avg10=0.20 avg60=11.54 avg300=16.25 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 518057984
+file 507191296
+kernel 38215680
+kernel_stack 3571712
+pagetables 7671808
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280989696
+file_dirty 892928
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73412608
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:33.111Z =====
+--- /proc/pressure/memory ---
+some avg10=0.17 avg60=11.24 avg300=16.28 total=162295048
+full avg10=0.16 avg60=11.16 avg300=16.14 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 520159232
+file 507211776
+kernel 38400000
+kernel_stack 3571712
+pagetables 7720960
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283918336
+file_dirty 1097728
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73408512
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:35.309Z =====
+--- /proc/pressure/memory ---
+some avg10=0.14 avg60=10.87 avg300=16.17 total=162295048
+full avg10=0.13 avg60=10.79 avg300=16.03 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 522776576
+file 507265024
+kernel 38797312
+kernel_stack 3604480
+pagetables 7868416
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 286367744
+file_dirty 1249280
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73408512
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:37.488Z =====
+--- /proc/pressure/memory ---
+some avg10=0.11 avg60=10.52 avg300=16.06 total=162295048
+full avg10=0.11 avg60=10.44 avg300=15.92 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 520261632
+file 507375616
+kernel 38297600
+kernel_stack 3571712
+pagetables 7675904
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281247744
+file_dirty 1298432
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73400320
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:39.697Z =====
+--- /proc/pressure/memory ---
+some avg10=0.07 avg60=9.84 avg300=15.84 total=162295048
+full avg10=0.07 avg60=9.77 avg300=15.70 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 522772480
+file 507596800
+kernel 38322176
+kernel_stack 3571712
+pagetables 7667712
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281300992
+file_dirty 1568768
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73396224
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:41.890Z =====
+--- /proc/pressure/memory ---
+some avg10=0.06 avg60=9.52 avg300=15.73 total=162295048
+full avg10=0.06 avg60=9.45 avg300=15.59 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 523866112
+file 507785216
+kernel 38346752
+kernel_stack 3571712
+pagetables 7671808
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281354240
+file_dirty 1798144
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73396224
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:44.061Z =====
+--- /proc/pressure/memory ---
+some avg10=0.05 avg60=9.21 avg300=15.63 total=162295048
+full avg10=0.05 avg60=9.14 avg300=15.48 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 527077376
+file 507887616
+kernel 38789120
+kernel_stack 3604480
+pagetables 7827456
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 284737536
+file_dirty 1998848
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73396224
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:46.248Z =====
+--- /proc/pressure/memory ---
+some avg10=0.04 avg60=8.90 avg300=15.52 total=162295048
+full avg10=0.04 avg60=8.84 avg300=15.38 total=159005129
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 525938688
+file 507998208
+kernel 38408192
+kernel_stack 3571712
+pagetables 7671808
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281448448
+file_dirty 1867776
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73396224
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:48.419Z =====
+--- /proc/pressure/memory ---
+some avg10=0.03 avg60=8.61 avg300=15.41 total=162295048
+full avg10=0.03 avg60=8.55 avg300=15.27 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 527171584
+file 508026880
+kernel 38432768
+kernel_stack 3571712
+pagetables 7671808
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281468928
+file_dirty 2080768
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73383936
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:50.610Z =====
+--- /proc/pressure/memory ---
+some avg10=0.02 avg60=8.33 avg300=15.31 total=162295048
+full avg10=0.02 avg60=8.27 avg300=15.17 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 528621568
+file 508084224
+kernel 38465536
+kernel_stack 3571712
+pagetables 7675904
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281526272
+file_dirty 2277376
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73383936
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:52.775Z =====
+--- /proc/pressure/memory ---
+some avg10=0.02 avg60=8.06 avg300=15.20 total=162295048
+full avg10=0.02 avg60=8.00 avg300=15.06 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 529510400
+file 508375040
+kernel 38469632
+kernel_stack 3571712
+pagetables 7671808
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281665536
+file_dirty 778240
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73383936
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:54.947Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=7.79 avg300=15.10 total=162295048
+full avg10=0.01 avg60=7.74 avg300=14.96 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 530964480
+file 508411904
+kernel 38522880
+kernel_stack 3571712
+pagetables 7684096
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281767936
+file_dirty 1028096
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:57.115Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=7.54 avg300=14.99 total=162295048
+full avg10=0.01 avg60=7.48 avg300=14.86 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 531861504
+file 508424192
+kernel 38547456
+kernel_stack 3571712
+pagetables 7680000
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281866240
+file_dirty 1273856
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:10:59.283Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=7.29 avg300=14.89 total=162295048
+full avg10=0.01 avg60=7.24 avg300=14.76 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 533389312
+file 509353984
+kernel 38576128
+kernel_stack 3571712
+pagetables 7684096
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 282931200
+file_dirty 1519616
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:01.450Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=7.05 avg300=14.79 total=162295049
+full avg10=0.00 avg60=7.00 avg300=14.66 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 534880256
+file 509390848
+kernel 38592512
+kernel_stack 3571712
+pagetables 7684096
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283017216
+file_dirty 1744896
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:03.620Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.60 avg300=14.59 total=162295049
+full avg10=0.00 avg60=6.55 avg300=14.46 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 537591808
+file 509489152
+kernel 38834176
+kernel_stack 3571712
+pagetables 7741440
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 291979264
+file_dirty 1937408
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:05.814Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.38 avg300=14.49 total=162295049
+full avg10=0.00 avg60=6.33 avg300=14.36 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 538456064
+file 509517824
+kernel 38797312
+kernel_stack 3571712
+pagetables 7729152
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 291459072
+file_dirty 2113536
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:08.002Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.17 avg300=14.39 total=162295049
+full avg10=0.00 avg60=6.13 avg300=14.26 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 537804800
+file 509534208
+kernel 38662144
+kernel_stack 3571712
+pagetables 7692288
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283172864
+file_dirty 749568
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:10.177Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.97 avg300=14.29 total=162295049
+full avg10=0.00 avg60=5.93 avg300=14.16 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 540696576
+file 509612032
+kernel 38694912
+kernel_stack 3571712
+pagetables 7700480
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283197440
+file_dirty 1048576
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:12.348Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.77 avg300=14.19 total=162295049
+full avg10=0.00 avg60=5.73 avg300=14.06 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 541900800
+file 509632512
+kernel 38707200
+kernel_stack 3571712
+pagetables 7700480
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283238400
+file_dirty 1048576
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:14.517Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.58 avg300=14.09 total=162295049
+full avg10=0.00 avg60=5.54 avg300=13.97 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 543596544
+file 509665280
+kernel 38748160
+kernel_stack 3571712
+pagetables 7708672
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283275264
+file_dirty 1257472
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:16.690Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.40 avg300=14.00 total=162295049
+full avg10=0.00 avg60=5.36 avg300=13.87 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 546463744
+file 509755392
+kernel 39100416
+kernel_stack 3604480
+pagetables 7856128
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 286720000
+file_dirty 1290240
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:18.860Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.22 avg300=13.90 total=162295049
+full avg10=0.00 avg60=5.19 avg300=13.78 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 545808384
+file 509906944
+kernel 38711296
+kernel_stack 3571712
+pagetables 7712768
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283348992
+file_dirty 1519616
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73379840
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:21.031Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.05 avg300=13.81 total=162295049
+full avg10=0.00 avg60=5.02 avg300=13.68 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 547938304
+file 510095360
+kernel 38768640
+kernel_stack 3571712
+pagetables 7737344
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283430912
+file_dirty 1810432
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:23.202Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.89 avg300=13.71 total=162295049
+full avg10=0.00 avg60=4.85 avg300=13.59 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 550137856
+file 510394368
+kernel 38752256
+kernel_stack 3571712
+pagetables 7733248
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283561984
+file_dirty 2027520
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:25.379Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.73 avg300=13.62 total=162295049
+full avg10=0.00 avg60=4.69 avg300=13.50 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 2100199424
+file 517017600
+kernel 42565632
+kernel_stack 3620864
+pagetables 10964992
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 290009088
+file_dirty 2523136
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:27.597Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.42 avg300=13.43 total=162295049
+full avg10=0.00 avg60=4.39 avg300=13.31 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 5000376320
+file 517083136
+kernel 48209920
+kernel_stack 3620864
+pagetables 16633856
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 290025472
+file_dirty 2727936
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:29.776Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.28 avg300=13.34 total=162295049
+full avg10=0.00 avg60=4.25 avg300=13.22 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 7879290880
+file 517201920
+kernel 53870592
+kernel_stack 3620864
+pagetables 22269952
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 290086912
+file_dirty 2916352
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:31.983Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.14 avg300=13.25 total=162295049
+full avg10=0.00 avg60=4.11 avg300=13.13 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 10842972160
+file 517332992
+kernel 59650048
+kernel_stack 3620864
+pagetables 28069888
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 290111488
+file_dirty 3076096
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:11:34.203Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.00 avg300=13.16 total=162295049
+full avg10=0.00 avg60=3.97 avg300=13.04 total=159005130
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 13730340864
+file 517488640
+kernel 65310720
+kernel_stack 3620864
+pagetables 33710080
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 290140160
+file_dirty 3239936
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 73347072
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:20.969Z =====
+--- /proc/pressure/memory ---
+some avg10=1.42 avg60=15.30 avg300=15.86 total=190244494
+full avg10=1.40 avg60=15.20 avg300=15.74 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557350912
+file 420913152
+kernel 37490688
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 273055744
+file_dirty 1011712
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55750656
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:45.995Z =====
+--- /proc/pressure/memory ---
+some avg10=0.95 avg60=14.32 avg300=15.64 total=190244494
+full avg10=0.93 avg60=14.22 avg300=15.53 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557449216
+file 429826048
+kernel 37531648
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 276824064
+file_dirty 1245184
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55750656
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:48.195Z =====
+--- /proc/pressure/memory ---
+some avg10=0.78 avg60=13.85 avg300=15.54 total=190244494
+full avg10=0.76 avg60=13.75 avg300=15.42 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557195264
+file 430473216
+kernel 37560320
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 277061632
+file_dirty 1454080
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55730176
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:50.385Z =====
+--- /proc/pressure/memory ---
+some avg10=0.63 avg60=13.40 avg300=15.43 total=190244494
+full avg10=0.62 avg60=13.30 avg300=15.31 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557735936
+file 430764032
+kernel 37625856
+kernel_stack 3571712
+pagetables 7761920
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 277237760
+file_dirty 1671168
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55730176
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:52.588Z =====
+--- /proc/pressure/memory ---
+some avg10=0.52 avg60=12.96 avg300=15.32 total=190244494
+full avg10=0.51 avg60=12.87 avg300=15.21 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557895680
+file 430952448
+kernel 37642240
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 277454848
+file_dirty 1888256
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:54.823Z =====
+--- /proc/pressure/memory ---
+some avg10=0.42 avg60=12.53 avg300=15.22 total=190244494
+full avg10=0.42 avg60=12.45 avg300=15.10 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557924352
+file 431222784
+kernel 37666816
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 277831680
+file_dirty 2043904
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:56.991Z =====
+--- /proc/pressure/memory ---
+some avg10=0.35 avg60=12.12 avg300=15.12 total=190244494
+full avg10=0.34 avg60=12.04 avg300=15.00 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 557973504
+file 431480832
+kernel 37695488
+kernel_stack 3571712
+pagetables 7745536
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 277938176
+file_dirty 278528
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:13:59.167Z =====
+--- /proc/pressure/memory ---
+some avg10=0.28 avg60=11.72 avg300=15.01 total=190244494
+full avg10=0.28 avg60=11.65 avg300=14.90 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558075904
+file 431554560
+kernel 37728256
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278024192
+file_dirty 712704
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:01.336Z =====
+--- /proc/pressure/memory ---
+some avg10=0.23 avg60=11.34 avg300=14.91 total=190244494
+full avg10=0.23 avg60=11.26 avg300=14.80 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558153728
+file 431763456
+kernel 37773312
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278097920
+file_dirty 942080
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:03.506Z =====
+--- /proc/pressure/memory ---
+some avg10=0.19 avg60=10.97 avg300=14.81 total=190244494
+full avg10=0.18 avg60=10.89 avg300=14.69 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 560308224
+file 431886336
+kernel 38174720
+kernel_stack 3604480
+pagetables 7897088
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281808896
+file_dirty 1171456
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:05.733Z =====
+--- /proc/pressure/memory ---
+some avg10=0.12 avg60=10.26 avg300=14.60 total=190244494
+full avg10=0.12 avg60=10.19 avg300=14.49 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558010368
+file 432111616
+kernel 37814272
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278298624
+file_dirty 1519616
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:07.901Z =====
+--- /proc/pressure/memory ---
+some avg10=0.10 avg60=9.93 avg300=14.50 total=190244494
+full avg10=0.10 avg60=9.86 avg300=14.39 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558018560
+file 432439296
+kernel 37842944
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278659072
+file_dirty 1736704
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:10.070Z =====
+--- /proc/pressure/memory ---
+some avg10=0.08 avg60=9.60 avg300=14.40 total=190244494
+full avg10=0.08 avg60=9.54 avg300=14.30 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558026752
+file 432463872
+kernel 37883904
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278695936
+file_dirty 1929216
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:12.244Z =====
+--- /proc/pressure/memory ---
+some avg10=0.06 avg60=9.29 avg300=14.31 total=190244494
+full avg10=0.06 avg60=9.22 avg300=14.20 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558727168
+file 432627712
+kernel 37908480
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 278810624
+file_dirty 2048000
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:14.415Z =====
+--- /proc/pressure/memory ---
+some avg10=0.05 avg60=8.98 avg300=14.21 total=190244494
+full avg10=0.05 avg60=8.92 avg300=14.10 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558882816
+file 432934912
+kernel 37933056
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279056384
+file_dirty 2240512
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:16.587Z =====
+--- /proc/pressure/memory ---
+some avg10=0.04 avg60=8.69 avg300=14.11 total=190244494
+full avg10=0.04 avg60=8.63 avg300=14.00 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558915584
+file 433152000
+kernel 38010880
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279441408
+file_dirty 2424832
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55697408
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:18.763Z =====
+--- /proc/pressure/memory ---
+some avg10=0.03 avg60=8.40 avg300=14.01 total=190244494
+full avg10=0.03 avg60=8.35 avg300=13.91 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 560525312
+file 433192960
+kernel 38158336
+kernel_stack 3571712
+pagetables 7811072
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 288112640
+file_dirty 2330624
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:20.945Z =====
+--- /proc/pressure/memory ---
+some avg10=0.03 avg60=8.13 avg300=13.92 total=190244494
+full avg10=0.03 avg60=8.07 avg300=13.81 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558899200
+file 433217536
+kernel 38002688
+kernel_stack 3571712
+pagetables 7745536
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279478272
+file_dirty 2482176
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:23.123Z =====
+--- /proc/pressure/memory ---
+some avg10=0.02 avg60=7.86 avg300=13.82 total=190244494
+full avg10=0.02 avg60=7.81 avg300=13.72 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 558948352
+file 433254400
+kernel 38023168
+kernel_stack 3571712
+pagetables 7741440
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279552000
+file_dirty 2646016
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:25.291Z =====
+--- /proc/pressure/memory ---
+some avg10=0.02 avg60=7.60 avg300=13.73 total=190244494
+full avg10=0.01 avg60=7.55 avg300=13.62 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559140864
+file 433356800
+kernel 38060032
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279801856
+file_dirty 2715648
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:27.459Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=7.36 avg300=13.63 total=190244494
+full avg10=0.01 avg60=7.30 avg300=13.53 total=186776079
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559157248
+file 433549312
+kernel 38080512
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 279814144
+file_dirty 2875392
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:29.627Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=7.11 avg300=13.54 total=190244494
+full avg10=0.01 avg60=7.07 avg300=13.44 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559267840
+file 434434048
+kernel 38105088
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280924160
+file_dirty 569344
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:31.816Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.66 avg300=13.36 total=190244494
+full avg10=0.00 avg60=6.61 avg300=13.25 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559271936
+file 434454528
+kernel 38141952
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280940544
+file_dirty 827392
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:33.982Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.44 avg300=13.26 total=190244494
+full avg10=0.00 avg60=6.39 avg300=13.16 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559517696
+file 434696192
+kernel 38170624
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281145344
+file_dirty 1028096
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:36.151Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.23 avg300=13.17 total=190244494
+full avg10=0.00 avg60=6.18 avg300=13.07 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559063040
+file 434724864
+kernel 38187008
+kernel_stack 3571712
+pagetables 7745536
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281174016
+file_dirty 1290240
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:38.333Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=6.02 avg300=13.08 total=190244494
+full avg10=0.00 avg60=5.98 avg300=12.98 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559132672
+file 435027968
+kernel 38322176
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281538560
+file_dirty 1531904
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:40.500Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.83 avg300=12.99 total=190244494
+full avg10=0.00 avg60=5.78 avg300=12.89 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559165440
+file 435535872
+kernel 38346752
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281812992
+file_dirty 1630208
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:42.673Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.63 avg300=12.90 total=190244494
+full avg10=0.00 avg60=5.60 avg300=12.81 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 559833088
+file 435560448
+kernel 38383616
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 281837568
+file_dirty 1835008
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:44.842Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.45 avg300=12.82 total=190244494
+full avg10=0.00 avg60=5.41 avg300=12.72 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 570339328
+file 436330496
+kernel 38973440
+kernel_stack 3686400
+pagetables 8036352
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 315912192
+file_dirty 708608
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:47.026Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.27 avg300=12.73 total=190244494
+full avg10=0.00 avg60=5.23 avg300=12.63 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562180096
+file 436359168
+kernel 38780928
+kernel_stack 3604480
+pagetables 7880704
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 286105600
+file_dirty 954368
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:49.197Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=5.10 avg300=12.64 total=190244494
+full avg10=0.00 avg60=5.06 avg300=12.54 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562204672
+file 436551680
+kernel 38744064
+kernel_stack 3604480
+pagetables 7880704
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 286261248
+file_dirty 1216512
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:51.392Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.93 avg300=12.55 total=190244494
+full avg10=0.00 avg60=4.90 avg300=12.46 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 560242688
+file 436604928
+kernel 38445056
+kernel_stack 3571712
+pagetables 7745536
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 282636288
+file_dirty 1454080
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:53.598Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.77 avg300=12.47 total=190244494
+full avg10=0.00 avg60=4.74 avg300=12.37 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 560566272
+file 436801536
+kernel 38424576
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283435008
+file_dirty 1630208
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:55.775Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.46 avg300=12.30 total=190244494
+full avg10=0.00 avg60=4.43 avg300=12.20 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 560791552
+file 436846592
+kernel 38363136
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 282873856
+file_dirty 1851392
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:14:57.945Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.32 avg300=12.21 total=190244494
+full avg10=0.00 avg60=4.28 avg300=12.12 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 561074176
+file 436875264
+kernel 38404096
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 282931200
+file_dirty 2064384
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:00.115Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.17 avg300=12.13 total=190244494
+full avg10=0.00 avg60=4.14 avg300=12.04 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 561410048
+file 436924416
+kernel 38383616
+kernel_stack 3571712
+pagetables 7761920
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 282972160
+file_dirty 2183168
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:02.287Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=4.04 avg300=12.05 total=190244494
+full avg10=0.00 avg60=4.01 avg300=11.95 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 561426432
+file 437080064
+kernel 38391808
+kernel_stack 3571712
+pagetables 7745536
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283025408
+file_dirty 2412544
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:04.459Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.90 avg300=11.96 total=190244494
+full avg10=0.00 avg60=3.88 avg300=11.87 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 561635328
+file 437133312
+kernel 38379520
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283033600
+file_dirty 294912
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:06.631Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.78 avg300=11.88 total=190244494
+full avg10=0.00 avg60=3.75 avg300=11.79 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 561246208
+file 438255616
+kernel 38408192
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 283963392
+file_dirty 745472
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:08.803Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.65 avg300=11.80 total=190244494
+full avg10=0.00 avg60=3.63 avg300=11.71 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 561332224
+file 439422976
+kernel 38400000
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 285323264
+file_dirty 1007616
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:10.973Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.53 avg300=11.72 total=190244494
+full avg10=0.00 avg60=3.51 avg300=11.63 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562122752
+file 439492608
+kernel 38420480
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 285462528
+file_dirty 1282048
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:13.146Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.42 avg300=11.64 total=190244494
+full avg10=0.00 avg60=3.39 avg300=11.55 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562208768
+file 439513088
+kernel 38400000
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 285556736
+file_dirty 1511424
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:15.319Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.30 avg300=11.56 total=190244494
+full avg10=0.00 avg60=3.28 avg300=11.47 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562364416
+file 439541760
+kernel 38428672
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 285556736
+file_dirty 1556480
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:17.489Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.20 avg300=11.48 total=190244494
+full avg10=0.00 avg60=3.17 avg300=11.39 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562442240
+file 439562240
+kernel 38420480
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 285585408
+file_dirty 1769472
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:19.660Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=3.09 avg300=11.40 total=190244494
+full avg10=0.00 avg60=3.07 avg300=11.31 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 564113408
+file 439590912
+kernel 38617088
+kernel_stack 3571712
+pagetables 7802880
+sec_pagetables 0
+percpu 568584
+sock 20480
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 294182912
+file_dirty 1966080
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:21.895Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.89 avg300=11.24 total=190244494
+full avg10=0.00 avg60=2.87 avg300=11.16 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 564039680
+file 439787520
+kernel 38547456
+kernel_stack 3571712
+pagetables 7798784
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 293658624
+file_dirty 2154496
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:24.083Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.80 avg300=11.17 total=190244494
+full avg10=0.00 avg60=2.78 avg300=11.08 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 564187136
+file 440188928
+kernel 38572032
+kernel_stack 3571712
+pagetables 7794688
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 294825984
+file_dirty 2125824
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:26.261Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.70 avg300=11.09 total=190244494
+full avg10=0.00 avg60=2.68 avg300=11.01 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 563163136
+file 444186624
+kernel 38891520
+kernel_stack 3588096
+pagetables 7774208
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 782336
+shmem 1531904
+zswap 0
+zswapped 0
+file_mapped 289308672
+file_dirty 2678784
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:28.454Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.62 avg300=11.01 total=190244494
+full avg10=0.00 avg60=2.60 avg300=10.93 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 565420032
+file 503156736
+kernel 39219200
+kernel_stack 3604480
+pagetables 7909376
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1499136
+zswap 0
+zswapped 0
+file_mapped 293527552
+file_dirty 20480
+file_writeback 20480
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:30.631Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.53 avg300=10.94 total=190244494
+full avg10=0.00 avg60=2.51 avg300=10.85 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 563732480
+file 503320576
+kernel 38760448
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290050048
+file_dirty 798720
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:32.798Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.45 avg300=10.86 total=190244495
+full avg10=0.00 avg60=2.43 avg300=10.78 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 563781632
+file 503595008
+kernel 38748160
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290152448
+file_dirty 1044480
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:34.969Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.37 avg300=10.79 total=190244495
+full avg10=0.00 avg60=2.35 avg300=10.71 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 563580928
+file 503652352
+kernel 38780928
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290172928
+file_dirty 1241088
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55689216
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:37.149Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.29 avg300=10.71 total=190244495
+full avg10=0.00 avg60=2.27 avg300=10.63 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562380800
+file 503750656
+kernel 38776832
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290177024
+file_dirty 1478656
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:39.339Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.21 avg300=10.64 total=190244495
+full avg10=0.00 avg60=2.20 avg300=10.56 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562388992
+file 503779328
+kernel 38801408
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290234368
+file_dirty 1712128
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:41.515Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.14 avg300=10.57 total=190244495
+full avg10=0.00 avg60=2.12 avg300=10.49 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562442240
+file 503963648
+kernel 38785024
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290320384
+file_dirty 1949696
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:43.684Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=2.07 avg300=10.50 total=190244495
+full avg10=0.00 avg60=2.05 avg300=10.42 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562442240
+file 503984128
+kernel 38789120
+kernel_stack 3571712
+pagetables 7745536
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290336768
+file_dirty 2170880
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:45.851Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.94 avg300=10.35 total=190244495
+full avg10=0.00 avg60=1.92 avg300=10.27 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562606080
+file 504033280
+kernel 38780928
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290410496
+file_dirty 2322432
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:48.022Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.87 avg300=10.28 total=190244495
+full avg10=0.00 avg60=1.86 avg300=10.20 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562606080
+file 504057856
+kernel 38805504
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290451456
+file_dirty 2535424
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:50.209Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.81 avg300=10.21 total=190244495
+full avg10=0.00 avg60=1.80 avg300=10.13 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 564420608
+file 504082432
+kernel 39010304
+kernel_stack 3571712
+pagetables 7802880
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 299487232
+file_dirty 2637824
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:52.388Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.75 avg300=10.14 total=190244495
+full avg10=0.00 avg60=1.74 avg300=10.06 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562200576
+file 504094720
+kernel 38813696
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290451456
+file_dirty 2789376
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:54.560Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.69 avg300=10.07 total=190244495
+full avg10=0.00 avg60=1.68 avg300=10.00 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562208768
+file 504119296
+kernel 38780928
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290484224
+file_dirty 2985984
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:56.726Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.64 avg300=10.00 total=190244495
+full avg10=0.00 avg60=1.63 avg300=9.93 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562384896
+file 504176640
+kernel 38801408
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290541568
+file_dirty 3166208
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:15:58.946Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.58 avg300=9.93 total=190244495
+full avg10=0.00 avg60=1.57 avg300=9.86 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562393088
+file 504414208
+kernel 38797312
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290582528
+file_dirty 3313664
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:01.115Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.53 avg300=9.86 total=190244495
+full avg10=0.00 avg60=1.52 avg300=9.79 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562388992
+file 504451072
+kernel 38809600
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290631680
+file_dirty 487424
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:03.373Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.48 avg300=9.80 total=190244495
+full avg10=0.00 avg60=1.47 avg300=9.72 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562393088
+file 504774656
+kernel 38813696
+kernel_stack 3571712
+pagetables 7757824
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290639872
+file_dirty 733184
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:05.542Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.43 avg300=9.73 total=190244495
+full avg10=0.00 avg60=1.42 avg300=9.66 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562098176
+file 504815616
+kernel 38793216
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290664448
+file_dirty 950272
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:07.714Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.38 avg300=9.66 total=190244495
+full avg10=0.00 avg60=1.37 avg300=9.59 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562114560
+file 504868864
+kernel 38805504
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290779136
+file_dirty 1212416
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:09.881Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.29 avg300=9.53 total=190244495
+full avg10=0.00 avg60=1.29 avg300=9.46 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 563765248
+file 505024512
+kernel 38989824
+kernel_stack 3588096
+pagetables 7831552
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 294064128
+file_dirty 1458176
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:12.072Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.25 avg300=9.46 total=190244495
+full avg10=0.00 avg60=1.24 avg300=9.39 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 566190080
+file 505114624
+kernel 39575552
+kernel_stack 3637248
+pagetables 8065024
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 774144
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 294490112
+file_dirty 1650688
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:14.246Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.21 avg300=9.40 total=190244495
+full avg10=0.00 avg60=1.20 avg300=9.33 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562348032
+file 505155584
+kernel 38817792
+kernel_stack 3571712
+pagetables 7753728
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290942976
+file_dirty 2043904
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:16.417Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.17 avg300=9.33 total=190244495
+full avg10=0.00 avg60=1.16 avg300=9.27 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562495488
+file 505180160
+kernel 38834176
+kernel_stack 3571712
+pagetables 7761920
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290959360
+file_dirty 2109440
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:18.589Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.13 avg300=9.27 total=190244495
+full avg10=0.00 avg60=1.12 avg300=9.20 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 562548736
+file 505217024
+kernel 38805504
+kernel_stack 3571712
+pagetables 7749632
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 765952
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290992128
+file_dirty 2248704
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:20.767Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.09 avg300=9.21 total=190244495
+full avg10=0.00 avg60=1.09 avg300=9.14 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 1384558592
+file 512212992
+kernel 41619456
+kernel_stack 3637248
+pagetables 9666560
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 306802688
+file_dirty 2764800
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:22.994Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.06 avg300=9.14 total=190244495
+full avg10=0.00 avg60=1.05 avg300=9.08 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 4252061696
+file 512233472
+kernel 47001600
+kernel_stack 3620864
+pagetables 15212544
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 306589696
+file_dirty 2883584
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:25.218Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=1.02 avg300=9.08 total=190244495
+full avg10=0.00 avg60=1.02 avg300=9.01 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 7175446528
+file 512389120
+kernel 52559872
+kernel_stack 3620864
+pagetables 20897792
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 297738240
+file_dirty 3010560
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:27.408Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.99 avg300=9.02 total=190244495
+full avg10=0.00 avg60=0.98 avg300=8.95 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 10020532224
+file 512565248
+kernel 58105856
+kernel_stack 3620864
+pagetables 26460160
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 297807872
+file_dirty 3186688
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:29.604Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.96 avg300=8.96 total=190244495
+full avg10=0.00 avg60=0.95 avg300=8.89 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 12914003968
+file 512589824
+kernel 63799296
+kernel_stack 3620864
+pagetables 32129024
+sec_pagetables 0
+percpu 568584
+sock 4096
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 297828352
+file_dirty 3371008
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:16:31.792Z =====
+--- /proc/pressure/memory ---
+some avg10=0.00 avg60=0.89 avg300=8.83 total=190244495
+full avg10=0.00 avg60=0.89 avg300=8.77 total=186776080
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 15774928896
+file 512614400
+kernel 69369856
+kernel_stack 3620864
+pagetables 37732352
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 3710976
+zswap 0
+zswapped 0
+file_mapped 297877504
+file_dirty 987136
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 55435264
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:03.553Z =====
+--- /proc/pressure/memory ---
+some avg10=0.67 avg60=12.16 avg300=12.74 total=223071743
+full avg10=0.67 avg60=12.14 avg300=12.70 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 536760320
+file 420368384
+kernel 38273024
+kernel_stack 3604480
+pagetables 7966720
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 280301568
+file_dirty 303104
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 463065088
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:29.653Z =====
+--- /proc/pressure/memory ---
+some avg10=0.55 avg60=11.76 avg300=12.66 total=223071743
+full avg10=0.55 avg60=11.75 avg300=12.61 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 536121344
+file 430641152
+kernel 38100992
+kernel_stack 3604480
+pagetables 7929856
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 284184576
+file_dirty 860160
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 463028224
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:31.848Z =====
+--- /proc/pressure/memory ---
+some avg10=0.36 avg60=11.00 avg300=12.48 total=223071743
+full avg10=0.36 avg60=10.99 avg300=12.44 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 536174592
+file 430759936
+kernel 38137856
+kernel_stack 3604480
+pagetables 7933952
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 284291072
+file_dirty 958464
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 463028224
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:34.127Z =====
+--- /proc/pressure/memory ---
+some avg10=0.30 avg60=10.64 avg300=12.40 total=223071743
+full avg10=0.30 avg60=10.63 avg300=12.35 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 535384064
+file 431288320
+kernel 38154240
+kernel_stack 3604480
+pagetables 7921664
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 284467200
+file_dirty 1220608
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 462245888
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:36.318Z =====
+--- /proc/pressure/memory ---
+some avg10=0.24 avg60=10.29 avg300=12.31 total=223071743
+full avg10=0.24 avg60=10.28 avg300=12.27 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 535363584
+file 431857664
+kernel 38182912
+kernel_stack 3604480
+pagetables 7925760
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 284708864
+file_dirty 1462272
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 462241792
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:38.491Z =====
+--- /proc/pressure/memory ---
+some avg10=0.20 avg60=9.96 avg300=12.23 total=223071743
+full avg10=0.20 avg60=9.94 avg300=12.18 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 535379968
+file 431927296
+kernel 38338560
+kernel_stack 3604480
+pagetables 7925760
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 284909568
+file_dirty 1630208
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 462233600
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:40.665Z =====
+--- /proc/pressure/memory ---
+some avg10=0.16 avg60=9.63 avg300=12.14 total=223071743
+full avg10=0.16 avg60=9.62 avg300=12.10 total=219449555
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 536227840
+file 432300032
+kernel 38576128
+kernel_stack 3604480
+pagetables 7966720
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 286896128
+file_dirty 1855488
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 462233600
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:42.861Z =====
+--- /proc/pressure/memory ---
+some avg10=0.13 avg60=9.32 avg300=12.06 total=223071926
+full avg10=0.13 avg60=9.30 avg300=12.02 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 541429760
+file 437112832
+kernel 39264256
+kernel_stack 3637248
+pagetables 8200192
+sec_pagetables 0
+percpu 568584
+sock 16384
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 295346176
+file_dirty 2101248
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 462229504
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:45.053Z =====
+--- /proc/pressure/memory ---
+some avg10=0.11 avg60=9.01 avg300=11.98 total=223071926
+full avg10=0.11 avg60=9.00 avg300=11.93 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 535834624
+file 450433024
+kernel 38572032
+kernel_stack 3604480
+pagetables 7929856
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290238464
+file_dirty 520192
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461918208
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:47.224Z =====
+--- /proc/pressure/memory ---
+some avg10=0.09 avg60=8.71 avg300=11.89 total=223071926
+full avg10=0.09 avg60=8.70 avg300=11.85 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 537559040
+file 450662400
+kernel 38969344
+kernel_stack 3637248
+pagetables 8077312
+sec_pagetables 0
+percpu 568584
+sock 12288
+vmalloc 774144
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290611200
+file_dirty 835584
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461893632
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:49.390Z =====
+--- /proc/pressure/memory ---
+some avg10=0.07 avg60=8.43 avg300=11.81 total=223071926
+full avg10=0.07 avg60=8.42 avg300=11.77 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 535687168
+file 450818048
+kernel 38629376
+kernel_stack 3604480
+pagetables 7938048
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290537472
+file_dirty 1024000
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461889536
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:51.559Z =====
+--- /proc/pressure/memory ---
+some avg10=0.06 avg60=8.15 avg300=11.73 total=223071926
+full avg10=0.06 avg60=8.14 avg300=11.69 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 535904256
+file 450879488
+kernel 38641664
+kernel_stack 3604480
+pagetables 7929856
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290537472
+file_dirty 1171456
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461889536
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:53.739Z =====
+--- /proc/pressure/memory ---
+some avg10=0.04 avg60=7.89 avg300=11.65 total=223071926
+full avg10=0.04 avg60=7.88 avg300=11.61 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 536059904
+file 451047424
+kernel 38678528
+kernel_stack 3604480
+pagetables 7933952
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290590720
+file_dirty 1445888
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461889536
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:55.908Z =====
+--- /proc/pressure/memory ---
+some avg10=0.03 avg60=7.38 avg300=11.49 total=223071926
+full avg10=0.03 avg60=7.37 avg300=11.45 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 538775552
+file 451383296
+kernel 38891520
+kernel_stack 3620864
+pagetables 8003584
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 290906112
+file_dirty 1671168
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461881344
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:19:58.079Z =====
+--- /proc/pressure/memory ---
+some avg10=0.02 avg60=7.14 avg300=11.41 total=223071926
+full avg10=0.02 avg60=7.13 avg300=11.37 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 539103232
+file 451653632
+kernel 39116800
+kernel_stack 3637248
+pagetables 8089600
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 774144
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 291074048
+file_dirty 180224
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461881344
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:20:00.266Z =====
+--- /proc/pressure/memory ---
+some avg10=0.02 avg60=6.90 avg300=11.34 total=223071926
+full avg10=0.02 avg60=6.89 avg300=11.29 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 537235456
+file 451743744
+kernel 38764544
+kernel_stack 3604480
+pagetables 7929856
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 291061760
+file_dirty 716800
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461877248
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:20:02.433Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=6.68 avg300=11.26 total=223071926
+full avg10=0.01 avg60=6.67 avg300=11.22 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 537247744
+file 451866624
+kernel 38780928
+kernel_stack 3604480
+pagetables 7925760
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 291209216
+file_dirty 929792
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461877248
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:20:04.604Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=6.46 avg300=11.18 total=223071926
+full avg10=0.01 avg60=6.45 avg300=11.14 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 536817664
+file 451899392
+kernel 38817792
+kernel_stack 3604480
+pagetables 7925760
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 770048
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 291250176
+file_dirty 1204224
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461873152
+--- Kubelet Summary API (Node Memory) ---
+===== 2026-03-13T05:20:06.792Z =====
+--- /proc/pressure/memory ---
+some avg10=0.01 avg60=6.25 avg300=11.10 total=223071926
+full avg10=0.01 avg60=6.24 avg300=11.06 total=219449728
+--- /sys/fs/cgroup/memory.stat (head) ---
+anon 539996160
+file 452071424
+kernel 39329792
+kernel_stack 3637248
+pagetables 8097792
+sec_pagetables 0
+percpu 568584
+sock 8192
+vmalloc 774144
+shmem 1470464
+zswap 0
+zswapped 0
+file_mapped 295710720
+file_dirty 1421312
+file_writeback 0
+swapcached 0
+anon_thp 0
+file_thp 0
+shmem_thp 0
+inactive_anon 461869056
+--- Kubelet Summary API (Node Memory) ---

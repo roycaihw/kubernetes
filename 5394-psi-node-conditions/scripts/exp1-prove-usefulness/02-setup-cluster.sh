@@ -54,5 +54,6 @@ gcloud compute ssh "$VM_NAME" --zone="$ZONE" --command="
   export KUBE_GIT_VERSION=v1.36.0
   export FEATURE_GATES='PSINodeCondition=true'
   export KUBELET_FLAGS='--feature-gates=PSINodeCondition=true --fail-swap-on=false'
+  sed -i 's/apiVersion: kubelet.config.k8s.io\/v1beta1/apiVersion: kubelet.config.k8s.io\/v1beta1\\nsystemMemoryContentionThreshold: 0.2/' hack/local-up-cluster.sh
   nohup hack/local-up-cluster.sh > cluster.log 2>&1 &
 "
